@@ -65,7 +65,7 @@
             animation: slideInRight 0.3s ease-out forwards;
         }
         
-        /* Custom scrollbar for a cleaner look */
+        /* Custom scrollbar */
         ::-webkit-scrollbar {
             width: 8px;
         }
@@ -88,25 +88,10 @@
         const { useState, useEffect, useMemo } = React;
 
         // --- Icons ---
-        // Helper component to render SVG icons
         const Icon = ({ path, className = "" }) => (
-            <svg 
-                xmlns="http://www.w3.org/2000/svg" 
-                width="24" 
-                height="24" 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                stroke="currentColor" 
-                strokeWidth="2" 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                className={className}
-            >
-                {path}
-            </svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{path}</svg>
         );
 
-        // Icon Definitions
         const LayoutDashboard = (props) => <Icon {...props} path={<><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></>} />;
         const AlertCircle = (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></>} />;
         const CreditCard = (props) => <Icon {...props} path={<><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></>} />;
@@ -131,8 +116,6 @@
         const Download = (props) => <Icon {...props} path={<><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></>} />;
         const Edit = (props) => <Icon {...props} path={<><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></>} />;
         const ChevronLeft = (props) => <Icon {...props} path={<path d="m15 18-6-6 6-6"/>} />;
-
-        // --- Components ---
 
         const Card = ({ children, className = "" }) => (
             <div className={`bg-white rounded-xl border border-slate-200 shadow-sm ${className}`}>
@@ -159,52 +142,10 @@
             );
         };
 
-        // --- Data Lists ---
-
-        // MENTORS (Login Access)
-        const mentorList = [
-            "Noha Radwan", 
-            "Rashad Mohamed", 
-            "Emad Mohamed", 
-            "Mohamed Mounir"
-        ];
-
-        // ASSOCIATES (Team Members to be logged)
-        const associateList = [
-            "Ariath Piol", "Job James", "Lina Hesham", "Mohab Magdy", "Marwa Ahmed", 
-            "Ramadan Philip", "Aida Clement", "Hassan Khallaf", "Nada Ashraf", "Ruben Joseph", 
-            "Esraa Tarek Eroq", "Ahmed Abdelghany", "Nour Ayman", "Ashraf Essam", "Hala Ayman", 
-            "Rania Mohamed", "Salma Ahmed", "Marwan Hassan", "Osama M. Adam", "Marwan Zakaria", 
-            "Shahd Emad", "Ahmed Nasser abdelhakim"
-        ];
-
-        // FLOOR WALKER OPTIONS
-        const floorWalkerReasons = [
-            "SOP Guidance",
-            "Process education",
-            "System Navigation"
-        ];
-
-        const floorWalkerRequestTypes = [
-            "Membership",
-            "Billing",
-            "Account Access",
-            "Account Setup",
-            "Order Support",
-            "Technical Support",
-            "Prospective",
-            "Bundle Membership",
-            "Order Receipt",
-            "Order Confirmation",
-            "Product Support",
-            "Shipping and Delivery",
-            "Program / Classes",
-            "Payment Dispute",
-            "Tempo 12M Installement",
-            "Promotions"
-        ];
-
-        // QUIZ MODULES
+        const mentorList = [ "Noha Radwan", "Rashad Mohamed", "Emad Mohamed", "Mohamed Mounir" ];
+        const associateList = [ "Ariath Piol", "Job James", "Lina Hesham", "Mohab Magdy", "Marwa Ahmed", "Ramadan Philip", "Aida Clement", "Hassan Khallaf", "Nada Ashraf", "Ruben Joseph", "Esraa Tarek Eroq", "Ahmed Abdelghany", "Nour Ayman", "Ashraf Essam", "Hala Ayman", "Rania Mohamed", "Salma Ahmed", "Marwan Hassan", "Osama M. Adam", "Marwan Zakaria", "Shahd Emad", "Ahmed Nasser abdelhakim" ];
+        const floorWalkerReasons = [ "SOP Guidance", "Process education", "System Navigation" ];
+        const floorWalkerRequestTypes = [ "Membership", "Billing", "Account Access", "Account Setup", "Order Support", "Technical Support", "Prospective", "Bundle Membership", "Order Receipt", "Order Confirmation", "Product Support", "Shipping and Delivery", "Program / Classes", "Payment Dispute", "Tempo 12M Installement", "Promotions" ];
         const quizModules = [
             { id: 'productExpert', title: 'Product Expert', desc: 'Is the associate able to demonstrate product expertise when queried by the customer?' },
             { id: 'processAwareness', title: 'Process Awareness', desc: 'Comprehending the process, rather than just adhering to its procedures.' },
@@ -213,1352 +154,88 @@
             { id: 'fcr', title: 'FCR', desc: 'Was the associate able to anticipate all the customer questions?' }
         ];
 
-        // --- PREFILLED DATA (Mock/Real Data) ---
+        // --- PREFILLED DATA ---
         const generateMockData = () => {
              return [
-                {
-                    id: 1770000000001,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Emad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-01-01T00:00:00',
-                    details: {
-                        associateName: 'Marwan Zakaria',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'Process education',
-                        requestType: 'Order Support',
-                        validRequest: 'Yes',
-                        slackLink: 'Link',
-                        comment: ''
-                    }
-                },
-                {
-                    id: 1770000000002,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Emad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-01-01T00:00:00',
-                    details: {
-                        associateName: 'Marwan Zakaria',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'Process education',
-                        requestType: 'Prospective',
-                        validRequest: 'Yes',
-                        slackLink: 'Link',
-                        comment: ''
-                    }
-                },
-                {
-                    id: 1770000000003,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Rashad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-01-02T00:00:00',
-                    details: {
-                        associateName: 'Marwan Hassan',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'Process education',
-                        requestType: 'Order Support',
-                        validRequest: 'Yes',
-                        slackLink: 'Link',
-                        comment: ''
-                    }
-                },
-                {
-                    id: 1770000000004,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Rashad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-01-02T00:00:00',
-                    details: {
-                        associateName: 'Nour Ayman',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'SOP Guidance',
-                        requestType: 'Membership',
-                        validRequest: 'No',
-                        slackLink: 'Link',
-                        comment: 'Nour should\'ve followed the membership cancelation SOP'
-                    }
-                },
-                {
-                    id: 1770000000005,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Emad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-01-05T00:00:00',
-                    details: {
-                        associateName: 'Ahmed Nasser abdelhakim',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'System Navigation',
-                        requestType: 'Membership',
-                        validRequest: 'Yes',
-                        slackLink: 'Link',
-                        comment: ''
-                    }
-                },
-                {
-                    id: 1770000000006,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Emad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-01-05T00:00:00',
-                    details: {
-                        associateName: 'Ruben Joseph',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'System Navigation',
-                        requestType: 'Membership',
-                        validRequest: 'Yes',
-                        slackLink: 'Link',
-                        comment: ''
-                    }
-                },
-                {
-                    id: 1770000000007,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Emad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-01-05T00:00:00',
-                    details: {
-                        associateName: 'Ramadan Philip',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'Process education',
-                        requestType: 'Order Support',
-                        validRequest: 'Yes',
-                        slackLink: 'Link',
-                        comment: ''
-                    }
-                },
-                {
-                    id: 1770000000008,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Emad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-01-05T00:00:00',
-                    details: {
-                        associateName: 'Ramadan Philip',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'SOP Guidance',
-                        requestType: 'Order Support',
-                        validRequest: 'Yes',
-                        slackLink: 'Link',
-                        comment: ''
-                    }
-                },
-                {
-                    id: 1770000000009,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Emad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-01-05T00:00:00',
-                    details: {
-                        associateName: 'Ahmed Nasser abdelhakim',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'Process education',
-                        requestType: 'Order Support',
-                        validRequest: 'Yes',
-                        slackLink: 'Link',
-                        comment: ''
-                    }
-                },
-                {
-                    id: 1770000000010,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Emad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-01-05T00:00:00',
-                    details: {
-                        associateName: 'Ahmed Nasser abdelhakim',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'SOP Guidance',
-                        requestType: 'Prospective',
-                        validRequest: 'Yes',
-                        slackLink: 'Link',
-                        comment: ''
-                    }
-                },
-                {
-                    id: 1770000000011,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Rashad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-01-05T00:00:00',
-                    details: {
-                        associateName: 'Osama M. Adam',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'System Navigation',
-                        requestType: 'Membership',
-                        validRequest: 'Yes',
-                        slackLink: 'Link',
-                        comment: ''
-                    }
-                },
-                {
-                    id: 1770000000012,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Rashad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-01-06T00:00:00',
-                    details: {
-                        associateName: 'Shahd Emad',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'Process education',
-                        requestType: 'Technical Support',
-                        validRequest: 'Yes',
-                        slackLink: 'Link',
-                        comment: ''
-                    }
-                },
-                {
-                    id: 1770000000013,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Emad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-01-06T00:00:00',
-                    details: {
-                        associateName: 'Mohab Magdy',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'Process education',
-                        requestType: 'Order Support',
-                        validRequest: 'Yes',
-                        slackLink: 'Link',
-                        comment: ''
-                    }
-                },
-                {
-                    id: 1770000000014,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Rashad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-01-06T00:00:00',
-                    details: {
-                        associateName: 'Osama M. Adam',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'Process education',
-                        requestType: 'Order Support',
-                        validRequest: 'Yes',
-                        slackLink: 'Link',
-                        comment: ''
-                    }
-                },
-                {
-                    id: 1770000000015,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Rashad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-01-06T00:00:00',
-                    details: {
-                        associateName: 'Hala Ayman',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'Process education',
-                        requestType: 'Membership',
-                        validRequest: 'Yes',
-                        slackLink: 'Link',
-                        comment: ''
-                    }
-                },
-                {
-                    id: 1770000000016,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Rashad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-01-07T00:00:00',
-                    details: {
-                        associateName: 'Salma Ahmed',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'Process education',
-                        requestType: 'Membership',
-                        validRequest: 'Yes',
-                        slackLink: 'Link',
-                        comment: ''
-                    }
-                },
-                {
-                    id: 1770000000017,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Rashad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-01-07T00:00:00',
-                    details: {
-                        associateName: 'Ahmed Abdelghany',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'Process education',
-                        requestType: 'Program / Classes',
-                        validRequest: 'Yes',
-                        slackLink: 'Link',
-                        comment: ''
-                    }
-                },
-                {
-                    id: 1770000000018,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Rashad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-01-08T00:00:00',
-                    details: {
-                        associateName: 'Rania Mohamed',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'Process education',
-                        requestType: 'Membership',
-                        validRequest: 'Yes',
-                        slackLink: 'Link',
-                        comment: ''
-                    }
-                },
-                {
-                    id: 1770000000019,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Rashad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-01-08T00:00:00',
-                    details: {
-                        associateName: 'Aida Clement',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'Process education',
-                        requestType: 'Order Support',
-                        validRequest: 'Yes',
-                        slackLink: 'Link',
-                        comment: ''
-                    }
-                },
-                {
-                    id: 1770000000020,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Rashad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-01-09T00:00:00',
-                    details: {
-                        associateName: 'Hala Ayman',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'Process education',
-                        requestType: 'Program / Classes',
-                        validRequest: 'Yes',
-                        slackLink: 'Link',
-                        comment: ''
-                    }
-                },
-                {
-                    id: 1770000000021,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Rashad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-01-09T00:00:00',
-                    details: {
-                        associateName: 'Shahd Emad',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'Process education',
-                        requestType: 'Order Support',
-                        validRequest: 'Yes',
-                        slackLink: 'Link',
-                        comment: ''
-                    }
-                },
-                {
-                    id: 1770000000022,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Noha Radwan',
-                    status: 'Resolved',
-                    date: '2026-01-09T00:00:00',
-                    details: {
-                        associateName: 'Aida Clement',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'Process education',
-                        requestType: 'Order Support',
-                        validRequest: 'Yes',
-                        slackLink: 'Link',
-                        comment: ''
-                    }
-                },
-                {
-                    id: 1770000000023,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Noha Radwan',
-                    status: 'Resolved',
-                    date: '2026-01-09T00:00:00',
-                    details: {
-                        associateName: 'Aida Clement',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'Process education',
-                        requestType: 'Membership',
-                        validRequest: 'Yes',
-                        slackLink: 'Link',
-                        comment: ''
-                    }
-                },
-                {
-                    id: 1770000000024,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Noha Radwan',
-                    status: 'Resolved',
-                    date: '2026-01-10T00:00:00',
-                    details: {
-                        associateName: 'Aida Clement',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'Process education',
-                        requestType: 'Order Confirmation',
-                        validRequest: 'No',
-                        slackLink: 'Link',
-                        comment: 'No need for the SBS, as Aida should\'ve let the customer know that they did order the Core, whcih comes without a Cabinet'
-                    }
-                },
-                {
-                    id: 1770000000025,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Noha Radwan',
-                    status: 'Resolved',
-                    date: '2026-01-10T00:00:00',
-                    details: {
-                        associateName: 'Shahd Emad',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'Process education',
-                        requestType: 'Account Access',
-                        validRequest: 'Yes',
-                        slackLink: 'Link',
-                        comment: ''
-                    }
-                },
-                {
-                    id: 1770000000026,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Rashad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-01-12T00:00:00',
-                    details: {
-                        associateName: 'Ashraf Essam',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'Process education',
-                        requestType: 'Order Support',
-                        validRequest: 'Yes',
-                        slackLink: 'Link',
-                        comment: ''
-                    }
-                },
-                {
-                    id: 1770000000027,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Rashad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-01-13T00:00:00',
-                    details: {
-                        associateName: 'Hala Ayman',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'Process education',
-                        requestType: 'Billing',
-                        validRequest: 'Yes',
-                        slackLink: 'Link',
-                        comment: ''
-                    }
-                },
-                {
-                    id: 1770000000028,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Rashad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-01-13T00:00:00',
-                    details: {
-                        associateName: 'Hala Ayman',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'Process education',
-                        requestType: 'Program / Classes',
-                        validRequest: 'Yes',
-                        slackLink: 'Link',
-                        comment: ''
-                    }
-                },
-                {
-                    id: 1770000000029,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Rashad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-01-14T00:00:00',
-                    details: {
-                        associateName: 'Rania Mohamed',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'Process education',
-                        requestType: 'Membership',
-                        validRequest: 'No',
-                        slackLink: 'Link',
-                        comment: 'Everything was explained in the HIP already'
-                    }
-                },
-                {
-                    id: 1770000000030,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Rashad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-01-14T00:00:00',
-                    details: {
-                        associateName: 'Rania Mohamed',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'Process education',
-                        requestType: 'Account Setup',
-                        validRequest: 'Yes',
-                        slackLink: 'Link',
-                        comment: ''
-                    }
-                },
-                {
-                    id: 1770000000031,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Rashad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-01-14T00:00:00',
-                    details: {
-                        associateName: 'Rania Mohamed',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'Process education',
-                        requestType: 'Order Support',
-                        validRequest: 'No',
-                        slackLink: 'Link',
-                        comment: 'Rania followed the wrong process'
-                    }
-                },
-                {
-                    id: 1770000000032,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Rashad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-01-15T00:00:00',
-                    details: {
-                        associateName: 'Ahmed Abdelghany',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'System Navigation',
-                        requestType: 'Program / Classes',
-                        validRequest: 'Yes',
-                        slackLink: 'Link',
-                        comment: ''
-                    }
-                },
-                {
-                    id: 1770000000033,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Rashad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-01-15T00:00:00',
-                    details: {
-                        associateName: 'Rania Mohamed',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'Process education',
-                        requestType: 'Membership',
-                        validRequest: 'No',
-                        slackLink: 'Link',
-                        comment: 'Rania knows how to check the Referral code already'
-                    }
-                },
-                {
-                    id: 1770000000034,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Rashad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-01-16T00:00:00',
-                    details: {
-                        associateName: 'Marwan Hassan',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'Process education',
-                        requestType: 'Order Support',
-                        validRequest: 'Yes',
-                        slackLink: 'Link',
-                        comment: ''
-                    }
-                },
-                {
-                    id: 1770000000035,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Rashad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-01-16T00:00:00',
-                    details: {
-                        associateName: 'Nour Ayman',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'System Navigation',
-                        requestType: 'Billing',
-                        validRequest: 'No',
-                        slackLink: 'Link',
-                        comment: 'Nour could\'ve checked the charge on Retool'
-                    }
-                },
-                {
-                    id: 1770000000036,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Rashad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-01-17T00:00:00',
-                    details: {
-                        associateName: 'Marwan Zakaria',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'System Navigation',
-                        requestType: 'Order Support',
-                        validRequest: 'Yes',
-                        slackLink: 'Link',
-                        comment: ''
-                    }
-                },
-                {
-                    id: 1770000000037,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Rashad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-01-19T00:00:00',
-                    details: {
-                        associateName: 'Hassan Khallaf',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'Process education',
-                        requestType: 'Membership',
-                        validRequest: 'Yes',
-                        slackLink: 'Link',
-                        comment: ''
-                    }
-                },
-                {
-                    id: 1770000000038,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Emad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-01-19T00:00:00',
-                    details: {
-                        associateName: 'Shahd Emad',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'System Navigation',
-                        requestType: 'Account Access',
-                        validRequest: 'Yes',
-                        slackLink: 'Link',
-                        comment: ''
-                    }
-                },
-                {
-                    id: 1770000000039,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Emad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-01-20T00:00:00',
-                    details: {
-                        associateName: 'Marwan Hassan',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'System Navigation',
-                        requestType: 'Membership',
-                        validRequest: 'Yes',
-                        slackLink: 'Link',
-                        comment: ''
-                    }
-                },
-                {
-                    id: 1770000000040,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Emad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-01-21T00:00:00',
-                    details: {
-                        associateName: 'Marwan Hassan',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'Process education',
-                        requestType: 'Membership',
-                        validRequest: 'No',
-                        slackLink: 'Link',
-                        comment: 'The CX was a family member under a canceled account and was having issue log in, Marwan found that the primary owner has another account and should\'ve explained to the customer without raising'
-                    }
-                },
-                {
-                    id: 1770000000041,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Rashad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-01-21T00:00:00',
-                    details: {
-                        associateName: 'Marwan Hassan',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'Process education',
-                        requestType: 'Order Support',
-                        validRequest: 'Yes',
-                        slackLink: 'Link',
-                        comment: ''
-                    }
-                },
-                {
-                    id: 1770000000042,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Emad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-01-21T00:00:00',
-                    details: {
-                        associateName: 'Hala Ayman',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'Process education',
-                        requestType: 'Membership',
-                        validRequest: 'No',
-                        slackLink: 'Link',
-                        comment: 'The CX got charged after the pause and asked for a refund after 15 days, Hala should\'ve explained our policy without raising the case'
-                    }
-                },
-                {
-                    id: 1770000000043,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Rashad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-01-21T00:00:00',
-                    details: {
-                        associateName: 'Ashraf Essam',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'System Navigation',
-                        requestType: 'Account Access',
-                        validRequest: 'Yes',
-                        slackLink: 'Link',
-                        comment: ''
-                    }
-                },
-                {
-                    id: 1770000000044,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Rashad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-01-22T00:00:00',
-                    details: {
-                        associateName: 'Ahmed Nasser abdelhakim',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'Process education',
-                        requestType: 'Order Support',
-                        validRequest: 'Yes',
-                        slackLink: 'Link',
-                        comment: ''
-                    }
-                },
-                {
-                    id: 1770000000045,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Rashad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-01-23T00:00:00',
-                    details: {
-                        associateName: 'Esraa Tarek Eroq',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'Process education',
-                        requestType: 'Bundle Membership',
-                        validRequest: 'Yes',
-                        slackLink: 'Link',
-                        comment: ''
-                    }
-                },
-                {
-                    id: 1770000000046,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Rashad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-01-23T00:00:00',
-                    details: {
-                        associateName: 'Mohab Magdy',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'Process education',
-                        requestType: 'Billing',
-                        validRequest: 'Yes',
-                        slackLink: 'Link',
-                        comment: ''
-                    }
-                },
-                {
-                    id: 1770000000047,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Emad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-01-23T00:00:00',
-                    details: {
-                        associateName: 'Nour Ayman',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'Process education',
-                        requestType: 'Membership',
-                        validRequest: 'Yes',
-                        slackLink: 'Link',
-                        comment: ''
-                    }
-                },
-                {
-                    id: 1770000000048,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Noha Radwan',
-                    status: 'Resolved',
-                    date: '2026-01-25T00:00:00',
-                    details: {
-                        associateName: 'Rania Mohamed',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'SOP Guidance',
-                        requestType: 'Product Support',
-                        validRequest: 'No',
-                        slackLink: 'Link',
-                        comment: 'The customer has a no audio issue, and she didn;t know which SOP to follow. No searching skills were utilized.'
-                    }
-                },
-                {
-                    id: 1770000000049,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Noha Radwan',
-                    status: 'Resolved',
-                    date: '2026-01-25T00:00:00',
-                    details: {
-                        associateName: 'Rania Mohamed',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'System Navigation',
-                        requestType: 'Account Setup',
-                        validRequest: 'No',
-                        slackLink: 'Link',
-                        comment: 'No certain reason why the SBS was required'
-                    }
-                },
-                {
-                    id: 1770000000050,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Rashad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-01-27T00:00:00',
-                    details: {
-                        associateName: 'Ashraf Essam',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'System Navigation',
-                        requestType: 'Membership',
-                        validRequest: 'Yes',
-                        slackLink: 'Link',
-                        comment: ''
-                    }
-                },
-                {
-                    id: 1770000000051,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Emad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-01-27T00:00:00',
-                    details: {
-                        associateName: 'Rania Mohamed',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'Process education',
-                        requestType: 'Bundle Membership',
-                        validRequest: 'Yes',
-                        slackLink: 'Link',
-                        comment: ''
-                    }
-                },
-                {
-                    id: 1770000000052,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Rashad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-01-28T00:00:00',
-                    details: {
-                        associateName: 'Ashraf Essam',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'System Navigation',
-                        requestType: 'Membership',
-                        validRequest: 'Yes',
-                        slackLink: 'Link',
-                        comment: ''
-                    }
-                },
-                {
-                    id: 1770000000053,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Rashad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-01-29T00:00:00',
-                    details: {
-                        associateName: 'Mohab Magdy',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'System Navigation',
-                        requestType: 'Membership',
-                        validRequest: 'Yes',
-                        slackLink: 'Link',
-                        comment: ''
-                    }
-                },
-                {
-                    id: 1770000000054,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Emad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-01-29T00:00:00',
-                    details: {
-                        associateName: 'Marwan Zakaria',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'System Navigation',
-                        requestType: 'Order Support',
-                        validRequest: 'Yes',
-                        slackLink: 'Link',
-                        comment: ''
-                    }
-                },
-                {
-                    id: 1770000000055,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Emad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-01-29T00:00:00',
-                    details: {
-                        associateName: 'Shahd Emad',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'Process education',
-                        requestType: 'Bundle Membership',
-                        validRequest: 'Yes',
-                        slackLink: 'Link',
-                        comment: ''
-                    }
-                },
-                {
-                    id: 1770000000056,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Emad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-01-30T00:00:00',
-                    details: {
-                        associateName: 'Nour Ayman',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'System Navigation',
-                        requestType: 'Order Support',
-                        validRequest: 'Yes',
-                        slackLink: 'Link',
-                        comment: ''
-                    }
-                },
-                {
-                    id: 1770000000057,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Emad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-01-30T00:00:00',
-                    details: {
-                        associateName: 'Nour Ayman',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'System Navigation',
-                        requestType: 'Account Access',
-                        validRequest: 'No',
-                        slackLink: 'Link',
-                        comment: 'The CX couldn\'t log in to her profile, Nour should\'ve reset the password, no need for SBS'
-                    }
-                },
-                {
-                    id: 1770000000058,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Emad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-01-30T00:00:00',
-                    details: {
-                        associateName: 'Shahd Emad',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'SOP Guidance',
-                        requestType: 'Product Support',
-                        validRequest: 'No',
-                        slackLink: 'Link',
-                        comment: 'The CX was worried about not getting updates for his Studio sonce we removed it from our website'
-                    }
-                },
-                {
-                    id: 1770000000059,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Noha Radwan',
-                    status: 'Resolved',
-                    date: '2026-01-31T00:00:00',
-                    details: {
-                        associateName: 'Hala Ayman',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'Process education',
-                        requestType: 'Billing',
-                        validRequest: 'Yes',
-                        slackLink: 'Link',
-                        comment: ''
-                    }
-                },
-                {
-                    id: 1770000000060,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Noha Radwan',
-                    status: 'Resolved',
-                    date: '2026-01-31T00:00:00',
-                    details: {
-                        associateName: 'Hala Ayman',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'Process education',
-                        requestType: 'Membership',
-                        validRequest: 'Yes',
-                        slackLink: 'Link',
-                        comment: ''
-                    }
-                },
-                {
-                    id: 1770000000061,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Noha Radwan',
-                    status: 'Resolved',
-                    date: '2026-02-01T00:00:00',
-                    details: {
-                        associateName: 'Hala Ayman',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'Process education',
-                        requestType: 'Prospective',
-                        validRequest: 'No',
-                        slackLink: 'Link',
-                        comment: 'No need for a SBS for info we already know'
-                    }
-                },
-                {
-                    id: 1770000000062,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Noha Radwan',
-                    status: 'Resolved',
-                    date: '2026-02-01T00:00:00',
-                    details: {
-                        associateName: 'Rania Mohamed',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'System Navigation',
-                        requestType: 'Account Setup',
-                        validRequest: 'No',
-                        slackLink: 'Link',
-                        comment: 'Customer wanted a referral code!'
-                    }
-                },
-                {
-                    id: 1770000000063,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Noha Radwan',
-                    status: 'Resolved',
-                    date: '2026-02-02T00:00:00',
-                    details: {
-                        associateName: 'Rania Mohamed',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'Process education',
-                        requestType: 'Account Access',
-                        validRequest: 'No',
-                        slackLink: 'Link',
-                        comment: 'The customer needs to log out and back in with the same membership email, basic ts steps.'
-                    }
-                },
-                {
-                    id: 1770000000064,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Emad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-02-02T00:00:00',
-                    details: {
-                        associateName: 'Osama M. Adam',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'SOP Guidance',
-                        requestType: 'Order Support',
-                        validRequest: 'Yes',
-                        slackLink: 'Link',
-                        comment: ''
-                    }
-                },
-                {
-                    id: 1770000000065,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Noha Radwan',
-                    status: 'Resolved',
-                    date: '2026-02-03T00:00:00',
-                    details: {
-                        associateName: 'Nour Ayman',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'System Navigation',
-                        requestType: 'Order Support',
-                        validRequest: 'No',
-                        slackLink: 'Link',
-                        comment: 'Nour didn\'t check the tracking number prior to the SBS to see that the order wasn\'t shipped.'
-                    }
-                },
-                {
-                    id: 1770000000066,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Rashad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-02-03T00:00:00',
-                    details: {
-                        associateName: 'Ramadan Philip',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'Process education',
-                        requestType: 'Order Support',
-                        validRequest: 'Yes',
-                        slackLink: 'Link',
-                        comment: ''
-                    }
-                },
-                {
-                    id: 1770000000067,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Rashad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-02-03T00:00:00',
-                    details: {
-                        associateName: 'Ashraf Essam',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'System Navigation',
-                        requestType: 'Account Access',
-                        validRequest: 'Yes',
-                        slackLink: 'Link',
-                        comment: ''
-                    }
-                },
-                {
-                    id: 1770000000068,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Emad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-02-03T00:00:00',
-                    details: {
-                        associateName: 'Rania Mohamed',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'System Navigation',
-                        requestType: 'Prospective',
-                        validRequest: 'No',
-                        slackLink: 'Link',
-                        comment: 'Customer asked if coach Mel is a real person or AI.'
-                    }
-                },
-                {
-                    id: 1770000000069,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Emad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-02-03T00:00:00',
-                    details: {
-                        associateName: 'Shahd Emad',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'System Navigation',
-                        requestType: 'Product Support',
-                        validRequest: 'Yes',
-                        slackLink: 'Link',
-                        comment: ''
-                    }
-                },
-                {
-                    id: 1770000000070,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Emad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-02-03T00:00:00',
-                    details: {
-                        associateName: 'Rania Mohamed',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'Process education',
-                        requestType: 'Account Setup',
-                        validRequest: 'Yes',
-                        slackLink: 'Link',
-                        comment: ''
-                    }
-                },
-                {
-                    id: 1770000000071,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Noha Radwan',
-                    status: 'Resolved',
-                    date: '2026-02-04T00:00:00',
-                    details: {
-                        associateName: 'Salma Ahmed',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'Process education',
-                        requestType: 'Account Access',
-                        validRequest: 'Yes',
-                        slackLink: 'Link',
-                        comment: ''
-                    }
-                },
-                {
-                    id: 1770000000072,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Emad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-02-04T00:00:00',
-                    details: {
-                        associateName: 'Rania Mohamed',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'System Navigation',
-                        requestType: 'Program / Classes',
-                        validRequest: 'No',
-                        slackLink: 'Link',
-                        comment: 'The customer was asking if the quiz on the website would provide her with a custom plan, Rania should\'ve provided the customer with recommendations and explained how to start'
-                    }
-                },
-                {
-                    id: 1770000000073,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Emad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-02-05T00:00:00',
-                    details: {
-                        associateName: 'Rania Mohamed',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'SOP Guidance',
-                        requestType: 'Membership',
-                        validRequest: 'No',
-                        slackLink: 'Link',
-                        comment: 'The next charge is secheduled for today, Rania should\'ve added the discount per the SOP'
-                    }
-                },
-                {
-                    id: 1770000000074,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Emad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-02-06T00:00:00',
-                    details: {
-                        associateName: 'Marwan Zakaria',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'SOP Guidance',
-                        requestType: 'Account Setup',
-                        validRequest: 'No',
-                        slackLink: 'Link',
-                        comment: 'The steps were in the SOP'
-                    }
-                },
-                {
-                    id: 1770000000075,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Emad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-02-09T00:00:00',
-                    details: {
-                        associateName: 'Nour Ayman',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'SOP Guidance',
-                        requestType: 'Order Support',
-                        validRequest: 'No',
-                        slackLink: 'Link',
-                        comment: 'The steps were in the SOP'
-                    }
-                },
-                {
-                    id: 1770000000076,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Emad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-02-10T00:00:00',
-                    details: {
-                        associateName: 'Rania Mohamed',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'Process education',
-                        requestType: 'Membership',
-                        validRequest: 'Yes',
-                        slackLink: 'Link',
-                        comment: ''
-                    }
-                },
-                {
-                    id: 1770000000077,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Rashad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-02-10T00:00:00',
-                    details: {
-                        associateName: 'Marwan Hassan',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'Process education',
-                        requestType: 'Order Support',
-                        validRequest: 'Yes',
-                        slackLink: 'Link',
-                        comment: ''
-                    }
-                },
-                {
-                    id: 1770000000078,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Emad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-02-11T00:00:00',
-                    details: {
-                        associateName: 'Nour Ayman',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'SOP Guidance',
-                        requestType: 'Technical Support',
-                        validRequest: 'No',
-                        slackLink: 'Link',
-                        comment: 'The steps were in the SOP'
-                    }
-                },
-                {
-                    id: 1770000000079,
-                    type: 'floorwalker',
-                    title: 'FloorWalker Log',
-                    agent: 'Emad Mohamed',
-                    status: 'Resolved',
-                    date: '2026-02-12T00:00:00',
-                    details: {
-                        associateName: 'Mohab Magdy',
-                        ticketLink: 'Link',
-                        reasonForSupport: 'Process education',
-                        requestType: 'Bundle Membership',
-                        validRequest: 'Yes',
-                        slackLink: 'Link',
-                        comment: ''
-                    }
-                }
+                { id: 1770000000001, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-01-01T00:00:00', details: { associateName: 'Marwan Zakaria', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Order Support', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
+                { id: 1770000000002, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-01-01T00:00:00', details: { associateName: 'Marwan Zakaria', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Prospective', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
+                { id: 1770000000003, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-02T00:00:00', details: { associateName: 'Marwan Hassan', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Order Support', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
+                { id: 1770000000004, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-02T00:00:00', details: { associateName: 'Nour Ayman', ticketLink: 'Link', reasonForSupport: 'SOP Guidance', requestType: 'Membership', validRequest: 'No', slackLink: 'Link', comment: 'Nour should\'ve followed the membership cancelation SOP' } },
+                { id: 1770000000005, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-01-05T00:00:00', details: { associateName: 'Ahmed Nasser abdelhakim', ticketLink: 'Link', reasonForSupport: 'System Navigation', requestType: 'Membership', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
+                { id: 1770000000006, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-01-05T00:00:00', details: { associateName: 'Ruben Joseph', ticketLink: 'Link', reasonForSupport: 'System Navigation', requestType: 'Membership', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
+                { id: 1770000000007, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-01-05T00:00:00', details: { associateName: 'Ramadan Philip', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Order Support', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
+                { id: 1770000000008, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-01-05T00:00:00', details: { associateName: 'Ramadan Philip', ticketLink: 'Link', reasonForSupport: 'SOP Guidance', requestType: 'Order Support', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
+                { id: 1770000000009, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-01-05T00:00:00', details: { associateName: 'Ahmed Nasser abdelhakim', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Order Support', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
+                { id: 1770000000010, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-01-05T00:00:00', details: { associateName: 'Ahmed Nasser abdelhakim', ticketLink: 'Link', reasonForSupport: 'SOP Guidance', requestType: 'Prospective', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
+                { id: 1770000000011, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-05T00:00:00', details: { associateName: 'Osama M. Adam', ticketLink: 'Link', reasonForSupport: 'System Navigation', requestType: 'Membership', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
+                { id: 1770000000012, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-06T00:00:00', details: { associateName: 'Shahd Emad', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Technical Support', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
+                { id: 1770000000013, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-01-06T00:00:00', details: { associateName: 'Mohab Magdy', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Order Support', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
+                { id: 1770000000014, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-06T00:00:00', details: { associateName: 'Osama M. Adam', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Order Support', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
+                { id: 1770000000015, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-06T00:00:00', details: { associateName: 'Hala Ayman', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Membership', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
+                { id: 1770000000016, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-07T00:00:00', details: { associateName: 'Salma Ahmed', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Membership', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
+                { id: 1770000000017, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-07T00:00:00', details: { associateName: 'Ahmed Abdelghany', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Program / Classes', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
+                { id: 1770000000018, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-08T00:00:00', details: { associateName: 'Rania Mohamed', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Membership', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
+                { id: 1770000000019, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-08T00:00:00', details: { associateName: 'Aida Clement', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Order Support', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
+                { id: 1770000000020, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-09T00:00:00', details: { associateName: 'Hala Ayman', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Program / Classes', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
+                { id: 1770000000021, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-09T00:00:00', details: { associateName: 'Shahd Emad', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Order Support', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
+                { id: 1770000000022, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Noha Radwan', status: 'Resolved', date: '2026-01-09T00:00:00', details: { associateName: 'Aida Clement', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Order Support', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
+                { id: 1770000000023, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Noha Radwan', status: 'Resolved', date: '2026-01-09T00:00:00', details: { associateName: 'Aida Clement', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Membership', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
+                { id: 1770000000024, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Noha Radwan', status: 'Resolved', date: '2026-01-10T00:00:00', details: { associateName: 'Aida Clement', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Order Confirmation', validRequest: 'No', slackLink: 'Link', comment: 'No need for the SBS, as Aida should\'ve let the customer know that they did order the Core, whcih comes without a Cabinet' } },
+                { id: 1770000000025, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Noha Radwan', status: 'Resolved', date: '2026-01-10T00:00:00', details: { associateName: 'Shahd Emad', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Account Access', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
+                { id: 1770000000026, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-12T00:00:00', details: { associateName: 'Ashraf Essam', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Order Support', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
+                { id: 1770000000027, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-13T00:00:00', details: { associateName: 'Hala Ayman', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Billing', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
+                { id: 1770000000028, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-13T00:00:00', details: { associateName: 'Hala Ayman', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Program / Classes', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
+                { id: 1770000000029, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-14T00:00:00', details: { associateName: 'Rania Mohamed', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Membership', validRequest: 'No', slackLink: 'Link', comment: 'Everything was explained in the HIP already' } },
+                { id: 1770000000030, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-14T00:00:00', details: { associateName: 'Rania Mohamed', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Account Setup', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
+                { id: 1770000000031, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-14T00:00:00', details: { associateName: 'Rania Mohamed', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Order Support', validRequest: 'No', slackLink: 'Link', comment: 'Rania followed the wrong process' } },
+                { id: 1770000000032, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-15T00:00:00', details: { associateName: 'Ahmed Abdelghany', ticketLink: 'Link', reasonForSupport: 'System Navigation', requestType: 'Program / Classes', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
+                { id: 1770000000033, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-15T00:00:00', details: { associateName: 'Rania Mohamed', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Membership', validRequest: 'No', slackLink: 'Link', comment: 'Rania knows how to check the Referral code already' } },
+                { id: 1770000000034, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-16T00:00:00', details: { associateName: 'Marwan Hassan', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Order Support', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
+                { id: 1770000000035, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-16T00:00:00', details: { associateName: 'Nour Ayman', ticketLink: 'Link', reasonForSupport: 'System Navigation', requestType: 'Billing', validRequest: 'No', slackLink: 'Link', comment: 'Nour could\'ve checked the charge on Retool' } },
+                { id: 1770000000036, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-17T00:00:00', details: { associateName: 'Marwan Zakaria', ticketLink: 'Link', reasonForSupport: 'System Navigation', requestType: 'Order Support', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
+                { id: 1770000000037, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-19T00:00:00', details: { associateName: 'Hassan Khallaf', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Membership', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
+                { id: 1770000000038, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-01-19T00:00:00', details: { associateName: 'Shahd Emad', ticketLink: 'Link', reasonForSupport: 'System Navigation', requestType: 'Account Access', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
+                { id: 1770000000039, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-01-20T00:00:00', details: { associateName: 'Marwan Hassan', ticketLink: 'Link', reasonForSupport: 'System Navigation', requestType: 'Membership', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
+                { id: 1770000000040, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-01-21T00:00:00', details: { associateName: 'Marwan Hassan', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Membership', validRequest: 'No', slackLink: 'Link', comment: 'The CX was a family member under a canceled account and was having issue log in, Marwan found that the primary owner has another account and should\'ve explained to the customer without raising' } },
+                { id: 1770000000041, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-21T00:00:00', details: { associateName: 'Marwan Hassan', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Order Support', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
+                { id: 1770000000042, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-01-21T00:00:00', details: { associateName: 'Hala Ayman', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Membership', validRequest: 'No', slackLink: 'Link', comment: 'The CX got charged after the pause and asked for a refund after 15 days, Hala should\'ve explained our policy without raising the case' } },
+                { id: 1770000000043, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-21T00:00:00', details: { associateName: 'Ashraf Essam', ticketLink: 'Link', reasonForSupport: 'System Navigation', requestType: 'Account Access', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
+                { id: 1770000000044, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-22T00:00:00', details: { associateName: 'Ahmed Nasser abdelhakim', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Order Support', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
+                { id: 1770000000045, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-23T00:00:00', details: { associateName: 'Esraa Tarek Eroq', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Bundle Membership', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
+                { id: 1770000000046, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-23T00:00:00', details: { associateName: 'Mohab Magdy', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Billing', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
+                { id: 1770000000047, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-01-23T00:00:00', details: { associateName: 'Nour Ayman', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Membership', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
+                { id: 1770000000048, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Noha Radwan', status: 'Resolved', date: '2026-01-25T00:00:00', details: { associateName: 'Rania Mohamed', ticketLink: 'Link', reasonForSupport: 'SOP Guidance', requestType: 'Product Support', validRequest: 'No', slackLink: 'Link', comment: 'The customer has a no audio issue, and she didn;t know which SOP to follow. No searching skills were utilized.' } },
+                { id: 1770000000049, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Noha Radwan', status: 'Resolved', date: '2026-01-25T00:00:00', details: { associateName: 'Rania Mohamed', ticketLink: 'Link', reasonForSupport: 'System Navigation', requestType: 'Account Setup', validRequest: 'No', slackLink: 'Link', comment: 'No certain reason why the SBS was required' } },
+                { id: 1770000000050, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-27T00:00:00', details: { associateName: 'Ashraf Essam', ticketLink: 'Link', reasonForSupport: 'System Navigation', requestType: 'Membership', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
+                { id: 1770000000051, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-01-27T00:00:00', details: { associateName: 'Rania Mohamed', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Bundle Membership', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
+                { id: 1770000000052, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-28T00:00:00', details: { associateName: 'Ashraf Essam', ticketLink: 'Link', reasonForSupport: 'System Navigation', requestType: 'Membership', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
+                { id: 1770000000053, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-29T00:00:00', details: { associateName: 'Mohab Magdy', ticketLink: 'Link', reasonForSupport: 'System Navigation', requestType: 'Membership', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
+                { id: 1770000000054, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-01-29T00:00:00', details: { associateName: 'Marwan Zakaria', ticketLink: 'Link', reasonForSupport: 'System Navigation', requestType: 'Order Support', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
+                { id: 1770000000055, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-01-29T00:00:00', details: { associateName: 'Shahd Emad', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Bundle Membership', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
+                { id: 1770000000056, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-01-30T00:00:00', details: { associateName: 'Nour Ayman', ticketLink: 'Link', reasonForSupport: 'System Navigation', requestType: 'Order Support', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
+                { id: 1770000000057, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-01-30T00:00:00', details: { associateName: 'Nour Ayman', ticketLink: 'Link', reasonForSupport: 'System Navigation', requestType: 'Account Access', validRequest: 'No', slackLink: 'Link', comment: 'The CX couldn\'t log in to her profile, Nour should\'ve reset the password, no need for SBS' } },
+                { id: 1770000000058, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-01-30T00:00:00', details: { associateName: 'Shahd Emad', ticketLink: 'Link', reasonForSupport: 'SOP Guidance', requestType: 'Product Support', validRequest: 'No', slackLink: 'Link', comment: 'The CX was worried about not getting updates for his Studio sonce we removed it from our website' } },
+                { id: 1770000000059, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Noha Radwan', status: 'Resolved', date: '2026-01-31T00:00:00', details: { associateName: 'Hala Ayman', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Billing', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
+                { id: 1770000000060, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Noha Radwan', status: 'Resolved', date: '2026-01-31T00:00:00', details: { associateName: 'Hala Ayman', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Membership', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
+                { id: 1770000000061, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Noha Radwan', status: 'Resolved', date: '2026-02-01T00:00:00', details: { associateName: 'Hala Ayman', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Prospective', validRequest: 'No', slackLink: 'Link', comment: 'No need for a SBS for info we already know' } },
+                { id: 1770000000062, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Noha Radwan', status: 'Resolved', date: '2026-02-01T00:00:00', details: { associateName: 'Rania Mohamed', ticketLink: 'Link', reasonForSupport: 'System Navigation', requestType: 'Account Setup', validRequest: 'No', slackLink: 'Link', comment: 'Customer wanted a referral code!' } },
+                { id: 1770000000063, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Noha Radwan', status: 'Resolved', date: '2026-02-02T00:00:00', details: { associateName: 'Rania Mohamed', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Account Access', validRequest: 'No', slackLink: 'Link', comment: 'The customer needs to log out and back in with the same membership email, basic ts steps.' } },
+                { id: 1770000000064, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-02-02T00:00:00', details: { associateName: 'Osama M. Adam', ticketLink: 'Link', reasonForSupport: 'SOP Guidance', requestType: 'Order Support', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
+                { id: 1770000000065, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Noha Radwan', status: 'Resolved', date: '2026-02-03T00:00:00', details: { associateName: 'Nour Ayman', ticketLink: 'Link', reasonForSupport: 'System Navigation', requestType: 'Order Support', validRequest: 'No', slackLink: 'Link', comment: 'Nour didn\'t check the tracking number prior to the SBS to see that the order wasn\'t shipped.' } },
+                { id: 1770000000066, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-02-03T00:00:00', details: { associateName: 'Ramadan Philip', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Order Support', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
+                { id: 1770000000067, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-02-03T00:00:00', details: { associateName: 'Ashraf Essam', ticketLink: 'Link', reasonForSupport: 'System Navigation', requestType: 'Account Access', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
+                { id: 1770000000068, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-02-03T00:00:00', details: { associateName: 'Rania Mohamed', ticketLink: 'Link', reasonForSupport: 'System Navigation', requestType: 'Prospective', validRequest: 'No', slackLink: 'Link', comment: 'Customer asked if coach Mel is a real person or AI.' } },
+                { id: 1770000000069, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-02-03T00:00:00', details: { associateName: 'Shahd Emad', ticketLink: 'Link', reasonForSupport: 'System Navigation', requestType: 'Product Support', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
+                { id: 1770000000070, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-02-03T00:00:00', details: { associateName: 'Rania Mohamed', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Account Setup', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
+                { id: 1770000000071, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Noha Radwan', status: 'Resolved', date: '2026-02-04T00:00:00', details: { associateName: 'Salma Ahmed', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Account Access', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
+                { id: 1770000000072, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-02-04T00:00:00', details: { associateName: 'Rania Mohamed', ticketLink: 'Link', reasonForSupport: 'System Navigation', requestType: 'Program / Classes', validRequest: 'No', slackLink: 'Link', comment: 'The customer was asking if the quiz on the website would provide her with a custom plan, Rania should\'ve provided the customer with recommendations and explained how to start' } },
+                { id: 1770000000073, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-02-05T00:00:00', details: { associateName: 'Rania Mohamed', ticketLink: 'Link', reasonForSupport: 'SOP Guidance', requestType: 'Membership', validRequest: 'No', slackLink: 'Link', comment: 'The next charge is secheduled for today, Rania should\'ve added the discount per the SOP' } },
+                { id: 1770000000074, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-02-06T00:00:00', details: { associateName: 'Marwan Zakaria', ticketLink: 'Link', reasonForSupport: 'SOP Guidance', requestType: 'Account Setup', validRequest: 'No', slackLink: 'Link', comment: 'The steps were in the SOP' } },
+                { id: 1770000000075, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-02-09T00:00:00', details: { associateName: 'Nour Ayman', ticketLink: 'Link', reasonForSupport: 'SOP Guidance', requestType: 'Order Support', validRequest: 'No', slackLink: 'Link', comment: 'The steps were in the SOP' } },
+                { id: 1770000000076, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-02-10T00:00:00', details: { associateName: 'Rania Mohamed', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Membership', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
+                { id: 1770000000077, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-02-10T00:00:00', details: { associateName: 'Marwan Hassan', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Order Support', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
+                { id: 1770000000078, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-02-11T00:00:00', details: { associateName: 'Nour Ayman', ticketLink: 'Link', reasonForSupport: 'SOP Guidance', requestType: 'Technical Support', validRequest: 'No', slackLink: 'Link', comment: 'The steps were in the SOP' } },
+                { id: 1770000000079, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-02-12T00:00:00', details: { associateName: 'Mohab Magdy', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Bundle Membership', validRequest: 'Yes', slackLink: 'Link', comment: '' } }
             ]; 
         };
 
@@ -1569,7 +246,7 @@
             
             // View State
             const [activeTab, setActiveTab] = useState('dashboard');
-            const [tasks, setTasks] = useState(generateMockData()); // Initialize with mock data
+            const [tasks, setTasks] = useState([]);
             const [isFormOpen, setIsFormOpen] = useState(false);
             const [searchTerm, setSearchTerm] = useState('');
             const [editingTaskId, setEditingTaskId] = useState(null);
@@ -1630,9 +307,15 @@
                 if (window.Firebase && typeof __firebase_config !== 'undefined') {
                     const { initializeApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, getFirestore } = window.Firebase;
                     const firebaseConfig = JSON.parse(__firebase_config);
-                    const app = initializeApp(firebaseConfig);
+                    // Single App Initialization pattern
+                    let app;
+                    try {
+                        app = window.Firebase.getApp();
+                    } catch {
+                        app = initializeApp(firebaseConfig);
+                    }
+                    
                     const auth = getAuth(app);
-                    const db = getFirestore(app);
                     
                     const initAuth = async () => {
                         if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
@@ -1655,9 +338,8 @@
             useEffect(() => {
                 if (!authUser || !window.Firebase || typeof __app_id === 'undefined') return;
                 
-                const { getFirestore, collection, onSnapshot, query, orderBy } = window.Firebase;
-                const firebaseConfig = JSON.parse(__firebase_config);
-                const app = window.Firebase.initializeApp(firebaseConfig); 
+                const { getFirestore, collection, onSnapshot, query, orderBy, getApp } = window.Firebase;
+                const app = getApp();
                 const db = getFirestore(app);
                 
                 const q = collection(db, 'artifacts', __app_id, 'public', 'data', 'tasks');
@@ -1669,7 +351,6 @@
                     }));
                     
                     // IF DATABASE HAS DATA, MERGE IT
-                    // This allows users to see the prefilled data if they haven't saved anything yet.
                     if (loadedTasks.length > 0) {
                          // Merge strategy: Create a map by ID. Prefer DB version if ID exists in both.
                         const localTasks = generateMockData();
@@ -1925,9 +606,9 @@
                     }
                 }
 
-                const { getFirestore, collection, addDoc, updateDoc, doc, setDoc } = window.Firebase;
-                const firebaseConfig = JSON.parse(__firebase_config);
-                const app = window.Firebase.initializeApp(firebaseConfig);
+                const { getFirestore, collection, addDoc, updateDoc, doc, setDoc, getApp } = window.Firebase;
+                // SAFE APP RETRIEVAL
+                const app = getApp();
                 const db = getFirestore(app);
 
                 const taskData = {
@@ -1959,7 +640,9 @@
                     alert("Failed to save. Please check your connection.");
                 }
             };
-
+            
+            // ... rest of the component
+            
             const handleInputChange = (field, value) => {
                 setFormData(prev => ({ ...prev, [field]: value }));
             };
