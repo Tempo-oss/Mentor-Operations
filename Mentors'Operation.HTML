@@ -401,19 +401,15 @@
                         'correctionModule' // Special field type
                     ]
                 },
-                ai_validation: { 
-                    label: 'AI Validation', 
-                    icon: Bot, 
-                    color: 'indigo', 
+                duplicate_iap: {
+                    label: 'Duplicate IAP',
+                    icon: FileText,
+                    color: 'indigo',
                     fields: [
-                        'questionCategory',
-                        'botName',
-                        'utteranceAt',
-                        'userQuery',
-                        'ticketId',
-                        'comment',
-                        'action'
-                    ] 
+                        'customerEmail',
+                        'emailSent',
+                        'subscriptionStatus'
+                    ]
                 },
                 surprise_delight: { 
                     label: 'Surprise & Delight', 
@@ -1510,6 +1506,45 @@
                                                 );
                                             }
 
+                                            // Handle Duplicate IAP - Email Sent
+                                            if (field === 'emailSent') {
+                                                return (
+                                                    <div key={field}>
+                                                        <label className="block text-sm font-medium text-slate-700 mb-1">Email Sent?</label>
+                                                        <select 
+                                                            className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                                                            onChange={(e) => handleInputChange(field, e.target.value)}
+                                                            value={formData[field] || ''}
+                                                        >
+                                                            <option value="" disabled>Select...</option>
+                                                            <option value="Yes">Yes</option>
+                                                            <option value="No">No</option>
+                                                        </select>
+                                                    </div>
+                                                );
+                                            }
+
+                                            // Handle Duplicate IAP - Subscription Status
+                                            if (field === 'subscriptionStatus') {
+                                                return (
+                                                    <div key={field}>
+                                                        <label className="block text-sm font-medium text-slate-700 mb-1">Subscription Status</label>
+                                                        <select 
+                                                            className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                                                            onChange={(e) => handleInputChange(field, e.target.value)}
+                                                            value={formData[field] || ''}
+                                                        >
+                                                            <option value="" disabled>Select Status...</option>
+                                                            <option value="Active">Active</option>
+                                                            <option value="Cancelled">Cancelled</option>
+                                                        </select>
+                                                    </div>
+                                                );
+                                            }
+
+                                            // Handle specific "Valid Request" dropdown for FloorWalker (Already handled above but logic ensures uniqueness based on field name if reused elsewhere)
+                                            // Since field names are unique per category config or shared, standard fields fall through below.
+
                                             // Handle specific "Surprise & Delight Type" dropdown
                                             if (field === 'surpriseAndDelightType') {
                                                 return (
@@ -1684,12 +1719,11 @@
                                     </div>
 
                                     {/* Global Status (Hidden for Quizzes & HIP Requests as they are auto-resolved) */}
-                                    {newTaskType !== 'weekly_quiz' && newTaskType !== 'hip_request' && newTaskType !== 'disputes' && newTaskType !== 'pending_subs' && newTaskType !== 'ai_validation' && (
+                                    {newTaskType !== 'weekly_quiz' && newTaskType !== 'hip_request' && newTaskType !== 'disputes' && newTaskType !== 'pending_subs' && (
                                         <div>
                                             <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
                                             <select 
                                                 className="w-full p-2.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                                                defaultValue="Pending"
                                                 onChange={(e) => handleInputChange('status', e.target.value)}
                                                 value={formData.status || 'Pending'}
                                             >
