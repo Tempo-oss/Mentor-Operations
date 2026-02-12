@@ -44,7 +44,18 @@
         
         body {
             font-family: 'Inter', sans-serif;
+            background-color: #F9FAFB;
         }
+
+        /* Tempo Brand Colors */
+        :root {
+            --tempo-blue: #2563EB; /* Approximate from screenshot */
+            --tempo-dark: #111827;
+        }
+
+        .text-tempo-dark { color: var(--tempo-dark); }
+        .bg-tempo-blue { background-color: var(--tempo-blue); }
+        .hover-bg-tempo-blue:hover { background-color: #1d4ed8; }
 
         /* Animations */
         @keyframes fadeIn {
@@ -81,11 +92,11 @@
         }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-900">
+<body class="text-slate-900">
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useMemo } = React;
+        const { useState, useEffect, useMemo, useRef } = React;
 
         // --- Icons ---
         const Icon = ({ path, className = "" }) => (
@@ -115,7 +126,9 @@
         const MessageCircle = (props) => <Icon {...props} path={<><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></>} />;
         const Download = (props) => <Icon {...props} path={<><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></>} />;
         const Edit = (props) => <Icon {...props} path={<><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></>} />;
-        const ChevronLeft = (props) => <Icon {...props} path={<path d="m15 18-6-6 6-6"/>} />;
+        const CloudOff = (props) => <Icon {...props} path={<><path d="M22.61 16.95A5 5 0 0 0 18 10h-1.26a8 8 0 0 0-7.05-6M5 5a8 8 0 0 0 4 7h1.8a5 5 0 0 0 1.8 9h2.4"/><line x1="2" x2="22" y1="2" y2="22"/></>} />;
+
+        // --- Components ---
 
         const Card = ({ children, className = "" }) => (
             <div className={`bg-white rounded-xl border border-slate-200 shadow-sm ${className}`}>
@@ -155,6 +168,7 @@
         ];
 
         // --- PREFILLED DATA ---
+        // This data will be used if the DB is empty or as a fallback
         const generateMockData = () => {
              return [
                 { id: 1770000000001, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-01-01T00:00:00', details: { associateName: 'Marwan Zakaria', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Order Support', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
@@ -244,7 +258,9 @@
             const [currentUser, setCurrentUser] = useState(null);
             const [authUser, setAuthUser] = useState(null);
             const [authReady, setAuthReady] = useState(false);
-            
+            const [connectionStatus, setConnectionStatus] = useState('offline'); // 'connecting', 'online', 'offline'
+            const [dbInstance, setDbInstance] = useState(null);
+
             // View State
             const [activeTab, setActiveTab] = useState('dashboard');
             const [tasks, setTasks] = useState(generateMockData()); // Initialize with mock data
@@ -303,98 +319,125 @@
             const [hipInvalidReasons, setHipInvalidReasons] = useState([]);
             const [hipRequestTypes, setHipRequestTypes] = useState([]);
 
-            // Firebase Init
+            // 1. Single Robust Firebase Init
             useEffect(() => {
                 const initFirebase = async () => {
-                    // Wait for window.Firebase to be defined
                     if (!window.Firebase) {
-                        setTimeout(initFirebase, 100);
+                        setTimeout(initFirebase, 200); // Retry until loaded
                         return;
                     }
 
-                    if (typeof __firebase_config === 'undefined') {
-                        console.error("Firebase config missing");
-                        return;
-                    }
-
-                    const { initializeApp, getApps, getApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, getFirestore } = window.Firebase;
-                    
-                    const firebaseConfig = JSON.parse(__firebase_config);
-                    
-                    let app;
-                    if (getApps().length === 0) {
-                        app = initializeApp(firebaseConfig);
-                    } else {
-                        app = getApp();
-                    }
-                    
-                    const auth = getAuth(app);
-                    
-                    onAuthStateChanged(auth, (user) => {
-                        if (user) {
-                            setAuthUser(user);
-                            setAuthReady(true);
-                        } else {
-                            setAuthUser(null);
-                            setAuthReady(false);
-                            // Re-auth if lost
-                            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                                signInWithCustomToken(auth, __initial_auth_token).catch(console.error);
-                            } else {
-                                signInAnonymously(auth).catch(console.error);
-                            }
+                    try {
+                        setConnectionStatus('connecting');
+                        
+                        const { initializeApp, getApps, getApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, getFirestore } = window.Firebase;
+                        
+                        // Safety check for config
+                        if (typeof __firebase_config === 'undefined' || !__firebase_config) {
+                             console.warn("No Firebase config found. Running in Local Mode.");
+                             setAuthReady(true); 
+                             setConnectionStatus('offline');
+                             return;
                         }
-                    });
 
-                    // Initial sign in attempt
-                    if (!auth.currentUser) {
-                         if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        const firebaseConfig = JSON.parse(__firebase_config);
+                        
+                        let app;
+                        if (getApps().length === 0) {
+                            app = initializeApp(firebaseConfig);
+                        } else {
+                            app = getApp();
+                        }
+                        
+                        const auth = getAuth(app);
+                        const db = getFirestore(app);
+                        setDbInstance(db); // Save DB instance for reuse
+
+                        // Auth Listener
+                        onAuthStateChanged(auth, (user) => {
+                            if (user) {
+                                setAuthUser(user);
+                                setAuthReady(true);
+                                setConnectionStatus('online');
+                            } else {
+                                setAuthUser(null);
+                                setAuthReady(false);
+                                setConnectionStatus('connecting');
+                                // Attempt sign-in if lost
+                                doSignIn(auth);
+                            }
+                        });
+
+                        // Initial Sign-in
+                        if (!auth.currentUser) {
+                            await doSignIn(auth);
+                        }
+
+                    } catch (e) {
+                        console.error("Firebase init error:", e);
+                        setConnectionStatus('offline');
+                        // Fallback to allow app use even if DB fails
+                        setAuthReady(true); 
+                    }
+                };
+
+                const doSignIn = async (auth) => {
+                    const { signInAnonymously, signInWithCustomToken } = window.Firebase;
+                     try {
+                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                             await signInWithCustomToken(auth, __initial_auth_token);
                         } else {
                             await signInAnonymously(auth);
                         }
+                    } catch(e) {
+                        console.error("Auth failed:", e);
                     }
-                };
+                }
 
                 initFirebase();
             }, []);
 
-            // Firebase Data Sync
+            // 2. Data Sync Listener
             useEffect(() => {
-                if (!authUser || !window.Firebase || typeof __app_id === 'undefined') return;
+                // Only sync if we have a user and a DB connection
+                if (!authUser || !dbInstance || !window.Firebase || typeof __app_id === 'undefined') return;
                 
-                const { getFirestore, collection, onSnapshot, query, orderBy, getApp } = window.Firebase;
-                const app = getApp();
-                const db = getFirestore(app);
+                const { collection, onSnapshot } = window.Firebase;
                 const appId = typeof __app_id !== 'undefined' ? __app_id : 'mentor-ops-center';
                 
-                const q = collection(db, 'artifacts', appId, 'public', 'data', 'tasks');
+                const q = collection(dbInstance, 'artifacts', appId, 'public', 'data', 'tasks');
                 
                 const unsubscribe = onSnapshot(q, (snapshot) => {
                     const loadedTasks = snapshot.docs.map(doc => ({
-                        id: doc.id,
+                        id: doc.id, // Firestore string ID
                         ...doc.data()
                     }));
                     
-                    // Merge strategy: Create a map by ID. Prefer DB version if ID exists in both.
-                    const localTasks = generateMockData();
-                    const taskMap = new Map();
+                    // MERGE STRATEGY: 
+                    // 1. Start with hardcoded "Real Data"
+                    // 2. Overwrite/Append with Cloud Data
+                    const localData = generateMockData();
+                    const mergedMap = new Map();
 
-                    // Add local tasks first
-                    localTasks.forEach(t => taskMap.set(String(t.id), t));
+                    // Load local first
+                    localData.forEach(t => mergedMap.set(String(t.id), t));
 
-                    // Add DB tasks, overwriting any local tasks with same ID
-                    loadedTasks.forEach(t => taskMap.set(String(t.id), t));
+                    // Load cloud second (updates win)
+                    loadedTasks.forEach(t => mergedMap.set(String(t.id), t));
+
+                    const finalTasks = Array.from(mergedMap.values());
                     
-                    const mergedTasks = Array.from(taskMap.values());
-                    mergedTasks.sort((a, b) => new Date(b.date) - new Date(a.date));
-                    setTasks(mergedTasks);
+                    // Sort descending by date
+                    finalTasks.sort((a, b) => new Date(b.date) - new Date(a.date));
+                    
+                    setTasks(finalTasks);
                 }, (error) => {
                     console.error("Error fetching tasks:", error);
+                    setConnectionStatus('offline');
                 });
 
                 return () => unsubscribe();
-            }, [authUser]);
+            }, [authUser, dbInstance]);
 
             // Categories Configuration
             const categories = {
@@ -420,7 +463,6 @@
                     fields: [
                         'customerName', 
                         'customerEmail',
-                        // Amount removed
                         'pendingReason', 
                         'resolution'
                     ] 
@@ -591,8 +633,9 @@
             const handleAddTask = async (e) => {
                 e.preventDefault();
                 
-                if (!authReady || !authUser) {
-                    alert("Please wait for connection to be established...");
+                // Robust check: If no auth, warn but allow local save for UI feedback if needed (or block)
+                if (connectionStatus === 'connecting') {
+                    alert("Still connecting to database... please wait 2 seconds.");
                     return;
                 }
 
@@ -609,7 +652,7 @@
                     } else if (newTaskType === 'hip_request') {
                         computedStatus = 'Resolved'; 
                     } else if (newTaskType === 'duplicate_iap') {
-                        computedStatus = 'Resolved'; // Assume auto resolved for now unless pending logic needed
+                        computedStatus = 'Resolved'; 
                     } else {
                         if (formData.resolution === 'Resolved') computedStatus = 'Resolved';
                     }
@@ -618,7 +661,7 @@
                 // Prepare details with auto-captured fields
                 const finalDetails = { ...formData };
                 
-                // Auto-capture fields ONLY for new tasks or preserve existing logic
+                // Auto-capture fields ONLY for new tasks
                 if (!editingTaskId) {
                     if (newTaskType === 'surprise_delight') {
                         finalDetails.submitterName = currentUser;
@@ -628,10 +671,6 @@
                     }
                 }
 
-                // 2. Get DB safely
-                const { getFirestore, collection, addDoc, doc, setDoc, getApp } = window.Firebase;
-                const app = getApp();
-                const db = getFirestore(app);
                 const appId = typeof __app_id !== 'undefined' ? __app_id : 'mentor-ops-center';
 
                 const taskData = {
@@ -644,23 +683,30 @@
                     details: finalDetails
                 };
 
-                try {
-                    if (editingTaskId) {
-                        // 3. Handle Edit (Upsert)
-                        const taskRef = doc(db, 'artifacts', appId, 'public', 'data', 'tasks', String(editingTaskId));
-                        await setDoc(taskRef, taskData, { merge: true });
-                    } else {
-                        // 4. Handle Create
-                        const collRef = collection(db, 'artifacts', appId, 'public', 'data', 'tasks');
-                        await addDoc(collRef, taskData);
+                // Use the Persistent DB Instance
+                if (dbInstance) {
+                    const { collection, addDoc, doc, setDoc } = window.Firebase;
+                    try {
+                        if (editingTaskId) {
+                            // 3. Handle Edit (Upsert)
+                            // Note: String(editingTaskId) ensures we can overwrite the "prefilled" IDs in the cloud
+                            const taskRef = doc(dbInstance, 'artifacts', appId, 'public', 'data', 'tasks', String(editingTaskId));
+                            await setDoc(taskRef, taskData, { merge: true });
+                        } else {
+                            // 4. Handle Create
+                            const collRef = collection(dbInstance, 'artifacts', appId, 'public', 'data', 'tasks');
+                            await addDoc(collRef, taskData);
+                        }
+                        
+                        setIsFormOpen(false);
+                        setFormData({});
+                        setEditingTaskId(null);
+                    } catch (error) {
+                        console.error("Error saving task:", error);
+                        alert("Database write failed. Check console.");
                     }
-                    
-                    setIsFormOpen(false);
-                    setFormData({});
-                    setEditingTaskId(null);
-                } catch (error) {
-                    console.error("Error saving task:", error);
-                    alert("Failed to save. Please check your connection.");
+                } else {
+                    alert("Database not initialized. Cannot save.");
                 }
             };
             
@@ -1233,8 +1279,8 @@
 
                                 <div className="flex items-center gap-3">
                                     <div className="flex items-center gap-2 px-3 py-1 bg-slate-50 rounded-full border border-slate-200">
-                                        <div className={`h-2 w-2 rounded-full ${authReady ? 'bg-emerald-500' : 'bg-rose-500 animate-pulse'}`}></div>
-                                        <span className="text-xs font-medium text-slate-600">{authReady ? 'Online' : 'Connecting...'}</span>
+                                        <div className={`h-2 w-2 rounded-full ${connectionStatus === 'online' ? 'bg-emerald-500' : 'bg-rose-500 animate-pulse'}`}></div>
+                                        <span className="text-xs font-medium text-slate-600">{connectionStatus === 'online' ? 'Online' : 'Connecting...'}</span>
                                     </div>
                                     <div className="text-right hidden md:block">
                                         <p className="text-xs font-medium text-slate-500">Logged in as</p>
@@ -1820,10 +1866,14 @@
                                         </button>
                                         <button 
                                             type="submit" 
-                                            disabled={!authReady}
-                                            className={`flex-1 py-2.5 text-white rounded-lg text-sm font-medium shadow-md shadow-blue-200 ${authReady ? 'bg-blue-600 hover:bg-blue-700' : 'bg-slate-400 cursor-not-allowed'}`}
+                                            disabled={!authReady || connectionStatus === 'connecting'}
+                                            className={`flex-1 py-2.5 text-white rounded-lg text-sm font-medium shadow-md shadow-blue-200 flex items-center justify-center gap-2 ${
+                                                authReady && connectionStatus !== 'connecting' 
+                                                ? 'bg-blue-600 hover:bg-blue-700' 
+                                                : 'bg-slate-400 cursor-not-allowed'
+                                            }`}
                                         >
-                                            {authReady ? (editingTaskId ? 'Update Entry' : 'Save Record') : 'Connecting...'}
+                                            {connectionStatus === 'connecting' ? 'Connecting...' : (editingTaskId ? 'Update Entry' : 'Save Record')}
                                         </button>
                                     </div>
                                 </form>
