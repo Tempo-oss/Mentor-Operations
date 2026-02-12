@@ -246,7 +246,7 @@
             
             // View State
             const [activeTab, setActiveTab] = useState('dashboard');
-            const [tasks, setTasks] = useState([]);
+            const [tasks, setTasks] = useState(generateMockData()); // Initialize with mock data
             const [isFormOpen, setIsFormOpen] = useState(false);
             const [searchTerm, setSearchTerm] = useState('');
             const [editingTaskId, setEditingTaskId] = useState(null);
@@ -341,8 +341,9 @@
                 const { getFirestore, collection, onSnapshot, query, orderBy, getApp } = window.Firebase;
                 const app = getApp();
                 const db = getFirestore(app);
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'mentor-ops-center';
                 
-                const q = collection(db, 'artifacts', __app_id, 'public', 'data', 'tasks');
+                const q = collection(db, 'artifacts', appId, 'public', 'data', 'tasks');
                 
                 const unsubscribe = onSnapshot(q, (snapshot) => {
                     const loadedTasks = snapshot.docs.map(doc => ({
@@ -572,7 +573,12 @@
 
             const handleAddTask = async (e) => {
                 e.preventDefault();
-                if (!authUser) return;
+                
+                // 1. Check Auth
+                if (!authUser) {
+                    alert("Authentication not ready. Please wait a moment or refresh.");
+                    return;
+                }
 
                 let computedStatus = formData.status || 'Pending';
                 
@@ -606,10 +612,11 @@
                     }
                 }
 
-                const { getFirestore, collection, addDoc, updateDoc, doc, setDoc, getApp } = window.Firebase;
-                // SAFE APP RETRIEVAL
+                // 2. Get DB safely
+                const { getFirestore, collection, addDoc, doc, setDoc, getApp } = window.Firebase;
                 const app = getApp();
                 const db = getFirestore(app);
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'mentor-ops-center';
 
                 const taskData = {
                     type: newTaskType,
@@ -623,12 +630,12 @@
 
                 try {
                     if (editingTaskId) {
-                        // Use setDoc to handle both existing DB docs and new docs from local state (upsert)
-                        const taskRef = doc(db, 'artifacts', __app_id, 'public', 'data', 'tasks', String(editingTaskId));
+                        // 3. Handle Edit (Upsert)
+                        const taskRef = doc(db, 'artifacts', appId, 'public', 'data', 'tasks', String(editingTaskId));
                         await setDoc(taskRef, taskData, { merge: true });
                     } else {
-                        // Create New Task
-                        const collRef = collection(db, 'artifacts', __app_id, 'public', 'data', 'tasks');
+                        // 4. Handle Create
+                        const collRef = collection(db, 'artifacts', appId, 'public', 'data', 'tasks');
                         await addDoc(collRef, taskData);
                     }
                     
