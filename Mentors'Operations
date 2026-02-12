@@ -1,0 +1,1266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MentorOps Center</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes slideInRight {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+
+        .animate-slide-in-right {
+            animation: slideInRight 0.3s ease-out forwards;
+        }
+        
+        /* Custom range slider for ratings if needed, but using radio buttons for clarity */
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+
+        // --- Icons ---
+        // Helper component to render SVG icons
+        const Icon = ({ path, className = "" }) => (
+            <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                width="24" 
+                height="24" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                className={className}
+            >
+                {path}
+            </svg>
+        );
+
+        // Icon Definitions
+        const LayoutDashboard = (props) => <Icon {...props} path={<><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></>} />;
+        const AlertCircle = (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></>} />;
+        const CreditCard = (props) => <Icon {...props} path={<><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></>} />;
+        const Footprints = (props) => <Icon {...props} path={<><path d="M4 16v-2.38C4 11.5 2.97 10.5 3 8c.03-2.72 1.49-6 4.5-6C9.37 2 11 3.8 11 8c0 2.25-.79 4.33-2 6"/><path d="M20 20v-2.38c0-2.12 1.03-3.12 1-5.62-.03-2.72-1.49-6-4.5-6C14.63 6 13 7.8 13 12c0 2.25.79 4.33 2 6"/><path d="M16 17h4"/><path d="M4 13h4"/></>} />;
+        const Gift = (props) => <Icon {...props} path={<><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5"/></>} />;
+        const Bot = (props) => <Icon {...props} path={<><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></>} />;
+        const Megaphone = (props) => <Icon {...props} path={<><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></>} />;
+        const Plus = (props) => <Icon {...props} path={<><path d="M5 12h14"/><path d="M12 5v14"/></>} />;
+        const Search = (props) => <Icon {...props} path={<><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></>} />;
+        const CheckCircle2 = (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></>} />;
+        const Clock = (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></>} />;
+        const Filter = (props) => <Icon {...props} path={<><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></>} />;
+        const MoreHorizontal = (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></>} />;
+        const FileText = (props) => <Icon {...props} path={<><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></>} />;
+        const ChevronRight = (props) => <Icon {...props} path={<path d="m9 18 6-6-6-6"/>} />;
+        const User = (props) => <Icon {...props} path={<><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></>} />;
+        const Hash = (props) => <Icon {...props} path={<><line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/></>} />;
+        const Calendar = (props) => <Icon {...props} path={<><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></>} />;
+        const LogOut = (props) => <Icon {...props} path={<><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></>} />;
+        const ClipboardList = (props) => <Icon {...props} path={<><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></>} />;
+        const MessageCircle = (props) => <Icon {...props} path={<><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></>} />;
+
+        // --- Components ---
+
+        const Card = ({ children, className = "" }) => (
+            <div className={`bg-white rounded-xl border border-slate-200 shadow-sm ${className}`}>
+                {children}
+            </div>
+        );
+
+        const Badge = ({ children, color = "slate" }) => {
+            const colors = {
+                slate: "bg-slate-100 text-slate-700",
+                red: "bg-rose-100 text-rose-700",
+                blue: "bg-blue-100 text-blue-700",
+                green: "bg-emerald-100 text-emerald-700",
+                purple: "bg-purple-100 text-purple-700",
+                amber: "bg-amber-100 text-amber-700",
+                indigo: "bg-indigo-100 text-indigo-700",
+                cyan: "bg-cyan-100 text-cyan-700",
+                teal: "bg-teal-100 text-teal-700"
+            };
+            return (
+                <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${colors[color] || colors.slate}`}>
+                    {children}
+                </span>
+            );
+        };
+
+        // --- Data Lists ---
+
+        // MENTORS (Login Access)
+        const mentorList = [
+            "Noha Radwan", 
+            "Rashad Mohamed", 
+            "Emad Mohamed", 
+            "Mohamed Mounir"
+        ];
+
+        // ASSOCIATES (Team Members to be logged)
+        const associateList = [
+            "Ariath Piol", "Job James", "Lina Hesham", "Mohab Magdy", "Marwa Ahmed", 
+            "Ramadan Philip", "Aida Clement", "Hassan Khallaf", "Nada Ashraf", "Ruben Joseph", 
+            "Esraa Tarek Eroq", "Ahmed Abdelghany", "Nour Ayman", "Ashraf Essam", "Hala Ayman", 
+            "Rania Mohamed", "Salma Ahmed", "Marwan Hassan", "Osama M. Adam", "Marwan Zakaria", 
+            "Shahd Emad", "Ahmed Nasser abdelhakim"
+        ];
+
+        // FLOOR WALKER OPTIONS
+        const floorWalkerReasons = [
+            "SOP Guidance",
+            "Process education",
+            "System Navigation"
+        ];
+
+        const floorWalkerRequestTypes = [
+            "Membership",
+            "Billing",
+            "Account Access",
+            "Account Setup",
+            "Order Support",
+            "Technical Support",
+            "Prospective",
+            "Bundle Membership",
+            "Order Receipt",
+            "Order Confirmation",
+            "Product Support",
+            "Shipping and Delivery",
+            "Program / Classes",
+            "Payment Dispute",
+            "Tempo 12M Installement",
+            "Promotions"
+        ];
+
+        // QUIZ MODULES
+        const quizModules = [
+            { id: 'productExpert', title: 'Product Expert', desc: 'Is the associate able to demonstrate product expertise when queried by the customer?' },
+            { id: 'processAwareness', title: 'Process Awareness', desc: 'Comprehending the process, rather than just adhering to its procedures.' },
+            { id: 'communication', title: 'Communication', desc: 'Did the associate reflect effectiveness in communicating with the customer?' },
+            { id: 'customerConcern', title: 'Able to identify customer Concern', desc: 'Did the associate comprehend all of the customer\'s concerns effectively?' },
+            { id: 'fcr', title: 'FCR', desc: 'Was the associate able to anticipate all the customer questions?' }
+        ];
+
+        // --- Mock Data Generator ---
+
+        const generateMockData = () => {
+            return [
+                { 
+                    id: 1, 
+                    type: 'ai_validation', 
+                    title: 'Cancellations & Returns', 
+                    agent: 'Noha Radwan', 
+                    status: 'Resolved', 
+                    date: '2026-02-02T02:38:00', 
+                    priority: 'Medium', 
+                    details: { 
+                        questionCategory: 'Cancellations & Returns',
+                        botName: 'Tempo Support !',
+                        utteranceAt: '2026-02-02 2:38:00',
+                        userQuery: 'membership cancellation',
+                        ticketId: 'b4c49da0-be5f-41f3-a86e-faf7a2571aba',
+                        comment: 'Failed to transfer',
+                        action: 'Raised'
+                    } 
+                },
+                { 
+                    id: 2, 
+                    type: 'ai_validation', 
+                    title: 'Membership Costs and Trials', 
+                    agent: 'Rashad Mohamed', 
+                    status: 'Resolved', 
+                    date: '2026-02-02T19:16:00', 
+                    priority: 'Medium', 
+                    details: { 
+                        questionCategory: 'Membership Costs and Trials',
+                        botName: 'Tempo Support !',
+                        utteranceAt: '2026-02-02 19:16:00',
+                        userQuery: 'Am I able to purchase the equipment at full price but pay for the membership monthly?',
+                        ticketId: '93dd42e4-3bc3-4324-bd0e-c43b82e79f28',
+                        comment: 'Correct Response by Bot',
+                        action: ''
+                    } 
+                },
+                { id: 3, type: 'floorwalker', title: 'Assisted w/ VPN Issue', agent: 'Rashad Mohamed', status: 'Resolved', date: new Date().toISOString(), priority: 'Low', details: { topic: 'Technical', duration: '15 mins', associateName: 'Mohab Magdy' } },
+                { id: 4, type: 'disputes', title: 'Refund Denial - Acme Inc', agent: 'Noha Radwan', status: 'Pending', date: new Date().toISOString(), priority: 'High', details: { customerName: 'John Doe', disputeAmount: '$45.00', resolution: 'Pending' } }
+            ];
+        };
+
+        function MentorOpsCenter() {
+            // App State
+            const [currentUser, setCurrentUser] = useState(null);
+            
+            // View State
+            const [activeTab, setActiveTab] = useState('dashboard');
+            const [tasks, setTasks] = useState(generateMockData());
+            const [isFormOpen, setIsFormOpen] = useState(false);
+            const [searchTerm, setSearchTerm] = useState('');
+            
+            // New Task State
+            const [newTaskType, setNewTaskType] = useState('disputes');
+            const [formData, setFormData] = useState({});
+            
+            // Flexible Inputs State
+            const [customReason, setCustomReason] = useState(''); // Pending Subs
+            const [customFWReason, setCustomFWReason] = useState(''); // FloorWalker Reason
+            const [customFWRequestType, setCustomFWRequestType] = useState(''); // FloorWalker Request Type
+            const [customHipInvalidReason, setCustomHipInvalidReason] = useState(''); // HIP Invalid Reason
+            const [customHipRequestType, setCustomHipRequestType] = useState(''); // HIP Request Type
+            
+            // Dynamic Lists
+            const [pendingReasonsList, setPendingReasonsList] = useState([]);
+            const [fwReasonsList, setFwReasonsList] = useState(floorWalkerReasons);
+            const [fwRequestTypesList, setFwRequestTypesList] = useState(floorWalkerRequestTypes);
+            const [hipInvalidReasons, setHipInvalidReasons] = useState([]);
+            const [hipRequestTypes, setHipRequestTypes] = useState([]);
+
+            // Categories Configuration
+            const categories = {
+                disputes: { 
+                    label: 'Disputes', 
+                    icon: AlertCircle, 
+                    color: 'red', 
+                    fields: [
+                        'customerName', 
+                        'customerEmail', 
+                        'disputeAmount', 
+                        'disputeDate', 
+                        'disputeReason', 
+                        'disputedProduct', 
+                        'disputeLink', 
+                        'resolution'
+                    ] 
+                },
+                pending_subs: { 
+                    label: 'Pending Subs', 
+                    icon: CreditCard, 
+                    color: 'blue', 
+                    fields: [
+                        'customerName', 
+                        'customerEmail',
+                        'amount', 
+                        'pendingReason', 
+                        'resolution'
+                    ] 
+                },
+                floorwalker: { 
+                    label: 'FloorWalker', 
+                    icon: Footprints, 
+                    color: 'amber', 
+                    fields: [
+                        'date',
+                        // 'mentorName', // Removed - Auto Captured
+                        'associateName',
+                        'ticketLink',
+                        'reasonForSupport',
+                        'requestType',
+                        'validRequest',
+                        'slackLink',
+                        'comment'
+                    ] 
+                },
+                hip_request: {
+                    label: 'HIP Request',
+                    icon: MessageCircle,
+                    color: 'teal',
+                    fields: [
+                        'associateName',
+                        'ticketLink',
+                        'slackLink',
+                        'validHip',
+                        'invalidReason', // Conditional
+                        'hipRequestType'
+                    ]
+                },
+                weekly_quiz: {
+                    label: 'Weekly Quiz',
+                    icon: ClipboardList,
+                    color: 'cyan',
+                    fields: [
+                        'associateName',
+                        'associateEmail',
+                        'date',
+                        'correctionModule' // Special field type
+                    ]
+                },
+                ai_validation: { 
+                    label: 'AI Validation', 
+                    icon: Bot, 
+                    color: 'indigo', 
+                    fields: [
+                        'questionCategory',
+                        'botName',
+                        'utteranceAt',
+                        'userQuery',
+                        'ticketId',
+                        'comment',
+                        'action'
+                    ] 
+                },
+                surprise_delight: { 
+                    label: 'Surprise & Delight', 
+                    icon: Gift, 
+                    color: 'purple', 
+                    fields: [
+                        'agent', 
+                        'team',
+                        'customerName',
+                        'customerEmail',
+                        'productType',
+                        'ticketUrl',
+                        'surpriseAndDelightReason',
+                        'surpriseAndDelightType',
+                        'amount',
+                        'date',
+                        'notes'
+                    ] 
+                },
+                mx_announcement: { label: 'MX Announcement', icon: Megaphone, color: 'emerald', fields: ['title', 'channel', 'readReceipts'] },
+            };
+
+            // --- Statistics ---
+            const stats = {
+                total: tasks.length,
+                pending: tasks.filter(t => t.status === 'Pending').length,
+                resolved: tasks.filter(t => t.status === 'Resolved' || t.status === 'Activated' || t.status === 'Cancelled' || t.status === 'Won' || t.status === 'Lost').length,
+                byType: Object.keys(categories).reduce((acc, key) => {
+                    acc[key] = tasks.filter(t => t.type === key).length;
+                    return acc;
+                }, {})
+            };
+
+            // --- Handlers for Dynamic Lists ---
+
+            const handleAddReason = () => {
+                if (customReason && !pendingReasonsList.includes(customReason)) {
+                    setPendingReasonsList([...pendingReasonsList, customReason]);
+                    handleInputChange('pendingReason', customReason);
+                    setCustomReason('');
+                }
+            };
+
+            const handleAddFWReason = () => {
+                if (customFWReason && !fwReasonsList.includes(customFWReason)) {
+                    setFwReasonsList([...fwReasonsList, customFWReason]);
+                    handleInputChange('reasonForSupport', customFWReason);
+                    setCustomFWReason('');
+                }
+            };
+
+            const handleAddFWRequestType = () => {
+                if (customFWRequestType && !fwRequestTypesList.includes(customFWRequestType)) {
+                    setFwRequestTypesList([...fwRequestTypesList, customFWRequestType]);
+                    handleInputChange('requestType', customFWRequestType);
+                    setCustomFWRequestType('');
+                }
+            };
+
+            const handleAddHipInvalidReason = () => {
+                if (customHipInvalidReason && !hipInvalidReasons.includes(customHipInvalidReason)) {
+                    setHipInvalidReasons([...hipInvalidReasons, customHipInvalidReason]);
+                    handleInputChange('invalidReason', customHipInvalidReason);
+                    setCustomHipInvalidReason('');
+                }
+            };
+
+            const handleAddHipRequestType = () => {
+                if (customHipRequestType && !hipRequestTypes.includes(customHipRequestType)) {
+                    setHipRequestTypes([...hipRequestTypes, customHipRequestType]);
+                    handleInputChange('hipRequestType', customHipRequestType);
+                    setCustomHipRequestType('');
+                }
+            };
+
+            const handleQuizScoreChange = (moduleId, score) => {
+                const currentScores = formData.quizScores || {};
+                const newScores = { ...currentScores, [moduleId]: parseInt(score) };
+                handleInputChange('quizScores', newScores);
+                
+                // Calculate average automatically
+                const values = Object.values(newScores);
+                if (values.length > 0) {
+                    const avg = values.reduce((a, b) => a + b, 0) / values.length;
+                    handleInputChange('overallScore', avg.toFixed(1));
+                }
+            };
+
+            const handleQuizCommentChange = (moduleId, comment) => {
+                const currentComments = formData.quizComments || {};
+                handleInputChange('quizComments', { ...currentComments, [moduleId]: comment });
+            };
+
+            const handleAddTask = (e) => {
+                e.preventDefault();
+                let computedStatus = 'Pending';
+                
+                // Smart status based on resolution
+                if (newTaskType === 'disputes') {
+                    if (formData.resolution === 'Won' || formData.resolution === 'Lost') computedStatus = 'Resolved';
+                } else if (newTaskType === 'pending_subs') {
+                    if (formData.resolution === 'Activated' || formData.resolution === 'Cancelled') computedStatus = 'Resolved';
+                } else if (newTaskType === 'weekly_quiz') {
+                    computedStatus = 'Resolved'; // Quizzes are completed on submission
+                } else if (newTaskType === 'hip_request') {
+                    computedStatus = 'Resolved'; // Assume support requests are logged as done unless pending needed
+                } else if (newTaskType === 'ai_validation') {
+                    computedStatus = 'Resolved'; // Documentation task
+                } else {
+                    if (formData.resolution === 'Resolved') computedStatus = 'Resolved';
+                }
+
+                // Prepare details with auto-captured fields
+                const finalDetails = { ...formData };
+                
+                // Auto-capture Submitter Name for S&D
+                if (newTaskType === 'surprise_delight') {
+                    finalDetails.submitterName = currentUser;
+                }
+                
+                // Auto-capture Mentor Name for FloorWalker
+                if (newTaskType === 'floorwalker') {
+                    finalDetails.mentorName = currentUser;
+                }
+
+                const newTask = {
+                    id: Date.now(),
+                    type: newTaskType,
+                    title: formData.title || `${categories[newTaskType].label} Log`,
+                    agent: currentUser, // Auto-capture Main Agent/Owner
+                    status: computedStatus,
+                    priority: 'Medium',
+                    date: new Date().toISOString(),
+                    details: finalDetails
+                };
+                setTasks([newTask, ...tasks]);
+                setIsFormOpen(false);
+                setFormData({});
+            };
+
+            const handleInputChange = (field, value) => {
+                setFormData(prev => ({ ...prev, [field]: value }));
+            };
+
+            const filteredTasks = tasks.filter(task => 
+                task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                task.agent.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                categories[task.type].label.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+
+            // --- Views ---
+
+            const renderLogin = () => (
+                <div className="fixed inset-0 bg-slate-900 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center">
+                        <div className="h-16 w-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                            <User className="h-8 w-8" />
+                        </div>
+                        <h2 className="text-2xl font-bold text-slate-900 mb-2">Welcome Back</h2>
+                        <p className="text-slate-500 mb-8">Please select your identity to access the MentorOps Center.</p>
+                        
+                        <div className="text-left space-y-2 mb-6">
+                            <label className="text-sm font-medium text-slate-700">Select User</label>
+                            <select 
+                                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                                onChange={(e) => setCurrentUser(e.target.value)}
+                                defaultValue=""
+                            >
+                                <option value="" disabled>Choose your name...</option>
+                                {mentorList.map(name => (
+                                    <option key={name} value={name}>{name}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            if (!currentUser) {
+                return renderLogin();
+            }
+
+            const renderDashboard = () => (
+                <div className="space-y-6 animate-fade-in">
+                    {/* Top Stats Row */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <Card className="p-6 flex items-center justify-between bg-gradient-to-br from-slate-800 to-slate-900 text-white border-none">
+                            <div>
+                                <p className="text-slate-400 text-sm font-medium">Total Entries</p>
+                                <h3 className="text-3xl font-bold mt-1">{stats.total}</h3>
+                            </div>
+                            <div className="h-12 w-12 bg-white/10 rounded-full flex items-center justify-center">
+                                <LayoutDashboard className="h-6 w-6 text-white" />
+                            </div>
+                        </Card>
+                        
+                        <Card className="p-6 flex items-center justify-between">
+                            <div>
+                                <p className="text-slate-500 text-sm font-medium">Pending Follow-ups</p>
+                                <h3 className="text-3xl font-bold mt-1 text-rose-600">{stats.pending}</h3>
+                            </div>
+                            <div className="h-12 w-12 bg-rose-50 rounded-full flex items-center justify-center">
+                                <Clock className="h-6 w-6 text-rose-600" />
+                            </div>
+                        </Card>
+
+                        <Card className="p-6 flex items-center justify-between">
+                            <div>
+                                <p className="text-slate-500 text-sm font-medium">Resolved Today</p>
+                                <h3 className="text-3xl font-bold mt-1 text-emerald-600">{stats.resolved}</h3>
+                            </div>
+                            <div className="h-12 w-12 bg-emerald-50 rounded-full flex items-center justify-center">
+                                <CheckCircle2 className="h-6 w-6 text-emerald-600" />
+                            </div>
+                        </Card>
+                    </div>
+
+                    {/* Category Breakdown */}
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                        {Object.entries(categories).map(([key, config]) => {
+                            const IconComp = config.icon;
+                            return (
+                                <button 
+                                    key={key}
+                                    onClick={() => {
+                                        setNewTaskType(key);
+                                        setIsFormOpen(true);
+                                    }}
+                                    className="p-4 bg-white border border-slate-200 rounded-xl hover:shadow-md transition-all text-left group"
+                                >
+                                    <div className={`h-10 w-10 rounded-lg flex items-center justify-center mb-3 bg-${config.color}-100`}>
+                                        <IconComp className={`h-5 w-5 text-${config.color}-600`} />
+                                    </div>
+                                    <p className="text-sm font-medium text-slate-600 group-hover:text-slate-900">{config.label}</p>
+                                    <div className="flex items-center justify-between mt-1">
+                                        <span className="text-2xl font-bold text-slate-800">{stats.byType[key]}</span>
+                                        <Plus className="h-4 w-4 text-slate-400 group-hover:text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    </div>
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    {/* Recent Activity List */}
+                    <Card className="overflow-hidden">
+                        <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+                            <h3 className="font-semibold text-slate-800">Recent Follow-ups Needed</h3>
+                            <button onClick={() => setActiveTab('logs')} className="text-sm text-blue-600 hover:text-blue-700 font-medium">View All</button>
+                        </div>
+                        <div className="divide-y divide-slate-100">
+                            {tasks.filter(t => t.status === 'Pending').slice(0, 5).map(task => {
+                                const CatIcon = categories[task.type].icon;
+                                return (
+                                    <div key={task.id} className="p-4 flex items-center gap-4 hover:bg-slate-50 transition-colors">
+                                        <div className={`h-10 w-10 rounded-full flex-shrink-0 flex items-center justify-center bg-${categories[task.type].color}-100`}>
+                                            <CatIcon className={`h-5 w-5 text-${categories[task.type].color}-600`} />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-medium text-slate-900 truncate">{task.title}</p>
+                                            <p className="text-xs text-slate-500 flex items-center mt-0.5">
+                                                <User className="h-3 w-3 mr-1" /> {task.agent} • {new Date(task.date).toLocaleDateString()}
+                                            </p>
+                                        </div>
+                                        <Badge color="red">Action Req</Badge>
+                                    </div>
+                                );
+                            })}
+                            {tasks.filter(t => t.status === 'Pending').length === 0 && (
+                                <div className="p-8 text-center text-slate-500">
+                                    <CheckCircle2 className="h-12 w-12 mx-auto mb-2 text-emerald-200" />
+                                    <p>All caught up! No pending tasks.</p>
+                                </div>
+                            )}
+                        </div>
+                    </Card>
+                </div>
+            );
+
+            const renderLogs = () => (
+                <div className="space-y-4 animate-fade-in">
+                    <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                        <div className="relative w-full md:w-96">
+                            <div className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400">
+                                <Search className="h-4 w-4" />
+                            </div>
+                            <input 
+                                type="text" 
+                                placeholder="Search by title, agent, or type..." 
+                                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
+                        <div className="flex gap-2">
+                            <button className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50">
+                                <Filter className="h-4 w-4" /> Filter
+                            </button>
+                            <button 
+                                onClick={() => setIsFormOpen(true)}
+                                className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 shadow-sm shadow-blue-200"
+                            >
+                                <Plus className="h-4 w-4" /> New Entry
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden overflow-x-auto">
+                        <table className="w-full text-left text-sm">
+                            <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
+                                <tr>
+                                    <th className="px-6 py-3 whitespace-nowrap">Category</th>
+                                    <th className="px-6 py-3">Details</th>
+                                    <th className="px-6 py-3 whitespace-nowrap">Agent/Owner</th>
+                                    <th className="px-6 py-3 whitespace-nowrap">Status</th>
+                                    <th className="px-6 py-3 whitespace-nowrap">Date</th>
+                                    <th className="px-6 py-3 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {filteredTasks.map((task) => {
+                                    const CatIcon = categories[task.type].icon;
+                                    return (
+                                        <tr key={task.id} className="hover:bg-slate-50 transition-colors group">
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="flex items-center gap-3">
+                                                    <div className={`h-8 w-8 rounded-lg flex items-center justify-center bg-${categories[task.type].color}-100`}>
+                                                        <CatIcon className={`h-4 w-4 text-${categories[task.type].color}-600`} />
+                                                    </div>
+                                                    <span className="font-medium text-slate-700">{categories[task.type].label}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <p className="font-medium text-slate-900">{task.title}</p>
+                                                <p className="text-slate-500 text-xs truncate max-w-[200px]">
+                                                    {Object.values(task.details).filter(v => typeof v === 'string' || typeof v === 'number').join(' • ')}
+                                                </p>
+                                            </td>
+                                            <td className="px-6 py-4 text-slate-600 whitespace-nowrap">{task.agent}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium border ${
+                                                    task.status === 'Resolved' || task.status === 'Won' || task.status === 'Activated' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                                                    task.status === 'Lost' || task.status === 'Cancelled' ? 'bg-rose-50 text-rose-700 border-rose-200' :
+                                                    'bg-amber-50 text-amber-700 border-amber-200'
+                                                }`}>
+                                                    {task.status}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 text-slate-500 whitespace-nowrap">{new Date(task.date).toLocaleDateString()}</td>
+                                            <td className="px-6 py-4 text-right">
+                                                <button className="text-slate-400 hover:text-blue-600">
+                                                    <ChevronRight className="h-5 w-5" />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                        {filteredTasks.length === 0 && (
+                            <div className="p-12 text-center text-slate-400">
+                                <Search className="h-12 w-12 mx-auto mb-3 opacity-20" />
+                                <p>No records found matching your search.</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+
+            return (
+                <div className="min-h-screen bg-slate-50 font-sans text-slate-900 pb-20">
+                    {/* Header */}
+                    <header className="bg-white border-b border-slate-200 sticky top-0 z-20">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <div className="flex justify-between items-center h-16">
+                                <div className="flex items-center gap-3">
+                                    <div className="h-8 w-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                                        <Hash className="h-5 w-5 text-white" />
+                                    </div>
+                                    <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600">
+                                        Mentor<span className="font-light">Ops</span>
+                                    </h1>
+                                </div>
+                                
+                                <nav className="hidden md:flex space-x-1">
+                                    {['dashboard', 'logs', 'reports'].map((tab) => (
+                                        <button
+                                            key={tab}
+                                            onClick={() => setActiveTab(tab)}
+                                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                                activeTab === tab 
+                                                    ? 'bg-slate-100 text-slate-900' 
+                                                    : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                                            }`}
+                                        >
+                                            {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                                        </button>
+                                    ))}
+                                </nav>
+
+                                <div className="flex items-center gap-3">
+                                    <div className="text-right hidden md:block">
+                                        <p className="text-xs font-medium text-slate-500">Logged in as</p>
+                                        <p className="text-sm font-bold text-slate-900 leading-none">{currentUser}</p>
+                                    </div>
+                                    <div className="h-8 w-8 rounded-full bg-blue-100 text-blue-600 overflow-hidden border border-blue-200 flex items-center justify-center font-bold text-xs">
+                                         {currentUser.split(' ').map(n => n[0]).join('')}
+                                    </div>
+                                    <button 
+                                        onClick={() => setCurrentUser(null)}
+                                        className="ml-2 p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-full transition-colors"
+                                        title="Logout"
+                                    >
+                                        <LogOut className="h-4 w-4" />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </header>
+
+                    {/* Main Content */}
+                    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                        {activeTab === 'dashboard' && renderDashboard()}
+                        {activeTab === 'logs' && renderLogs()}
+                        {activeTab === 'reports' && (
+                            <div className="flex flex-col items-center justify-center h-64 text-slate-400">
+                                 <FileText className="h-12 w-12 mb-4 opacity-50" />
+                                 <p className="text-lg">Weekly Report Generator coming soon.</p>
+                            </div>
+                        )}
+                    </main>
+
+                    {/* Slide-over Form Modal */}
+                    {isFormOpen && (
+                        <div className="fixed inset-0 z-50 flex justify-end">
+                            <div className="absolute inset-0 bg-slate-900/20 backdrop-blur-sm transition-opacity" onClick={() => setIsFormOpen(false)} />
+                            <div className="relative w-full max-w-md bg-white h-full shadow-2xl p-6 overflow-y-auto animate-slide-in-right">
+                                <div className="flex items-center justify-between mb-6">
+                                    <div className="flex items-center gap-3">
+                                        <div className={`p-2 rounded-lg bg-${categories[newTaskType].color}-100`}>
+                                            {React.createElement(categories[newTaskType].icon, { className: `h-6 w-6 text-${categories[newTaskType].color}-600` })}
+                                        </div>
+                                        <h2 className="text-xl font-bold text-slate-800">Log {categories[newTaskType].label}</h2>
+                                    </div>
+                                    <button onClick={() => setIsFormOpen(false)} className="text-slate-400 hover:text-slate-600">Close</button>
+                                </div>
+
+                                <form onSubmit={handleAddTask} className="space-y-4">
+                                    {/* Type Selector within Form */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">Task Category</label>
+                                        <select 
+                                            value={newTaskType} 
+                                            onChange={(e) => setNewTaskType(e.target.value)}
+                                            className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                                        >
+                                            {Object.entries(categories).map(([key, config]) => (
+                                                <option key={key} value={key}>{config.label}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {/* Common Fields */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">Title / Summary</label>
+                                        <input 
+                                            required
+                                            type="text" 
+                                            placeholder="Task summary"
+                                            className="w-full p-2.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                                            value={formData.title || ''}
+                                            onChange={(e) => handleInputChange('title', e.target.value)}
+                                        />
+                                    </div>
+
+                                    {/* Dynamic Fields based on Category */}
+                                    <div className="p-4 bg-slate-50 rounded-lg border border-slate-100 space-y-4">
+                                        {newTaskType === 'weekly_quiz' && (
+                                            <div className="flex justify-between items-center mb-2">
+                                                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Correction Module</h3>
+                                                <div className="bg-cyan-100 text-cyan-700 px-3 py-1 rounded-full text-sm font-bold">
+                                                    Overall: {formData.overallScore || '0.0'}
+                                                </div>
+                                            </div>
+                                        )}
+                                        {newTaskType !== 'weekly_quiz' && (
+                                            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Specific Details</h3>
+                                        )}
+                                        
+                                        {categories[newTaskType].fields.map(field => {
+                                            // Handle Correction Module (Weekly Quiz)
+                                            if (field === 'correctionModule') {
+                                                return (
+                                                    <div key={field} className="space-y-6">
+                                                        {quizModules.map(module => (
+                                                            <div key={module.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                                                                <h4 className="font-semibold text-slate-800 text-sm mb-1">{module.title}</h4>
+                                                                <p className="text-xs text-slate-500 mb-3">{module.desc}</p>
+                                                                
+                                                                <div className="flex items-center justify-between mb-3 bg-slate-50 p-2 rounded-lg">
+                                                                    <span className="text-xs font-bold text-slate-400">Poor</span>
+                                                                    <div className="flex gap-4">
+                                                                        {[1, 2, 3, 4, 5].map(score => (
+                                                                            <label key={score} className="flex flex-col items-center cursor-pointer group">
+                                                                                <input 
+                                                                                    type="radio" 
+                                                                                    name={`score_${module.id}`} 
+                                                                                    value={score}
+                                                                                    className="peer sr-only"
+                                                                                    onChange={(e) => handleQuizScoreChange(module.id, e.target.value)}
+                                                                                />
+                                                                                <div className="w-8 h-8 rounded-full bg-white border-2 border-slate-300 peer-checked:border-cyan-500 peer-checked:bg-cyan-500 peer-checked:text-white flex items-center justify-center text-xs font-bold transition-all group-hover:border-cyan-300 text-slate-500">
+                                                                                    {score}
+                                                                                </div>
+                                                                            </label>
+                                                                        ))}
+                                                                    </div>
+                                                                    <span className="text-xs font-bold text-slate-400">Excellent</span>
+                                                                </div>
+                                                                
+                                                                <input 
+                                                                    type="text" 
+                                                                    placeholder="Add a comment..." 
+                                                                    className="w-full p-2 bg-slate-50 border-b border-slate-200 text-sm focus:outline-none focus:border-cyan-500 transition-colors"
+                                                                    onChange={(e) => handleQuizCommentChange(module.id, e.target.value)}
+                                                                />
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                );
+                                            }
+
+                                            // Handle Associate Name dropdowns (use associateList)
+                                            if (['associateName', 'agent'].includes(field)) {
+                                                return (
+                                                    <div key={field}>
+                                                        <label className="block text-sm font-medium text-slate-700 mb-1 capitalize">
+                                                            {field === 'agent' ? 'Associate Name' : field.replace(/([A-Z])/g, ' $1').trim()}
+                                                        </label>
+                                                        <select 
+                                                            className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                                                            onChange={(e) => handleInputChange(field, e.target.value)}
+                                                            defaultValue=""
+                                                        >
+                                                            <option value="" disabled>Select Associate...</option>
+                                                            {associateList.map(name => (
+                                                                <option key={name} value={name}>{name}</option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
+                                                );
+                                            }
+
+                                            // Handle Floor Walker - Reason For Support - Dynamic
+                                            if (field === 'reasonForSupport') {
+                                                return (
+                                                    <div key={field}>
+                                                        <label className="block text-sm font-medium text-slate-700 mb-1 capitalize">
+                                                            {field.replace(/([A-Z])/g, ' $1').trim()}
+                                                        </label>
+                                                        <select 
+                                                            className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none mb-2"
+                                                            onChange={(e) => handleInputChange(field, e.target.value)}
+                                                            value={formData[field] || ''}
+                                                        >
+                                                            <option value="" disabled>Select Reason...</option>
+                                                            {fwReasonsList.map(option => (
+                                                                <option key={option} value={option}>{option}</option>
+                                                            ))}
+                                                        </select>
+                                                        
+                                                        <div className="flex gap-2 items-center">
+                                                            <input 
+                                                                type="text" 
+                                                                placeholder="Add new reason..." 
+                                                                className="flex-1 p-2 bg-white border border-slate-200 rounded-lg text-xs"
+                                                                value={customFWReason}
+                                                                onChange={(e) => setCustomFWReason(e.target.value)}
+                                                            />
+                                                            <button 
+                                                                type="button" 
+                                                                onClick={handleAddFWReason}
+                                                                className="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-xs font-bold"
+                                                            >
+                                                                Add
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            }
+
+                                            // Handle Floor Walker - Request Type - Dynamic
+                                            if (field === 'requestType') {
+                                                return (
+                                                    <div key={field}>
+                                                        <label className="block text-sm font-medium text-slate-700 mb-1 capitalize">
+                                                            {field.replace(/([A-Z])/g, ' $1').trim()}
+                                                        </label>
+                                                        <select 
+                                                            className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none mb-2"
+                                                            onChange={(e) => handleInputChange(field, e.target.value)}
+                                                            value={formData[field] || ''}
+                                                        >
+                                                            <option value="" disabled>Select Request Type...</option>
+                                                            {fwRequestTypesList.map(option => (
+                                                                <option key={option} value={option}>{option}</option>
+                                                            ))}
+                                                        </select>
+                                                        
+                                                        <div className="flex gap-2 items-center">
+                                                            <input 
+                                                                type="text" 
+                                                                placeholder="Add new type..." 
+                                                                className="flex-1 p-2 bg-white border border-slate-200 rounded-lg text-xs"
+                                                                value={customFWRequestType}
+                                                                onChange={(e) => setCustomFWRequestType(e.target.value)}
+                                                            />
+                                                            <button 
+                                                                type="button" 
+                                                                onClick={handleAddFWRequestType}
+                                                                className="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-xs font-bold"
+                                                            >
+                                                                Add
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            }
+
+                                            // Handle HIP Request - Valid HIP Logic
+                                            if (field === 'validHip') {
+                                                return (
+                                                    <div key={field}>
+                                                        <label className="block text-sm font-medium text-slate-700 mb-1">Valid HIP?</label>
+                                                        <select 
+                                                            className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                                                            onChange={(e) => handleInputChange(field, e.target.value)}
+                                                            defaultValue=""
+                                                        >
+                                                            <option value="" disabled>Select...</option>
+                                                            <option value="Yes">Yes</option>
+                                                            <option value="No">No</option>
+                                                        </select>
+                                                    </div>
+                                                );
+                                            }
+
+                                            // Handle HIP Request - Invalid Reason Logic (Conditional + Dynamic)
+                                            if (field === 'invalidReason') {
+                                                if (formData.validHip !== 'No') return null; // Only show if Valid HIP is No
+                                                return (
+                                                    <div key={field} className="animate-fade-in">
+                                                        <label className="block text-sm font-medium text-rose-700 mb-1">Reason for Invalid</label>
+                                                        <select 
+                                                            className="w-full p-2.5 bg-rose-50 border border-rose-200 rounded-lg text-sm focus:ring-2 focus:ring-rose-500 outline-none mb-2"
+                                                            onChange={(e) => handleInputChange(field, e.target.value)}
+                                                            value={formData[field] || ''}
+                                                        >
+                                                            <option value="" disabled>Select Reason...</option>
+                                                            {hipInvalidReasons.map(r => (
+                                                                <option key={r} value={r}>{r}</option>
+                                                            ))}
+                                                        </select>
+                                                        
+                                                        <div className="flex gap-2 items-center">
+                                                            <input 
+                                                                type="text" 
+                                                                placeholder="Add invalid reason..." 
+                                                                className="flex-1 p-2 bg-white border border-slate-200 rounded-lg text-xs"
+                                                                value={customHipInvalidReason}
+                                                                onChange={(e) => setCustomHipInvalidReason(e.target.value)}
+                                                            />
+                                                            <button 
+                                                                type="button" 
+                                                                onClick={handleAddHipInvalidReason}
+                                                                className="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-xs font-bold"
+                                                            >
+                                                                Add
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            }
+
+                                            // Handle HIP Request - Request Type (Dynamic)
+                                            if (field === 'hipRequestType') {
+                                                return (
+                                                    <div key={field}>
+                                                        <label className="block text-sm font-medium text-slate-700 mb-1">HIP Request Type</label>
+                                                        <select 
+                                                            className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none mb-2"
+                                                            onChange={(e) => handleInputChange(field, e.target.value)}
+                                                            value={formData[field] || ''}
+                                                        >
+                                                            <option value="" disabled>Select Type...</option>
+                                                            {hipRequestTypes.map(t => (
+                                                                <option key={t} value={t}>{t}</option>
+                                                            ))}
+                                                        </select>
+                                                        
+                                                        <div className="flex gap-2 items-center">
+                                                            <input 
+                                                                type="text" 
+                                                                placeholder="Add type..." 
+                                                                className="flex-1 p-2 bg-white border border-slate-200 rounded-lg text-xs"
+                                                                value={customHipRequestType}
+                                                                onChange={(e) => setCustomHipRequestType(e.target.value)}
+                                                            />
+                                                            <button 
+                                                                type="button" 
+                                                                onClick={handleAddHipRequestType}
+                                                                className="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-xs font-bold"
+                                                            >
+                                                                Add
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            }
+
+                                            // Handle specific "Valid Request" dropdown for FloorWalker (Already handled above but logic ensures uniqueness based on field name if reused elsewhere)
+                                            // Since field names are unique per category config or shared, standard fields fall through below.
+
+                                            // Handle specific "Surprise & Delight Type" dropdown
+                                            if (field === 'surpriseAndDelightType') {
+                                                return (
+                                                    <div key={field}>
+                                                        <label className="block text-sm font-medium text-slate-700 mb-1">Surprise & Delight Type</label>
+                                                        <select 
+                                                            className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                                                            onChange={(e) => handleInputChange(field, e.target.value)}
+                                                            defaultValue=""
+                                                        >
+                                                            <option value="" disabled>Select Item...</option>
+                                                            <option value="Water Bottle">Water Bottle</option>
+                                                            <option value="Tempo Sweat Towel">Tempo Sweat Towel</option>
+                                                            <option value="Yoga Block">Yoga Block</option>
+                                                            <option value="Yoga Strap">Yoga Strap</option>
+                                                            <option value="Recovery Roller">Recovery Roller</option>
+                                                            <option value="Gift Box">Gift Box</option>
+                                                            <option value="axis-performance-hat-black">axis-performance-hat-black</option>
+                                                            <option value="axis-performance-hat-slate-grey">axis-performance-hat-slate-grey</option>
+                                                            <option value="tempo-workout-gloves">tempo-workout-gloves</option>
+                                                            <option value="motive-training-tee-black">motive-training-tee-black</option>
+                                                            <option value="motive-training-tee-1">motive-training-tee-1</option>
+                                                            <option value="Pinnacle Knit Beanie">Pinnacle Knit Beanie</option>
+                                                        </select>
+                                                    </div>
+                                                );
+                                            }
+
+                                            // Handle specific "Product Type" dropdown
+                                            if (field === 'productType') {
+                                                return (
+                                                    <div key={field}>
+                                                        <label className="block text-sm font-medium text-slate-700 mb-1">Product Type</label>
+                                                        <select 
+                                                            className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                                                            onChange={(e) => handleInputChange(field, e.target.value)}
+                                                            defaultValue=""
+                                                        >
+                                                            <option value="" disabled>Select Product...</option>
+                                                            <option value="Accessories">Accessories</option>
+                                                            <option value="Membership">Membership</option>
+                                                            <option value="Tempo Move">Tempo Move</option>
+                                                            <option value="Tempo Core">Tempo Core</option>
+                                                            <option value="Tempo Studio">Tempo Studio</option>
+                                                        </select>
+                                                    </div>
+                                                );
+                                            }
+
+                                            // Handle specific "Team" dropdown
+                                            if (field === 'team') {
+                                                return (
+                                                    <div key={field}>
+                                                        <label className="block text-sm font-medium text-slate-700 mb-1">Team</label>
+                                                        <select 
+                                                            className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                                                            onChange={(e) => handleInputChange(field, e.target.value)}
+                                                            defaultValue=""
+                                                        >
+                                                            <option value="" disabled>Select Team...</option>
+                                                            <option value="Mentor">Mentor</option>
+                                                            <option value="Social media">Social media</option>
+                                                            <option value="T1">T1</option>
+                                                            <option value="Order Support">Order Support</option>
+                                                            <option value="Product Support">Product Support</option>
+                                                        </select>
+                                                    </div>
+                                                );
+                                            }
+
+                                            if (field === 'resolution') {
+                                                // Specific Resolution Logic per Type
+                                                if (newTaskType === 'disputes') {
+                                                    return (
+                                                        <div key={field}>
+                                                            <label className="block text-sm font-medium text-slate-700 mb-1">Resolution</label>
+                                                            <select 
+                                                                className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                                                                onChange={(e) => handleInputChange(field, e.target.value)}
+                                                                defaultValue="Pending"
+                                                            >
+                                                                <option value="Pending">Pending</option>
+                                                                <option value="Won">Won</option>
+                                                                <option value="Lost">Lost</option>
+                                                            </select>
+                                                        </div>
+                                                    );
+                                                }
+                                                if (newTaskType === 'pending_subs') {
+                                                     return (
+                                                        <div key={field}>
+                                                            <label className="block text-sm font-medium text-slate-700 mb-1">Resolution</label>
+                                                            <select 
+                                                                className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                                                                onChange={(e) => handleInputChange(field, e.target.value)}
+                                                                defaultValue="Pending"
+                                                            >
+                                                                <option value="Pending">Pending</option>
+                                                                <option value="Activated">Activated</option>
+                                                                <option value="Cancelled">Cancelled</option>
+                                                            </select>
+                                                        </div>
+                                                    );
+                                                }
+                                            }
+
+                                            // Pending Reason - Dynamic Add Logic
+                                            if (field === 'pendingReason' && newTaskType === 'pending_subs') {
+                                                return (
+                                                    <div key={field}>
+                                                        <label className="block text-sm font-medium text-slate-700 mb-1">Reason Pending</label>
+                                                        <select 
+                                                            className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none mb-2"
+                                                            onChange={(e) => handleInputChange(field, e.target.value)}
+                                                            value={formData[field] || ''}
+                                                        >
+                                                            <option value="" disabled>Select a reason...</option>
+                                                            {pendingReasonsList.map(r => (
+                                                                <option key={r} value={r}>{r}</option>
+                                                            ))}
+                                                        </select>
+                                                        
+                                                        <div className="flex gap-2 items-center">
+                                                            <input 
+                                                                type="text" 
+                                                                placeholder="Or add new reason..." 
+                                                                className="flex-1 p-2 bg-white border border-slate-200 rounded-lg text-xs"
+                                                                value={customReason}
+                                                                onChange={(e) => setCustomReason(e.target.value)}
+                                                            />
+                                                            <button 
+                                                                type="button" 
+                                                                onClick={handleAddReason}
+                                                                className="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-xs font-bold"
+                                                            >
+                                                                Add
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            }
+
+                                            if (field.toLowerCase().includes('date') || field === 'utteranceAt') {
+                                                return (
+                                                    <div key={field}>
+                                                        <label className="block text-sm font-medium text-slate-700 mb-1 capitalize">
+                                                            {field === 'utteranceAt' ? 'Utterance Time' : field.replace(/([A-Z])/g, ' $1').trim()}
+                                                        </label>
+                                                        <input 
+                                                            type={field === 'utteranceAt' ? 'datetime-local' : 'date'}
+                                                            className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                                                            onChange={(e) => handleInputChange(field, e.target.value)}
+                                                        />
+                                                    </div>
+                                                );
+                                            }
+                                            return (
+                                                <div key={field}>
+                                                    <label className="block text-sm font-medium text-slate-700 mb-1 capitalize">
+                                                        {field.replace(/([A-Z])/g, ' $1').trim()}
+                                                    </label>
+                                                    <input 
+                                                        type="text" 
+                                                        className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                                                        onChange={(e) => handleInputChange(field, e.target.value)}
+                                                    />
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+
+                                    {/* Global Status (Hidden for Quizzes & HIP Requests as they are auto-resolved) */}
+                                    {newTaskType !== 'weekly_quiz' && newTaskType !== 'hip_request' && newTaskType !== 'disputes' && newTaskType !== 'pending_subs' && newTaskType !== 'ai_validation' && (
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
+                                            <select 
+                                                className="w-full p-2.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                                                defaultValue="Pending"
+                                            >
+                                                <option value="Pending">Pending</option>
+                                                <option value="In Progress">In Progress</option>
+                                                <option value="Resolved">Resolved</option>
+                                            </select>
+                                        </div>
+                                    )}
+
+                                    <div className="pt-4 flex gap-3">
+                                        <button 
+                                            type="button" 
+                                            onClick={() => setIsFormOpen(false)}
+                                            className="flex-1 py-2.5 border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button 
+                                            type="submit" 
+                                            className="flex-1 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 shadow-md shadow-blue-200"
+                                        >
+                                            Save Record
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<MentorOpsCenter />);
+    </script>
+</body>
+</html>
