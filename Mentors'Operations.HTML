@@ -104,6 +104,7 @@
         const LogOut = (props) => <Icon {...props} path={<><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></>} />;
         const ClipboardList = (props) => <Icon {...props} path={<><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></>} />;
         const MessageCircle = (props) => <Icon {...props} path={<><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></>} />;
+        const Download = (props) => <Icon {...props} path={<><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></>} />;
 
         // --- Components ---
 
@@ -201,6 +202,15 @@
             const [tasks, setTasks] = useState(generateMockData());
             const [isFormOpen, setIsFormOpen] = useState(false);
             const [searchTerm, setSearchTerm] = useState('');
+            
+            // Reports State
+            const [reportFilters, setReportFilters] = useState({
+                category: 'all',
+                agent: 'all',
+                startDate: '',
+                endDate: ''
+            });
+            const [generatedReport, setGeneratedReport] = useState(null);
             
             // New Task State
             const [newTaskType, setNewTaskType] = useState('disputes');
@@ -452,6 +462,70 @@
                 categories[task.type].label.toLowerCase().includes(searchTerm.toLowerCase())
             );
 
+            // --- Report Logic ---
+            const handleGenerateReport = () => {
+                let filtered = tasks;
+
+                // Filter by Category
+                if (reportFilters.category !== 'all') {
+                    filtered = filtered.filter(t => t.type === reportFilters.category);
+                }
+
+                // Filter by Agent (Owner)
+                if (reportFilters.agent !== 'all') {
+                    filtered = filtered.filter(t => t.agent === reportFilters.agent);
+                }
+
+                // Filter by Date Range
+                if (reportFilters.startDate) {
+                    filtered = filtered.filter(t => new Date(t.date) >= new Date(reportFilters.startDate));
+                }
+                if (reportFilters.endDate) {
+                    // Add 1 day to include the end date fully
+                    const end = new Date(reportFilters.endDate);
+                    end.setHours(23, 59, 59, 999);
+                    filtered = filtered.filter(t => new Date(t.date) <= end);
+                }
+
+                setGeneratedReport(filtered);
+            };
+
+            const downloadCSV = () => {
+                if (!generatedReport || generatedReport.length === 0) return;
+
+                // Basic headers
+                let headers = ['ID', 'Type', 'Title', 'Agent/Owner', 'Status', 'Date', 'Details'];
+                
+                const csvContent = [
+                    headers.join(','),
+                    ...generatedReport.map(task => {
+                        // Flatten details into a readable string
+                        // For CSV robustness, we just stringify the details object for now
+                        // In a real app, you might want specific columns for every detail field
+                        const detailsStr = JSON.stringify(task.details).replace(/,/g, ';').replace(/"/g, '""'); 
+                        
+                        return [
+                            task.id,
+                            categories[task.type]?.label || task.type,
+                            `"${task.title.replace(/"/g, '""')}"`,
+                            task.agent,
+                            task.status,
+                            new Date(task.date).toLocaleDateString(),
+                            `"${detailsStr}"`
+                        ].join(',');
+                    })
+                ].join('\n');
+
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.setAttribute('download', `mentor_ops_report_${new Date().toISOString().split('T')[0]}.csv`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            };
+
             // --- Views ---
 
             const renderLogin = () => (
@@ -670,6 +744,135 @@
                 </div>
             );
 
+            const renderReports = () => (
+                <div className="space-y-6 animate-fade-in">
+                    {/* Filters Card */}
+                    <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="h-8 w-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                                <Filter className="h-5 w-5 text-blue-600" />
+                            </div>
+                            <h2 className="text-lg font-bold text-slate-900">Report Generator</h2>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Task Type</label>
+                                <select 
+                                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                                    value={reportFilters.category}
+                                    onChange={(e) => setReportFilters(prev => ({...prev, category: e.target.value}))}
+                                >
+                                    <option value="all">All Types</option>
+                                    {Object.entries(categories).map(([key, config]) => (
+                                        <option key={key} value={key}>{config.label}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Owner (Mentor)</label>
+                                <select 
+                                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                                    value={reportFilters.agent}
+                                    onChange={(e) => setReportFilters(prev => ({...prev, agent: e.target.value}))}
+                                >
+                                    <option value="all">All Mentors</option>
+                                    {mentorList.map(m => (
+                                        <option key={m} value={m}>{m}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Start Date</label>
+                                <input 
+                                    type="date" 
+                                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                                    value={reportFilters.startDate}
+                                    onChange={(e) => setReportFilters(prev => ({...prev, startDate: e.target.value}))}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">End Date</label>
+                                <input 
+                                    type="date" 
+                                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                                    value={reportFilters.endDate}
+                                    onChange={(e) => setReportFilters(prev => ({...prev, endDate: e.target.value}))}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end pt-2">
+                            <button 
+                                onClick={handleGenerateReport}
+                                className="px-6 py-2.5 bg-slate-900 text-white font-medium rounded-lg hover:bg-slate-800 transition-colors shadow-sm"
+                            >
+                                Generate Report
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Report Results */}
+                    {generatedReport && (
+                        <div className="space-y-4 animate-fade-in">
+                            <div className="flex justify-between items-end">
+                                <div>
+                                    <h3 className="text-xl font-bold text-slate-900">Report Preview</h3>
+                                    <p className="text-sm text-slate-500">
+                                        Found {generatedReport.length} records matching your criteria.
+                                    </p>
+                                </div>
+                                <button 
+                                    onClick={downloadCSV}
+                                    className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 font-medium rounded-lg hover:bg-slate-50 transition-colors"
+                                >
+                                    <Download className="h-4 w-4" /> Download CSV
+                                </button>
+                            </div>
+
+                            <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden overflow-x-auto">
+                                <table className="w-full text-left text-sm">
+                                    <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
+                                        <tr>
+                                            <th className="px-6 py-3">Type</th>
+                                            <th className="px-6 py-3">Title</th>
+                                            <th className="px-6 py-3">Owner</th>
+                                            <th className="px-6 py-3">Date</th>
+                                            <th className="px-6 py-3 text-right">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        {generatedReport.map(task => (
+                                            <tr key={task.id} className="hover:bg-slate-50">
+                                                <td className="px-6 py-4">{categories[task.type]?.label}</td>
+                                                <td className="px-6 py-4 font-medium text-slate-900">{task.title}</td>
+                                                <td className="px-6 py-4 text-slate-600">{task.agent}</td>
+                                                <td className="px-6 py-4 text-slate-500">{new Date(task.date).toLocaleDateString()}</td>
+                                                <td className="px-6 py-4 text-right">
+                                                    <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium border ${
+                                                        task.status === 'Resolved' || task.status === 'Won' || task.status === 'Activated' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                                                        'bg-slate-50 text-slate-700 border-slate-200'
+                                                    }`}>
+                                                        {task.status}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                        {generatedReport.length === 0 && (
+                                            <tr>
+                                                <td colSpan="5" className="px-6 py-12 text-center text-slate-400">
+                                                    No records found for the selected filters.
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+
             return (
                 <div className="min-h-screen bg-slate-50 font-sans text-slate-900 pb-20">
                     {/* Header */}
@@ -726,12 +929,7 @@
                     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                         {activeTab === 'dashboard' && renderDashboard()}
                         {activeTab === 'logs' && renderLogs()}
-                        {activeTab === 'reports' && (
-                            <div className="flex flex-col items-center justify-center h-64 text-slate-400">
-                                 <FileText className="h-12 w-12 mb-4 opacity-50" />
-                                 <p className="text-lg">Weekly Report Generator coming soon.</p>
-                            </div>
-                        )}
+                        {activeTab === 'reports' && renderReports()}
                     </main>
 
                     {/* Slide-over Form Modal */}
