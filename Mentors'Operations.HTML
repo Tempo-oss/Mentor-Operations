@@ -105,6 +105,7 @@
         const ClipboardList = (props) => <Icon {...props} path={<><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></>} />;
         const MessageCircle = (props) => <Icon {...props} path={<><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></>} />;
         const Download = (props) => <Icon {...props} path={<><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></>} />;
+        const Edit = (props) => <Icon {...props} path={<><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></>} />;
 
         // --- Components ---
 
@@ -202,8 +203,9 @@
             const [tasks, setTasks] = useState(generateMockData());
             const [isFormOpen, setIsFormOpen] = useState(false);
             const [searchTerm, setSearchTerm] = useState('');
+            const [editingTaskId, setEditingTaskId] = useState(null);
             
-            // Reports State
+            // Reports & Logs Filters State
             const [reportFilters, setReportFilters] = useState({
                 category: 'all',
                 agent: 'all',
@@ -211,6 +213,15 @@
                 endDate: ''
             });
             const [generatedReport, setGeneratedReport] = useState(null);
+            
+            // Logs View Specific Filter State
+            const [showLogFilters, setShowLogFilters] = useState(false);
+            const [logFilters, setLogFilters] = useState({
+                category: 'all',
+                agent: 'all',
+                startDate: '',
+                endDate: ''
+            });
             
             // New Task State
             const [newTaskType, setNewTaskType] = useState('disputes');
@@ -405,62 +416,106 @@
                 handleInputChange('quizComments', { ...currentComments, [moduleId]: comment });
             };
 
+            const handleEditTask = (task) => {
+                setNewTaskType(task.type);
+                // Populate formData with details + top-level props to ensure form pre-fills correctly
+                setFormData({ 
+                    ...task.details, 
+                    title: task.title, 
+                    // Ensure special status is captured
+                    status: task.status
+                });
+                setEditingTaskId(task.id);
+                setIsFormOpen(true);
+            };
+
             const handleAddTask = (e) => {
                 e.preventDefault();
-                let computedStatus = 'Pending';
+                let computedStatus = formData.status || 'Pending';
                 
-                // Smart status based on resolution
-                if (newTaskType === 'disputes') {
-                    if (formData.resolution === 'Won' || formData.resolution === 'Lost') computedStatus = 'Resolved';
-                } else if (newTaskType === 'pending_subs') {
-                    if (formData.resolution === 'Activated' || formData.resolution === 'Cancelled') computedStatus = 'Resolved';
-                } else if (newTaskType === 'weekly_quiz') {
-                    computedStatus = 'Resolved'; // Quizzes are completed on submission
-                } else if (newTaskType === 'hip_request') {
-                    computedStatus = 'Resolved'; // Assume support requests are logged as done unless pending needed
-                } else if (newTaskType === 'ai_validation') {
-                    computedStatus = 'Resolved'; // Documentation task
-                } else {
-                    if (formData.resolution === 'Resolved') computedStatus = 'Resolved';
+                // Smart status logic only applied if not manually set/edited or for new tasks logic overrides
+                if (!editingTaskId) {
+                    if (newTaskType === 'disputes') {
+                        if (formData.resolution === 'Won' || formData.resolution === 'Lost') computedStatus = 'Resolved';
+                    } else if (newTaskType === 'pending_subs') {
+                        if (formData.resolution === 'Activated' || formData.resolution === 'Cancelled') computedStatus = 'Resolved';
+                    } else if (newTaskType === 'weekly_quiz') {
+                        computedStatus = 'Resolved'; 
+                    } else if (newTaskType === 'hip_request') {
+                        computedStatus = 'Resolved'; 
+                    } else if (newTaskType === 'ai_validation') {
+                        computedStatus = 'Resolved'; 
+                    } else {
+                        if (formData.resolution === 'Resolved') computedStatus = 'Resolved';
+                    }
                 }
 
                 // Prepare details with auto-captured fields
                 const finalDetails = { ...formData };
                 
-                // Auto-capture Submitter Name for S&D
-                if (newTaskType === 'surprise_delight') {
-                    finalDetails.submitterName = currentUser;
-                }
-                
-                // Auto-capture Mentor Name for FloorWalker
-                if (newTaskType === 'floorwalker') {
-                    finalDetails.mentorName = currentUser;
+                // Auto-capture fields ONLY for new tasks or preserve existing logic
+                if (!editingTaskId) {
+                    if (newTaskType === 'surprise_delight') {
+                        finalDetails.submitterName = currentUser;
+                    }
+                    if (newTaskType === 'floorwalker') {
+                        finalDetails.mentorName = currentUser;
+                    }
                 }
 
-                const newTask = {
-                    id: Date.now(),
-                    type: newTaskType,
-                    title: formData.title || `${categories[newTaskType].label} Log`,
-                    agent: currentUser, // Auto-capture Main Agent/Owner
-                    status: computedStatus,
-                    priority: 'Medium',
-                    date: new Date().toISOString(),
-                    details: finalDetails
-                };
-                setTasks([newTask, ...tasks]);
+                if (editingTaskId) {
+                    // Update Existing Task
+                    setTasks(tasks.map(t => t.id === editingTaskId ? {
+                        ...t,
+                        type: newTaskType,
+                        title: formData.title,
+                        status: computedStatus,
+                        details: finalDetails
+                    } : t));
+                } else {
+                    // Create New Task
+                    const newTask = {
+                        id: Date.now(),
+                        type: newTaskType,
+                        title: formData.title || `${categories[newTaskType].label} Log`,
+                        agent: currentUser, 
+                        status: computedStatus,
+                        priority: 'Medium',
+                        date: new Date().toISOString(),
+                        details: finalDetails
+                    };
+                    setTasks([newTask, ...tasks]);
+                }
+
                 setIsFormOpen(false);
                 setFormData({});
+                setEditingTaskId(null);
             };
 
             const handleInputChange = (field, value) => {
                 setFormData(prev => ({ ...prev, [field]: value }));
             };
 
-            const filteredTasks = tasks.filter(task => 
-                task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                task.agent.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                categories[task.type].label.toLowerCase().includes(searchTerm.toLowerCase())
-            );
+            const filteredTasks = tasks.filter(task => {
+                // Search Term Filter
+                const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                      task.agent.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                      categories[task.type].label.toLowerCase().includes(searchTerm.toLowerCase());
+                
+                // Logs View Specific Filters
+                const matchesCategory = logFilters.category === 'all' || task.type === logFilters.category;
+                const matchesAgent = logFilters.agent === 'all' || task.agent === logFilters.agent;
+                
+                let matchesDate = true;
+                if (logFilters.startDate) matchesDate = matchesDate && new Date(task.date) >= new Date(logFilters.startDate);
+                if (logFilters.endDate) {
+                     const end = new Date(logFilters.endDate);
+                     end.setHours(23, 59, 59, 999);
+                     matchesDate = matchesDate && new Date(task.date) <= end;
+                }
+
+                return matchesSearch && matchesCategory && matchesAgent && matchesDate;
+            });
 
             // --- Report Logic ---
             const handleGenerateReport = () => {
@@ -499,9 +554,6 @@
                 const csvContent = [
                     headers.join(','),
                     ...generatedReport.map(task => {
-                        // Flatten details into a readable string
-                        // For CSV robustness, we just stringify the details object for now
-                        // In a real app, you might want specific columns for every detail field
                         const detailsStr = JSON.stringify(task.details).replace(/,/g, ';').replace(/"/g, '""'); 
                         
                         return [
@@ -602,6 +654,7 @@
                                     key={key}
                                     onClick={() => {
                                         setNewTaskType(key);
+                                        setEditingTaskId(null);
                                         setIsFormOpen(true);
                                     }}
                                     className="p-4 bg-white border border-slate-200 rounded-xl hover:shadow-md transition-all text-left group"
@@ -640,6 +693,13 @@
                                             </p>
                                         </div>
                                         <Badge color="red">Action Req</Badge>
+                                        <button 
+                                            onClick={() => handleEditTask(task)} 
+                                            className="p-1 hover:bg-slate-200 rounded-full text-slate-400 hover:text-blue-600"
+                                            title="Edit Task"
+                                        >
+                                            <Edit className="h-4 w-4" />
+                                        </button>
                                     </div>
                                 );
                             })}
@@ -670,17 +730,73 @@
                             />
                         </div>
                         <div className="flex gap-2">
-                            <button className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50">
+                            <button 
+                                onClick={() => setShowLogFilters(!showLogFilters)}
+                                className={`flex items-center gap-2 px-3 py-2 border rounded-lg text-sm font-medium transition-colors ${showLogFilters ? 'bg-slate-100 border-blue-200 text-blue-700' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'}`}
+                            >
                                 <Filter className="h-4 w-4" /> Filter
                             </button>
                             <button 
-                                onClick={() => setIsFormOpen(true)}
+                                onClick={() => {
+                                    setEditingTaskId(null);
+                                    setIsFormOpen(true);
+                                }}
                                 className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 shadow-sm shadow-blue-200"
                             >
                                 <Plus className="h-4 w-4" /> New Entry
                             </button>
                         </div>
                     </div>
+
+                    {/* Logs Filters Panel (Conditionally Rendered) */}
+                    {showLogFilters && (
+                        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm grid grid-cols-1 md:grid-cols-4 gap-4 animate-fade-in">
+                            <div>
+                                <label className="block text-xs font-medium text-slate-500 mb-1">Type</label>
+                                <select 
+                                    className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none"
+                                    value={logFilters.category}
+                                    onChange={(e) => setLogFilters(prev => ({...prev, category: e.target.value}))}
+                                >
+                                    <option value="all">All</option>
+                                    {Object.entries(categories).map(([key, config]) => (
+                                        <option key={key} value={key}>{config.label}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-slate-500 mb-1">Owner</label>
+                                <select 
+                                    className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none"
+                                    value={logFilters.agent}
+                                    onChange={(e) => setLogFilters(prev => ({...prev, agent: e.target.value}))}
+                                >
+                                    <option value="all">All</option>
+                                    {mentorList.map(m => (
+                                        <option key={m} value={m}>{m}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-slate-500 mb-1">Start Date</label>
+                                <input 
+                                    type="date" 
+                                    className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none"
+                                    value={logFilters.startDate}
+                                    onChange={(e) => setLogFilters(prev => ({...prev, startDate: e.target.value}))}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-slate-500 mb-1">End Date</label>
+                                <input 
+                                    type="date" 
+                                    className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none"
+                                    value={logFilters.endDate}
+                                    onChange={(e) => setLogFilters(prev => ({...prev, endDate: e.target.value}))}
+                                />
+                            </div>
+                        </div>
+                    )}
 
                     <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden overflow-x-auto">
                         <table className="w-full text-left text-sm">
@@ -725,8 +841,12 @@
                                             </td>
                                             <td className="px-6 py-4 text-slate-500 whitespace-nowrap">{new Date(task.date).toLocaleDateString()}</td>
                                             <td className="px-6 py-4 text-right">
-                                                <button className="text-slate-400 hover:text-blue-600">
-                                                    <ChevronRight className="h-5 w-5" />
+                                                <button 
+                                                    onClick={() => handleEditTask(task)} 
+                                                    className="text-slate-400 hover:text-blue-600 transition-colors p-1"
+                                                    title="Edit Entry"
+                                                >
+                                                    <Edit className="h-5 w-5" />
                                                 </button>
                                             </td>
                                         </tr>
@@ -942,19 +1062,22 @@
                                         <div className={`p-2 rounded-lg bg-${categories[newTaskType].color}-100`}>
                                             {React.createElement(categories[newTaskType].icon, { className: `h-6 w-6 text-${categories[newTaskType].color}-600` })}
                                         </div>
-                                        <h2 className="text-xl font-bold text-slate-800">Log {categories[newTaskType].label}</h2>
+                                        <h2 className="text-xl font-bold text-slate-800">
+                                            {editingTaskId ? 'Edit' : 'Log'} {categories[newTaskType].label}
+                                        </h2>
                                     </div>
                                     <button onClick={() => setIsFormOpen(false)} className="text-slate-400 hover:text-slate-600">Close</button>
                                 </div>
 
                                 <form onSubmit={handleAddTask} className="space-y-4">
-                                    {/* Type Selector within Form */}
+                                    {/* Type Selector within Form - Disabled in Edit Mode */}
                                     <div>
                                         <label className="block text-sm font-medium text-slate-700 mb-1">Task Category</label>
                                         <select 
                                             value={newTaskType} 
                                             onChange={(e) => setNewTaskType(e.target.value)}
-                                            className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                                            className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-slate-100 disabled:text-slate-500"
+                                            disabled={!!editingTaskId}
                                         >
                                             {Object.entries(categories).map(([key, config]) => (
                                                 <option key={key} value={key}>{config.label}</option>
@@ -1010,6 +1133,7 @@
                                                                                     value={score}
                                                                                     className="peer sr-only"
                                                                                     onChange={(e) => handleQuizScoreChange(module.id, e.target.value)}
+                                                                                    checked={parseInt(formData.quizScores?.[module.id]) === score}
                                                                                 />
                                                                                 <div className="w-8 h-8 rounded-full bg-white border-2 border-slate-300 peer-checked:border-cyan-500 peer-checked:bg-cyan-500 peer-checked:text-white flex items-center justify-center text-xs font-bold transition-all group-hover:border-cyan-300 text-slate-500">
                                                                                     {score}
@@ -1025,6 +1149,7 @@
                                                                     placeholder="Add a comment..." 
                                                                     className="w-full p-2 bg-slate-50 border-b border-slate-200 text-sm focus:outline-none focus:border-cyan-500 transition-colors"
                                                                     onChange={(e) => handleQuizCommentChange(module.id, e.target.value)}
+                                                                    value={formData.quizComments?.[module.id] || ''}
                                                                 />
                                                             </div>
                                                         ))}
@@ -1042,7 +1167,7 @@
                                                         <select 
                                                             className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                                                             onChange={(e) => handleInputChange(field, e.target.value)}
-                                                            defaultValue=""
+                                                            value={formData[field] || ''}
                                                         >
                                                             <option value="" disabled>Select Associate...</option>
                                                             {associateList.map(name => (
@@ -1137,7 +1262,7 @@
                                                         <select 
                                                             className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                                                             onChange={(e) => handleInputChange(field, e.target.value)}
-                                                            defaultValue=""
+                                                            value={formData[field] || ''}
                                                         >
                                                             <option value="" disabled>Select...</option>
                                                             <option value="Yes">Yes</option>
@@ -1231,7 +1356,7 @@
                                                         <select 
                                                             className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                                                             onChange={(e) => handleInputChange(field, e.target.value)}
-                                                            defaultValue=""
+                                                            value={formData[field] || ''}
                                                         >
                                                             <option value="" disabled>Select Item...</option>
                                                             <option value="Water Bottle">Water Bottle</option>
@@ -1259,7 +1384,7 @@
                                                         <select 
                                                             className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                                                             onChange={(e) => handleInputChange(field, e.target.value)}
-                                                            defaultValue=""
+                                                            value={formData[field] || ''}
                                                         >
                                                             <option value="" disabled>Select Product...</option>
                                                             <option value="Accessories">Accessories</option>
@@ -1280,7 +1405,7 @@
                                                         <select 
                                                             className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                                                             onChange={(e) => handleInputChange(field, e.target.value)}
-                                                            defaultValue=""
+                                                            value={formData[field] || ''}
                                                         >
                                                             <option value="" disabled>Select Team...</option>
                                                             <option value="Mentor">Mentor</option>
@@ -1302,7 +1427,7 @@
                                                             <select 
                                                                 className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                                                                 onChange={(e) => handleInputChange(field, e.target.value)}
-                                                                defaultValue="Pending"
+                                                                value={formData[field] || 'Pending'}
                                                             >
                                                                 <option value="Pending">Pending</option>
                                                                 <option value="Won">Won</option>
@@ -1318,7 +1443,7 @@
                                                             <select 
                                                                 className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                                                                 onChange={(e) => handleInputChange(field, e.target.value)}
-                                                                defaultValue="Pending"
+                                                                value={formData[field] || 'Pending'}
                                                             >
                                                                 <option value="Pending">Pending</option>
                                                                 <option value="Activated">Activated</option>
@@ -1375,6 +1500,7 @@
                                                             type={field === 'utteranceAt' ? 'datetime-local' : 'date'}
                                                             className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                                                             onChange={(e) => handleInputChange(field, e.target.value)}
+                                                            value={formData[field] || ''}
                                                         />
                                                     </div>
                                                 );
@@ -1388,6 +1514,7 @@
                                                         type="text" 
                                                         className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                                                         onChange={(e) => handleInputChange(field, e.target.value)}
+                                                        value={formData[field] || ''}
                                                     />
                                                 </div>
                                             );
@@ -1401,6 +1528,8 @@
                                             <select 
                                                 className="w-full p-2.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                                                 defaultValue="Pending"
+                                                onChange={(e) => handleInputChange('status', e.target.value)}
+                                                value={formData.status || 'Pending'}
                                             >
                                                 <option value="Pending">Pending</option>
                                                 <option value="In Progress">In Progress</option>
@@ -1412,7 +1541,11 @@
                                     <div className="pt-4 flex gap-3">
                                         <button 
                                             type="button" 
-                                            onClick={() => setIsFormOpen(false)}
+                                            onClick={() => {
+                                                setIsFormOpen(false);
+                                                setEditingTaskId(null);
+                                                setFormData({});
+                                            }}
                                             className="flex-1 py-2.5 border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50"
                                         >
                                             Cancel
@@ -1421,7 +1554,7 @@
                                             type="submit" 
                                             className="flex-1 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 shadow-md shadow-blue-200"
                                         >
-                                            Save Record
+                                            {editingTaskId ? 'Update Entry' : 'Save Record'}
                                         </button>
                                     </div>
                                 </form>
