@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MentorOps Center</title>
+    <title>Tempo MentorOps</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -16,7 +16,7 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
         
         body {
             font-family: 'Inter', sans-serif;
@@ -41,7 +41,20 @@
             animation: slideInRight 0.3s ease-out forwards;
         }
         
-        /* Custom range slider for ratings if needed, but using radio buttons for clarity */
+        /* Custom scrollbar for a cleaner look */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-900">
@@ -173,49 +186,10 @@
             { id: 'fcr', title: 'FCR', desc: 'Was the associate able to anticipate all the customer questions?' }
         ];
 
-        // --- Mock Data Generator ---
-
+        // --- LIVE MODE: NO MOCK DATA ---
+        // Initial state is now an empty array.
         const generateMockData = () => {
-            return [
-                { 
-                    id: 1, 
-                    type: 'ai_validation', 
-                    title: 'Cancellations & Returns', 
-                    agent: 'Noha Radwan', 
-                    status: 'Resolved', 
-                    date: '2026-02-02T02:38:00', 
-                    priority: 'Medium', 
-                    details: { 
-                        questionCategory: 'Cancellations & Returns',
-                        botName: 'Tempo Support !',
-                        utteranceAt: '2026-02-02 2:38:00',
-                        userQuery: 'membership cancellation',
-                        ticketId: 'b4c49da0-be5f-41f3-a86e-faf7a2571aba',
-                        comment: 'Failed to transfer',
-                        action: 'Raised'
-                    } 
-                },
-                { 
-                    id: 2, 
-                    type: 'ai_validation', 
-                    title: 'Membership Costs and Trials', 
-                    agent: 'Rashad Mohamed', 
-                    status: 'Resolved', 
-                    date: '2026-02-02T19:16:00', 
-                    priority: 'Medium', 
-                    details: { 
-                        questionCategory: 'Membership Costs and Trials',
-                        botName: 'Tempo Support !',
-                        utteranceAt: '2026-02-02 19:16:00',
-                        userQuery: 'Am I able to purchase the equipment at full price but pay for the membership monthly?',
-                        ticketId: '93dd42e4-3bc3-4324-bd0e-c43b82e79f28',
-                        comment: 'Correct Response by Bot',
-                        action: ''
-                    } 
-                },
-                { id: 3, type: 'floorwalker', title: 'Assisted w/ VPN Issue', agent: 'Rashad Mohamed', status: 'Resolved', date: new Date().toISOString(), priority: 'Low', details: { topic: 'Technical', duration: '15 mins', associateName: 'Mohab Magdy' } },
-                { id: 4, type: 'disputes', title: 'Refund Denial - Acme Inc', agent: 'Noha Radwan', status: 'Pending', date: new Date().toISOString(), priority: 'High', details: { customerName: 'John Doe', disputeAmount: '$45.00', resolution: 'Pending' } }
-            ];
+            return []; 
         };
 
         function MentorOpsCenter() {
@@ -703,12 +677,13 @@
                         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                             <div className="flex justify-between items-center h-16">
                                 <div className="flex items-center gap-3">
-                                    <div className="h-8 w-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                                        <Hash className="h-5 w-5 text-white" />
-                                    </div>
-                                    <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600">
-                                        Mentor<span className="font-light">Ops</span>
+                                    <h1 className="text-2xl font-bold tracking-[0.2em] text-slate-900">
+                                        TEMPO
                                     </h1>
+                                    <span className="h-6 w-px bg-slate-300 mx-1"></span>
+                                    <span className="text-sm font-medium text-slate-500 uppercase tracking-wider">
+                                        Mentor Ops
+                                    </span>
                                 </div>
                                 
                                 <nav className="hidden md:flex space-x-1">
