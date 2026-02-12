@@ -15,6 +15,27 @@
     <!-- Babel for JSX -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, updateDoc, onSnapshot, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        window.Firebase = {
+            initializeApp,
+            getAuth,
+            signInAnonymously,
+            signInWithCustomToken,
+            onAuthStateChanged,
+            getFirestore,
+            collection,
+            addDoc,
+            updateDoc,
+            onSnapshot,
+            doc
+        };
+    </script>
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
         
@@ -106,6 +127,7 @@
         const MessageCircle = (props) => <Icon {...props} path={<><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></>} />;
         const Download = (props) => <Icon {...props} path={<><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></>} />;
         const Edit = (props) => <Icon {...props} path={<><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></>} />;
+        const ChevronLeft = (props) => <Icon {...props} path={<path d="m15 18-6-6 6-6"/>} />;
 
         // --- Components ---
 
@@ -189,7 +211,6 @@
         ];
 
         // --- LIVE MODE: NO MOCK DATA ---
-        // Initial state is now an empty array.
         const generateMockData = () => {
             return []; 
         };
@@ -197,13 +218,18 @@
         function MentorOpsCenter() {
             // App State
             const [currentUser, setCurrentUser] = useState(null);
+            const [authUser, setAuthUser] = useState(null);
             
             // View State
             const [activeTab, setActiveTab] = useState('dashboard');
-            const [tasks, setTasks] = useState(generateMockData());
+            const [tasks, setTasks] = useState([]);
             const [isFormOpen, setIsFormOpen] = useState(false);
             const [searchTerm, setSearchTerm] = useState('');
             const [editingTaskId, setEditingTaskId] = useState(null);
+            
+            // Pagination State
+            const [currentPage, setCurrentPage] = useState(1);
+            const itemsPerPage = 10;
             
             // Reports & Logs Filters State
             const [reportFilters, setReportFilters] = useState({
@@ -229,17 +255,82 @@
             
             // Flexible Inputs State
             const [customReason, setCustomReason] = useState(''); // Pending Subs
+            const [customDisputeReason, setCustomDisputeReason] = useState(''); // Dispute Reason
             const [customFWReason, setCustomFWReason] = useState(''); // FloorWalker Reason
             const [customFWRequestType, setCustomFWRequestType] = useState(''); // FloorWalker Request Type
             const [customHipInvalidReason, setCustomHipInvalidReason] = useState(''); // HIP Invalid Reason
             const [customHipRequestType, setCustomHipRequestType] = useState(''); // HIP Request Type
             
             // Dynamic Lists
-            const [pendingReasonsList, setPendingReasonsList] = useState([]);
+            const [pendingReasonsList, setPendingReasonsList] = useState([
+                "Not delivered",
+                "Delivered but not updated.",
+                "Returned or canceled order, but the membership was left pending"
+            ]);
+            const [disputeReasonsList, setDisputeReasonsList] = useState([
+                "The cardholder claims you continued to charge them after they canceled their subscription.",
+                "The cardholder claims they did not authorize the purchase.",
+                "The cardholder claims the product or service was defective, damaged, or not as described.",
+                "Payment disputed because credit not processed"
+            ]);
             const [fwReasonsList, setFwReasonsList] = useState(floorWalkerReasons);
             const [fwRequestTypesList, setFwRequestTypesList] = useState(floorWalkerRequestTypes);
             const [hipInvalidReasons, setHipInvalidReasons] = useState([]);
             const [hipRequestTypes, setHipRequestTypes] = useState([]);
+
+            // Firebase Init
+            useEffect(() => {
+                if (window.Firebase && typeof __firebase_config !== 'undefined') {
+                    const { initializeApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, getFirestore } = window.Firebase;
+                    const firebaseConfig = JSON.parse(__firebase_config);
+                    const app = initializeApp(firebaseConfig);
+                    const auth = getAuth(app);
+                    const db = getFirestore(app);
+                    
+                    const initAuth = async () => {
+                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                            await signInWithCustomToken(auth, __initial_auth_token);
+                        } else {
+                            await signInAnonymously(auth);
+                        }
+                    };
+                    initAuth();
+                    
+                    const unsubscribe = onAuthStateChanged(auth, (user) => {
+                        setAuthUser(user);
+                    });
+                    
+                    return () => unsubscribe();
+                }
+            }, []);
+
+            // Firebase Data Sync
+            useEffect(() => {
+                if (!authUser || !window.Firebase || typeof __app_id === 'undefined') return;
+                
+                const { getFirestore, collection, onSnapshot, query, orderBy } = window.Firebase;
+                const firebaseConfig = JSON.parse(__firebase_config);
+                const app = window.Firebase.initializeApp(firebaseConfig); 
+                const db = getFirestore(app);
+                
+                const q = collection(db, 'artifacts', __app_id, 'public', 'data', 'tasks');
+                
+                const unsubscribe = onSnapshot(q, (snapshot) => {
+                    const loadedTasks = snapshot.docs.map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    }));
+                    
+                    // Client-side sort by date descending since we fetch all
+                    loadedTasks.sort((a, b) => new Date(b.date) - new Date(a.date));
+                    
+                    setTasks(loadedTasks);
+                }, (error) => {
+                    console.error("Error fetching tasks:", error);
+                });
+
+                return () => unsubscribe();
+            }, [authUser]);
 
             // Categories Configuration
             const categories = {
@@ -265,7 +356,7 @@
                     fields: [
                         'customerName', 
                         'customerEmail',
-                        'amount', 
+                        // Amount removed
                         'pendingReason', 
                         'resolution'
                     ] 
@@ -366,6 +457,14 @@
                 }
             };
 
+            const handleAddDisputeReason = () => {
+                if (customDisputeReason && !disputeReasonsList.includes(customDisputeReason)) {
+                    setDisputeReasonsList([...disputeReasonsList, customDisputeReason]);
+                    handleInputChange('disputeReason', customDisputeReason);
+                    setCustomDisputeReason('');
+                }
+            };
+
             const handleAddFWReason = () => {
                 if (customFWReason && !fwReasonsList.includes(customFWReason)) {
                     setFwReasonsList([...fwReasonsList, customFWReason]);
@@ -429,11 +528,13 @@
                 setIsFormOpen(true);
             };
 
-            const handleAddTask = (e) => {
+            const handleAddTask = async (e) => {
                 e.preventDefault();
+                if (!authUser) return;
+
                 let computedStatus = formData.status || 'Pending';
                 
-                // Smart status logic only applied if not manually set/edited or for new tasks logic overrides
+                // Smart status logic
                 if (!editingTaskId) {
                     if (newTaskType === 'disputes') {
                         if (formData.resolution === 'Won' || formData.resolution === 'Lost') computedStatus = 'Resolved';
@@ -463,39 +564,46 @@
                     }
                 }
 
-                if (editingTaskId) {
-                    // Update Existing Task
-                    setTasks(tasks.map(t => t.id === editingTaskId ? {
-                        ...t,
-                        type: newTaskType,
-                        title: formData.title,
-                        status: computedStatus,
-                        details: finalDetails
-                    } : t));
-                } else {
-                    // Create New Task
-                    const newTask = {
-                        id: Date.now(),
-                        type: newTaskType,
-                        title: formData.title || `${categories[newTaskType].label} Log`,
-                        agent: currentUser, 
-                        status: computedStatus,
-                        priority: 'Medium',
-                        date: new Date().toISOString(),
-                        details: finalDetails
-                    };
-                    setTasks([newTask, ...tasks]);
-                }
+                const { getFirestore, collection, addDoc, updateDoc, doc } = window.Firebase;
+                const firebaseConfig = JSON.parse(__firebase_config);
+                const app = window.Firebase.initializeApp(firebaseConfig);
+                const db = getFirestore(app);
 
-                setIsFormOpen(false);
-                setFormData({});
-                setEditingTaskId(null);
+                const taskData = {
+                    type: newTaskType,
+                    title: `${categories[newTaskType].label} Log`, // Default Title
+                    agent: currentUser, 
+                    status: computedStatus,
+                    priority: 'Medium',
+                    date: new Date().toISOString(),
+                    details: finalDetails
+                };
+
+                try {
+                    if (editingTaskId) {
+                        // Update Existing Task
+                        const taskRef = doc(db, 'artifacts', __app_id, 'public', 'data', 'tasks', editingTaskId);
+                        await updateDoc(taskRef, taskData);
+                    } else {
+                        // Create New Task
+                        const collRef = collection(db, 'artifacts', __app_id, 'public', 'data', 'tasks');
+                        await addDoc(collRef, taskData);
+                    }
+                    
+                    setIsFormOpen(false);
+                    setFormData({});
+                    setEditingTaskId(null);
+                } catch (error) {
+                    console.error("Error saving task:", error);
+                    alert("Failed to save. Please check your connection.");
+                }
             };
 
             const handleInputChange = (field, value) => {
                 setFormData(prev => ({ ...prev, [field]: value }));
             };
 
+            // Filter logic
             const filteredTasks = tasks.filter(task => {
                 // Search Term Filter
                 const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -516,6 +624,12 @@
 
                 return matchesSearch && matchesCategory && matchesAgent && matchesDate;
             });
+
+            // Pagination Logic
+            const indexOfLastItem = currentPage * itemsPerPage;
+            const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+            const currentItems = filteredTasks.slice(indexOfFirstItem, indexOfLastItem);
+            const totalPages = Math.ceil(filteredTasks.length / itemsPerPage);
 
             // --- Report Logic ---
             const handleGenerateReport = () => {
@@ -811,7 +925,7 @@
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                                {filteredTasks.map((task) => {
+                                {currentItems.map((task) => {
                                     const CatIcon = categories[task.type].icon;
                                     return (
                                         <tr key={task.id} className="hover:bg-slate-50 transition-colors group">
@@ -858,6 +972,31 @@
                             <div className="p-12 text-center text-slate-400">
                                 <Search className="h-12 w-12 mx-auto mb-3 opacity-20" />
                                 <p>No records found matching your search.</p>
+                            </div>
+                        )}
+                        
+                        {/* Pagination Controls */}
+                        {filteredTasks.length > 0 && (
+                            <div className="flex items-center justify-between px-6 py-4 bg-slate-50 border-t border-slate-200">
+                                <span className="text-xs text-slate-500">
+                                    Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, filteredTasks.length)} of {filteredTasks.length} entries
+                                </span>
+                                <div className="flex gap-2">
+                                    <button 
+                                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                        disabled={currentPage === 1}
+                                        className="px-3 py-1 text-xs font-medium border border-slate-200 rounded-md bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    >
+                                        Previous
+                                    </button>
+                                    <button 
+                                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                        disabled={currentPage === totalPages}
+                                        className="px-3 py-1 text-xs font-medium border border-slate-200 rounded-md bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    >
+                                        Next
+                                    </button>
+                                </div>
                             </div>
                         )}
                     </div>
@@ -1086,17 +1225,7 @@
                                     </div>
 
                                     {/* Common Fields */}
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">Title / Summary</label>
-                                        <input 
-                                            required
-                                            type="text" 
-                                            placeholder="Task summary"
-                                            className="w-full p-2.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                                            value={formData.title || ''}
-                                            onChange={(e) => handleInputChange('title', e.target.value)}
-                                        />
-                                    </div>
+                                    {/* Removed Title/Summary as requested */}
 
                                     {/* Dynamic Fields based on Category */}
                                     <div className="p-4 bg-slate-50 rounded-lg border border-slate-100 space-y-4">
@@ -1174,6 +1303,42 @@
                                                                 <option key={name} value={name}>{name}</option>
                                                             ))}
                                                         </select>
+                                                    </div>
+                                                );
+                                            }
+
+                                            // Handle Dispute Reason - Dynamic Dropdown
+                                            if (field === 'disputeReason') {
+                                                return (
+                                                    <div key={field}>
+                                                        <label className="block text-sm font-medium text-slate-700 mb-1">Dispute Reason</label>
+                                                        <select 
+                                                            className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none mb-2"
+                                                            onChange={(e) => handleInputChange(field, e.target.value)}
+                                                            value={formData[field] || ''}
+                                                        >
+                                                            <option value="" disabled>Select Reason...</option>
+                                                            {disputeReasonsList.map(r => (
+                                                                <option key={r} value={r}>{r}</option>
+                                                            ))}
+                                                        </select>
+                                                        
+                                                        <div className="flex gap-2 items-center">
+                                                            <input 
+                                                                type="text" 
+                                                                placeholder="Or add new reason..." 
+                                                                className="flex-1 p-2 bg-white border border-slate-200 rounded-lg text-xs"
+                                                                value={customDisputeReason}
+                                                                onChange={(e) => setCustomDisputeReason(e.target.value)}
+                                                            />
+                                                            <button 
+                                                                type="button" 
+                                                                onClick={handleAddDisputeReason}
+                                                                className="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-xs font-bold"
+                                                            >
+                                                                Add
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 );
                                             }
@@ -1344,9 +1509,6 @@
                                                     </div>
                                                 );
                                             }
-
-                                            // Handle specific "Valid Request" dropdown for FloorWalker (Already handled above but logic ensures uniqueness based on field name if reused elsewhere)
-                                            // Since field names are unique per category config or shared, standard fields fall through below.
 
                                             // Handle specific "Surprise & Delight Type" dropdown
                                             if (field === 'surpriseAndDelightType') {
