@@ -19,7 +19,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, updateDoc, onSnapshot, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, updateDoc, setDoc, onSnapshot, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         window.Firebase = {
             initializeApp,
@@ -31,6 +31,7 @@
             collection,
             addDoc,
             updateDoc,
+            setDoc,
             onSnapshot,
             doc
         };
@@ -210,7 +211,7 @@
             { id: 'fcr', title: 'FCR', desc: 'Was the associate able to anticipate all the customer questions?' }
         ];
 
-        // --- LIVE MODE: PREFILLED DATA ---
+        // --- PREFILLED DATA (Mock/Real Data) ---
         const generateMockData = () => {
              return [
                 {
@@ -1665,13 +1666,27 @@
                         ...doc.data()
                     }));
                     
-                    // Client-side sort by date descending since we fetch all
-                    loadedTasks.sort((a, b) => new Date(b.date) - new Date(a.date));
-                    
-                    // IF DATABASE IS EMPTY, KEEP THE MOCK DATA
+                    // IF DATABASE HAS DATA, MERGE IT
                     // This allows users to see the prefilled data if they haven't saved anything yet.
                     if (loadedTasks.length > 0) {
-                        setTasks(loadedTasks);
+                         // Merge strategy: Create a map by ID. Prefer DB version if ID exists in both.
+                        const localTasks = generateMockData();
+                        const taskMap = new Map();
+
+                        // Add local tasks first
+                        localTasks.forEach(t => taskMap.set(String(t.id), t));
+
+                        // Add DB tasks, overwriting any local tasks with same ID
+                        loadedTasks.forEach(t => taskMap.set(String(t.id), t));
+                        
+                        const mergedTasks = Array.from(taskMap.values());
+                        mergedTasks.sort((a, b) => new Date(b.date) - new Date(a.date));
+                        setTasks(mergedTasks);
+                    } else {
+                         // If DB is empty, stick with local data
+                         const localTasks = generateMockData();
+                         localTasks.sort((a, b) => new Date(b.date) - new Date(a.date));
+                         setTasks(localTasks);
                     }
                 }, (error) => {
                     console.error("Error fetching tasks:", error);
@@ -1908,7 +1923,7 @@
                     }
                 }
 
-                const { getFirestore, collection, addDoc, updateDoc, doc } = window.Firebase;
+                const { getFirestore, collection, addDoc, updateDoc, doc, setDoc } = window.Firebase;
                 const firebaseConfig = JSON.parse(__firebase_config);
                 const app = window.Firebase.initializeApp(firebaseConfig);
                 const db = getFirestore(app);
@@ -1925,9 +1940,9 @@
 
                 try {
                     if (editingTaskId) {
-                        // Update Existing Task
-                        const taskRef = doc(db, 'artifacts', __app_id, 'public', 'data', 'tasks', editingTaskId);
-                        await updateDoc(taskRef, taskData);
+                        // Use setDoc to handle both existing DB docs and new docs from local state (upsert)
+                        const taskRef = doc(db, 'artifacts', __app_id, 'public', 'data', 'tasks', String(editingTaskId));
+                        await setDoc(taskRef, taskData, { merge: true });
                     } else {
                         // Create New Task
                         const collRef = collection(db, 'artifacts', __app_id, 'public', 'data', 'tasks');
