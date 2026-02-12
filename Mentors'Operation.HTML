@@ -243,6 +243,7 @@
             // App State
             const [currentUser, setCurrentUser] = useState(null);
             const [authUser, setAuthUser] = useState(null);
+            const [authReady, setAuthReady] = useState(false);
             
             // View State
             const [activeTab, setActiveTab] = useState('dashboard');
@@ -304,34 +305,58 @@
 
             // Firebase Init
             useEffect(() => {
-                if (window.Firebase && typeof __firebase_config !== 'undefined') {
-                    const { initializeApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, getFirestore } = window.Firebase;
+                const initFirebase = async () => {
+                    // Wait for window.Firebase to be defined
+                    if (!window.Firebase) {
+                        setTimeout(initFirebase, 100);
+                        return;
+                    }
+
+                    if (typeof __firebase_config === 'undefined') {
+                        console.error("Firebase config missing");
+                        return;
+                    }
+
+                    const { initializeApp, getApps, getApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, getFirestore } = window.Firebase;
+                    
                     const firebaseConfig = JSON.parse(__firebase_config);
-                    // Single App Initialization pattern
+                    
                     let app;
-                    try {
-                        app = window.Firebase.getApp();
-                    } catch {
+                    if (getApps().length === 0) {
                         app = initializeApp(firebaseConfig);
+                    } else {
+                        app = getApp();
                     }
                     
                     const auth = getAuth(app);
                     
-                    const initAuth = async () => {
-                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    onAuthStateChanged(auth, (user) => {
+                        if (user) {
+                            setAuthUser(user);
+                            setAuthReady(true);
+                        } else {
+                            setAuthUser(null);
+                            setAuthReady(false);
+                            // Re-auth if lost
+                            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                                signInWithCustomToken(auth, __initial_auth_token).catch(console.error);
+                            } else {
+                                signInAnonymously(auth).catch(console.error);
+                            }
+                        }
+                    });
+
+                    // Initial sign in attempt
+                    if (!auth.currentUser) {
+                         if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                             await signInWithCustomToken(auth, __initial_auth_token);
                         } else {
                             await signInAnonymously(auth);
                         }
-                    };
-                    initAuth();
-                    
-                    const unsubscribe = onAuthStateChanged(auth, (user) => {
-                        setAuthUser(user);
-                    });
-                    
-                    return () => unsubscribe();
-                }
+                    }
+                };
+
+                initFirebase();
             }, []);
 
             // Firebase Data Sync
@@ -351,27 +376,19 @@
                         ...doc.data()
                     }));
                     
-                    // IF DATABASE HAS DATA, MERGE IT
-                    if (loadedTasks.length > 0) {
-                         // Merge strategy: Create a map by ID. Prefer DB version if ID exists in both.
-                        const localTasks = generateMockData();
-                        const taskMap = new Map();
+                    // Merge strategy: Create a map by ID. Prefer DB version if ID exists in both.
+                    const localTasks = generateMockData();
+                    const taskMap = new Map();
 
-                        // Add local tasks first
-                        localTasks.forEach(t => taskMap.set(String(t.id), t));
+                    // Add local tasks first
+                    localTasks.forEach(t => taskMap.set(String(t.id), t));
 
-                        // Add DB tasks, overwriting any local tasks with same ID
-                        loadedTasks.forEach(t => taskMap.set(String(t.id), t));
-                        
-                        const mergedTasks = Array.from(taskMap.values());
-                        mergedTasks.sort((a, b) => new Date(b.date) - new Date(a.date));
-                        setTasks(mergedTasks);
-                    } else {
-                         // If DB is empty, stick with local data
-                         const localTasks = generateMockData();
-                         localTasks.sort((a, b) => new Date(b.date) - new Date(a.date));
-                         setTasks(localTasks);
-                    }
+                    // Add DB tasks, overwriting any local tasks with same ID
+                    loadedTasks.forEach(t => taskMap.set(String(t.id), t));
+                    
+                    const mergedTasks = Array.from(taskMap.values());
+                    mergedTasks.sort((a, b) => new Date(b.date) - new Date(a.date));
+                    setTasks(mergedTasks);
                 }, (error) => {
                     console.error("Error fetching tasks:", error);
                 });
@@ -574,9 +591,8 @@
             const handleAddTask = async (e) => {
                 e.preventDefault();
                 
-                // 1. Check Auth
-                if (!authUser) {
-                    alert("Authentication not ready. Please wait a moment or refresh.");
+                if (!authReady || !authUser) {
+                    alert("Please wait for connection to be established...");
                     return;
                 }
 
@@ -1216,6 +1232,10 @@
                                 </nav>
 
                                 <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-2 px-3 py-1 bg-slate-50 rounded-full border border-slate-200">
+                                        <div className={`h-2 w-2 rounded-full ${authReady ? 'bg-emerald-500' : 'bg-rose-500 animate-pulse'}`}></div>
+                                        <span className="text-xs font-medium text-slate-600">{authReady ? 'Online' : 'Connecting...'}</span>
+                                    </div>
                                     <div className="text-right hidden md:block">
                                         <p className="text-xs font-medium text-slate-500">Logged in as</p>
                                         <p className="text-sm font-bold text-slate-900 leading-none">{currentUser}</p>
@@ -1800,9 +1820,10 @@
                                         </button>
                                         <button 
                                             type="submit" 
-                                            className="flex-1 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 shadow-md shadow-blue-200"
+                                            disabled={!authReady}
+                                            className={`flex-1 py-2.5 text-white rounded-lg text-sm font-medium shadow-md shadow-blue-200 ${authReady ? 'bg-blue-600 hover:bg-blue-700' : 'bg-slate-400 cursor-not-allowed'}`}
                                         >
-                                            {editingTaskId ? 'Update Entry' : 'Save Record'}
+                                            {authReady ? (editingTaskId ? 'Update Entry' : 'Save Record') : 'Connecting...'}
                                         </button>
                                     </div>
                                 </form>
