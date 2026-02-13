@@ -169,6 +169,11 @@
                 invalidReason: ["Already documented in SOP", "Training issue", "Incomplete info", "Duplicate request", "Not an Ops matter"],
                 team: ["T1", "Social Media", "Mentor", "Order Support", "Product Support"],
                 productType: ["Studio", "Move", "Core", "Accessories", "Membership"],
+                disputedProduct: ["Move", "Core", "Membership", "Accessories"],
+                validRequest: ["Yes", "No"],
+                validHip: ["Yes", "No"],
+                emailSent: ["Yes", "No"],
+                subscriptionStatus: ["Active", "Cancelled"],
                 surpriseAndDelightReason: [
                     "Delivery ETA (Within the lead time)", "Customer Ordered Wrong color by mistake", 
                     "Technical issues that was resolved by the normal TS", "Bundle Accessory Delay", 
@@ -616,7 +621,7 @@
                                             
                                             if (field === 'invalidReason' && !isValidNo) return null;
 
-                                            // Audit Module Logic
+                                            // Audit Module
                                             if (field === 'auditModule') return (
                                                 <div key={field} className="space-y-4 pt-2">
                                                     <div className="flex justify-between items-center"><h3 className="text-[10px] font-black text-slate-400 uppercase">Scoring Criteria</h3><Badge color="green">Score: {formData.overallAuditScore || '0'}%</Badge></div>
@@ -638,7 +643,7 @@
                                                 </div>
                                             );
 
-                                            // Correction Module Logic
+                                            // Weekly Quiz Module
                                             if (field === 'correctionModule') return (
                                                 <div key={field} className="space-y-6 pt-2">
                                                     <div className="flex justify-between items-center"><h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Correction Module</h3><Badge color="cyan">AVG: {formData.overallScore || '0.0'}</Badge></div>
@@ -672,7 +677,6 @@
                                                 </div>
                                             );
 
-                                            // HIP dependent dropdown logic (3 Levels)
                                             if (newTaskType === 'hip_request' && field === 'hipProduct') {
                                                 return (
                                                     <div key={field}>
@@ -722,7 +726,12 @@
                                                                 <option value="">Select...</option>
                                                                 {(field === 'associateName' || field === 'associateEmail') && associateList.map(a => <option key={a} value={a}>{a}</option>)}
                                                                 {field === 'mentorName' && ["Noha Radwan", "Rashad Mohamed", "Emad Mohamed"].map(a => <option key={a} value={a}>{a}</option>)}
-                                                                {customOptions[field]?.map(o => <option key={o} value={o}>{o}</option>)}
+                                                                {field === 'resolution' && (
+                                                                    newTaskType === 'pending_subs' ? ['Activated', 'Cancelled'] :
+                                                                    newTaskType === 'disputes' ? ['Pending', 'Lost', 'Won'] :
+                                                                    ['Pending', 'Resolved']
+                                                                ).map(o => <option key={o} value={o}>{o}</option>)}
+                                                                {field !== 'resolution' && customOptions[field]?.map(o => <option key={o} value={o}>{o}</option>)}
                                                                 <option value="ADD_NEW_CUSTOM" className="text-blue-600 font-bold">+ Add New Item...</option>
                                                             </select>
                                                             {customInputTarget === field && (
