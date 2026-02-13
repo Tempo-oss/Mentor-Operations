@@ -64,11 +64,11 @@
         const Footprints = (props) => <Icon {...props} path={<><path d="M4 16v-2.38C4 11.5 2.97 10.5 3 8c.03-2.72 1.49-6 4.5-6C9.37 2 11 3.8 11 8c0 2.25-.79 4.33-2 6"/><path d="M20 20v-2.38c0-2.12 1.03-3.12 1-5.62-.03-2.72-1.49-6-4.5-6C14.63 6 13 7.8 13 12c0 2.25.79 4.33 2 6"/><path d="M16 17h4"/><path d="M4 13h4"/></>} />;
         const Gift = (props) => <Icon {...props} path={<><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5"/></>} />;
         const UserCheck = (props) => <Icon {...props} path={<><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/></>} />;
+        const FileText = (props) => <Icon {...props} path={<><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></>} />;
         const Search = (props) => <Icon {...props} path={<><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></>} />;
         const CheckCircle2 = (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></>} />;
         const Clock = (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></>} />;
         const Filter = (props) => <Icon {...props} path={<><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></>} />;
-        const FileText = (props) => <Icon {...props} path={<><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></>} />;
         const User = (props) => <Icon {...props} path={<><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></>} />;
         const LogOut = (props) => <Icon {...props} path={<><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></>} />;
         const ClipboardList = (props) => <Icon {...props} path={<><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></>} />;
@@ -76,18 +76,19 @@
         const Download = (props) => <Icon {...props} path={<><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></>} />;
         const Edit = (props) => <Icon {...props} path={<><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></>} />;
         const Dice = (props) => <Icon {...props} path={<><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><circle cx="15.5" cy="15.5" r="1.5"/><circle cx="15.5" cy="8.5" r="1.5"/><circle cx="8.5" cy="15.5" r="1.5"/><circle cx="12" cy="12" r="1.5"/></>} />;
+        const Plus = (props) => <Icon {...props} path={<><path d="M5 12h14"/><path d="M12 5v14"/></>} />;
 
         // --- Static Data ---
         const mentorList = [ "Noha Radwan", "Rashad Mohamed", "Emad Mohamed", "Mohamed Mounir" ];
         const associateList = [ "Ariath Piol", "Job James", "Lina Hesham", "Mohab Magdy", "Marwa Ahmed", "Ramadan Philip", "Aida Clement", "Hassan Khallaf", "Nada Ashraf", "Ruben Joseph", "Esraa Tarek Eroq", "Ahmed Abdelghany", "Nour Ayman", "Ashraf Essam", "Hala Ayman", "Rania Mohamed", "Salma Ahmed", "Marwan Hassan", "Osama M. Adam", "Marwan Zakaria", "Shahd Emad", "Ahmed Nasser abdelhakim" ];
         
         const auditAttributes = [
-            { id: 'responsiveness', label: 'Responsiveness', weight: 10, desc: 'Measures how promptly and effectively the mentor responds.' },
-            { id: 'professionalism', label: 'Professionalism', weight: 10, desc: 'Evaluates conduct, tone, and ability to maintain respectful interactions.' },
-            { id: 'clarity', label: 'Clarity', weight: 20, desc: 'Assess ability to explain concepts/instructions clearly.' },
-            { id: 'workflow', label: 'Workflow', weight: 20, desc: 'Reviews how well the mentor followed the correct workflow.' },
-            { id: 'documentation', label: 'Documentation', weight: 10, desc: 'Examines quality and consistency of notes and updates.' },
-            { id: 'resolution', label: 'Resolution', weight: 30, desc: 'Evaluates ability to help resolve issues and close loops.' }
+            { id: 'responsiveness', label: 'Responsiveness', weight: 10, desc: 'Measures how promptly and effectively the mentor responds to queries, guidance requests, or escalations.' },
+            { id: 'professionalism', label: 'Professionalism', weight: 10, desc: 'Evaluates the mentor’s conduct, tone, and ability to maintain respectful, constructive, and supportive interactions.' },
+            { id: 'clarity', label: 'Clarity', weight: 20, desc: 'Assesses the mentor’s ability to explain concepts, instructions, or feedback in a clear, concise, and understandable manner.' },
+            { id: 'workflow', label: 'Workflow', weight: 20, desc: 'Reviews how well the mentor follows the correct workflow.' },
+            { id: 'documentation', label: 'Documentation', weight: 10, desc: 'Examines the quality and consistency of documentation provided by the mentor, including notes, guides, or process updates.' },
+            { id: 'resolution', label: 'Resolution', weight: 30, desc: 'Evaluates the mentor’s ability to help resolve issues, provide effective solutions, and close feedback loops efficiently.' }
         ];
 
         const quizModules = [
@@ -184,6 +185,16 @@
                 ]
             });
 
+            // Logs Filters State
+            const [showLogFilters, setShowLogFilters] = useState(false);
+            const [logFilters, setLogFilters] = useState({ category: 'all', agent: 'all', startDate: '', endDate: '' });
+
+            // Pagination & Reports
+            const [currentPage, setCurrentPage] = useState(1);
+            const itemsPerPage = 10;
+            const [reportFilters, setReportFilters] = useState({ category: 'all', agent: 'all', startDate: '', endDate: '' });
+            const [generatedReport, setGeneratedReport] = useState(null);
+
             const [customInputTarget, setCustomInputTarget] = useState(null);
 
             const fetchTasks = async () => {
@@ -207,47 +218,28 @@
                 const missingFields = [];
 
                 requiredFields.forEach(field => {
-                    // Logic for modules and special cases
                     if (field === 'correctionModule') {
                         const scores = formData.quizScores || {};
-                        quizModules.forEach(m => {
-                            if (!scores[m.id]) missingFields.push(`Quiz Rating: ${m.title}`);
-                        });
+                        quizModules.forEach(m => { if (!scores[m.id]) missingFields.push(`Quiz Rating: ${m.title}`); });
                         return;
                     }
-
                     if (field === 'auditModule') {
                         const scores = formData.auditScores || {};
-                        auditAttributes.forEach(a => {
-                            if (!scores[a.id]) missingFields.push(`Audit Attribute: ${a.label}`);
-                        });
+                        auditAttributes.forEach(a => { if (!scores[a.id]) missingFields.push(`Audit Attribute: ${a.label}`); });
                         return;
                     }
-                    
-                    // Logic for conditional invalidReason
                     if (field === 'invalidReason') {
                         const isFwInvalid = newTaskType === 'floorwalker' && formData.validRequest === 'No';
                         const isHipInvalid = newTaskType === 'hip_request' && formData.validHip === 'No';
-                        if ((isFwInvalid || isHipInvalid) && !formData[field]) {
-                            missingFields.push("Reason for Invalid Request");
-                        }
+                        if ((isFwInvalid || isHipInvalid) && !formData[field]) missingFields.push("Reason for Invalid Request");
                         return;
                     }
-
-                    // Logic for HIPAA hierarchy validation
-                    if (newTaskType === 'hip_request') {
-                        if (['hipProduct', 'hipCategory', 'hipRequestType'].includes(field) && !formData[field]) {
-                            missingFields.push(field.replace('hip', 'HIP ').replace(/([A-Z])/g, ' $1'));
-                        }
-                        // Continue normal validation for common fields like ticketLink
+                    if (newTaskType === 'hip_request' && ['hipProduct', 'hipCategory', 'hipRequestType'].includes(field) && !formData[field]) {
+                        missingFields.push(field.replace('hip', 'HIP ').replace(/([A-Z])/g, ' $1'));
+                        return;
                     }
-
-                    // Default validation for basic inputs and dropdowns
                     if (['hipProduct', 'hipCategory', 'hipRequestType', 'correctionModule', 'auditModule', 'invalidReason'].includes(field)) return;
-
-                    if (!formData[field] || formData[field].toString().trim() === '') {
-                        missingFields.push(field.replace(/([A-Z])/g, ' $1').trim());
-                    }
+                    if (!formData[field] || formData[field].toString().trim() === '') missingFields.push(field.replace(/([A-Z])/g, ' $1').trim());
                 });
 
                 if (missingFields.length > 0) {
@@ -255,9 +247,7 @@
                     return;
                 }
 
-                // --- SAVE LOGIC ---
                 let status = formData.status || 'Pending';
-                
                 if (!editingTaskId) {
                     if (newTaskType === 'disputes' && (formData.resolution === 'Won' || formData.resolution === 'Lost')) status = 'Resolved';
                     else if (newTaskType === 'pending_subs' && (formData.resolution === 'Activated' || formData.resolution === 'Cancelled')) status = 'Resolved';
@@ -297,20 +287,13 @@
             };
 
             const handleInputChange = (field, value) => {
-                if (value === 'ADD_NEW_CUSTOM') {
-                    setCustomInputTarget(field);
-                } else {
-                    setFormData(prev => ({ ...prev, [field]: value }));
-                    setCustomInputTarget(null);
-                }
+                if (value === 'ADD_NEW_CUSTOM') setCustomInputTarget(field);
+                else { setFormData(prev => ({ ...prev, [field]: value })); setCustomInputTarget(null); }
             };
 
             const handleAddCustomValue = (field, newValue) => {
                 if (!newValue.trim()) return;
-                setCustomOptions(prev => ({
-                    ...prev,
-                    [field]: [...(prev[field] || []), newValue]
-                }));
+                setCustomOptions(prev => ({ ...prev, [field]: [...(prev[field] || []), newValue] }));
                 handleInputChange(field, newValue);
             };
 
@@ -333,12 +316,7 @@
                 const hipLogs = tasks.filter(t => t.type === 'hip_request');
                 if (hipLogs.length === 0) { alert("No HIP logs available to audit yet."); return; }
                 const random = hipLogs[Math.floor(Math.random() * hipLogs.length)];
-                setFormData(prev => ({ 
-                    ...prev, 
-                    hipLogReference: random.id,
-                    auditedTicket: random.details.ticketLink,
-                    mentorName: random.agent
-                }));
+                setFormData(prev => ({ ...prev, hipLogReference: random.id, auditedTicket: random.details.ticketLink, mentorName: random.agent }));
             };
 
             const stats = useMemo(() => ({
@@ -348,10 +326,35 @@
                 byType: Object.keys(categories).reduce((acc, key) => { acc[key] = tasks.filter(t => t.type === key).length; return acc; }, {})
             }), [tasks]);
 
-            const filteredLogs = tasks.filter(t => 
-                (categories[t.type]?.label || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
-                (t.agent || '').toLowerCase().includes(searchTerm.toLowerCase())
-            );
+            const filteredLogs = tasks.filter(t => {
+                const matchesSearch = (categories[t.type]?.label || '').toLowerCase().includes(searchTerm.toLowerCase()) || (t.agent || '').toLowerCase().includes(searchTerm.toLowerCase());
+                const matchesCategory = logFilters.category === 'all' || t.type === logFilters.category;
+                const matchesAgent = logFilters.agent === 'all' || t.agent === logFilters.agent;
+                let matchesDate = true;
+                if (logFilters.startDate) matchesDate = matchesDate && new Date(t.date) >= new Date(logFilters.startDate);
+                if (logFilters.endDate) { const end = new Date(logFilters.endDate); end.setHours(23, 59, 59); matchesDate = matchesDate && new Date(t.date) <= end; }
+                return matchesSearch && matchesCategory && matchesAgent && matchesDate;
+            });
+
+            const paginatedLogs = filteredLogs.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+            const handleGenerateReport = () => {
+                let filtered = tasks;
+                if (reportFilters.category !== 'all') filtered = filtered.filter(t => t.type === reportFilters.category);
+                if (reportFilters.agent !== 'all') filtered = filtered.filter(t => t.agent === reportFilters.agent);
+                if (reportFilters.startDate) filtered = filtered.filter(t => new Date(t.date) >= new Date(reportFilters.startDate));
+                if (reportFilters.endDate) { const end = new Date(reportFilters.endDate); end.setHours(23,59,59); filtered = filtered.filter(t => new Date(t.date) <= end); }
+                setGeneratedReport(filtered);
+            };
+
+            const downloadCSV = () => {
+                if (!generatedReport) return;
+                const headers = ['ID', 'Type', 'Owner', 'Status', 'Date', 'Details'];
+                const csv = [headers.join(','), ...generatedReport.map(t => [t.id, t.type, t.agent, t.status, new Date(t.date).toLocaleDateString(), JSON.stringify(t.details).replace(/,/g, ';')].join(','))].join('\n');
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a'); a.href = url; a.download = 'mentor_ops_report.csv'; a.click();
+            };
 
             if (!currentUser) {
                 return (
@@ -381,7 +384,7 @@
                                 <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Mentor Ops</span>
                             </div>
                             <nav className="flex gap-1">
-                                {['dashboard', 'logs'].map(tab => (
+                                {['dashboard', 'logs', 'reports'].map(tab => (
                                     <button key={tab} onClick={() => setActiveTab(tab)} className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${activeTab === tab ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:bg-slate-50'}`}>
                                         {tab.toUpperCase()}
                                     </button>
@@ -436,10 +439,39 @@
                                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                                         <input type="text" placeholder="Search logs..." className="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                                     </div>
-                                    <button onClick={() => { setEditingTaskId(null); setFormData({}); setIsFormOpen(true); }} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold shadow-lg shadow-blue-100 hover:bg-blue-700">
-                                        <Plus className="h-4 w-4" /> New Entry
-                                    </button>
+                                    <div className="flex gap-2">
+                                        <button onClick={() => setShowLogFilters(!showLogFilters)} className={`flex items-center gap-2 px-3 py-2 border rounded-lg text-sm font-medium transition-colors ${showLogFilters ? 'bg-slate-100 border-blue-200 text-blue-700' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'}`}>
+                                            <Filter className="h-4 w-4" /> Filters
+                                        </button>
+                                        <button onClick={() => { setEditingTaskId(null); setFormData({}); setIsFormOpen(true); }} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold shadow-lg shadow-blue-100 hover:bg-blue-700">
+                                            <Plus className="h-4 w-4" /> New Entry
+                                        </button>
+                                    </div>
                                 </div>
+
+                                {showLogFilters && (
+                                    <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm grid grid-cols-1 md:grid-cols-4 gap-4 animate-fade-in">
+                                        <div><label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Category</label>
+                                            <select className="w-full p-2 bg-slate-50 border rounded-lg text-xs" value={logFilters.category} onChange={e => setLogFilters(f => ({...f, category: e.target.value}))}>
+                                                <option value="all">All Types</option>
+                                                {Object.entries(categories).map(([k, c]) => <option key={k} value={k}>{c.label}</option>)}
+                                            </select>
+                                        </div>
+                                        <div><label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Owner</label>
+                                            <select className="w-full p-2 bg-slate-50 border rounded-lg text-xs" value={logFilters.agent} onChange={e => setLogFilters(f => ({...f, agent: e.target.value}))}>
+                                                <option value="all">All Mentors</option>
+                                                {mentorList.map(m => <option key={m} value={m}>{m}</option>)}
+                                            </select>
+                                        </div>
+                                        <div><label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Start Date</label>
+                                            <input type="date" className="w-full p-2 bg-slate-50 border rounded-lg text-xs" value={logFilters.startDate} onChange={e => setLogFilters(f => ({...f, startDate: e.target.value}))} />
+                                        </div>
+                                        <div><label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">End Date</label>
+                                            <input type="date" className="w-full p-2 bg-slate-50 border rounded-lg text-xs" value={logFilters.endDate} onChange={e => setLogFilters(f => ({...f, endDate: e.target.value}))} />
+                                        </div>
+                                    </div>
+                                )}
+
                                 <Card className="overflow-hidden">
                                     <table className="w-full text-left text-sm">
                                         <thead className="bg-slate-50 border-b border-slate-200">
@@ -452,7 +484,7 @@
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">
-                                            {filteredLogs.map(task => (
+                                            {paginatedLogs.map(task => (
                                                 <tr key={task.id} className="hover:bg-slate-50 transition-colors">
                                                     <td className="px-6 py-4">
                                                         <div className="flex items-center gap-3">
@@ -476,7 +508,81 @@
                                             ))}
                                         </tbody>
                                     </table>
+                                    <div className="p-4 bg-slate-50 flex justify-between items-center text-xs font-bold text-slate-500">
+                                        <span>Showing {(currentPage-1)*itemsPerPage+1} to {Math.min(currentPage*itemsPerPage, filteredLogs.length)} of {filteredLogs.length}</span>
+                                        <div className="flex gap-2">
+                                            <button disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)} className="px-3 py-1 bg-white border rounded hover:bg-slate-100 disabled:opacity-50">Prev</button>
+                                            <button disabled={currentPage * itemsPerPage >= filteredLogs.length} onClick={() => setCurrentPage(p => p + 1)} className="px-3 py-1 bg-white border rounded hover:bg-slate-100 disabled:opacity-50">Next</button>
+                                        </div>
+                                    </div>
                                 </Card>
+                            </div>
+                        )}
+
+                        {activeTab === 'reports' && (
+                            <div className="space-y-6 animate-fade-in">
+                                <Card className="p-6 space-y-4">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <div className="h-8 w-8 bg-blue-100 rounded-lg flex items-center justify-center"><Filter className="h-5 w-5 text-blue-600" /></div>
+                                        <h2 className="text-lg font-bold">Report Generator</h2>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                        <div><label className="text-[10px] font-bold text-slate-400 uppercase">Category</label>
+                                            <select className="w-full p-2.5 bg-slate-50 border rounded-lg text-sm outline-none" value={reportFilters.category} onChange={e => setReportFilters(f => ({ ...f, category: e.target.value }))}>
+                                                <option value="all">All Types</option>
+                                                {Object.entries(categories).map(([k, c]) => <option key={k} value={k}>{c.label}</option>)}
+                                            </select>
+                                        </div>
+                                        <div><label className="text-[10px] font-bold text-slate-400 uppercase">Mentor</label>
+                                            <select className="w-full p-2.5 bg-slate-50 border rounded-lg text-sm outline-none" value={reportFilters.agent} onChange={e => setReportFilters(f => ({ ...f, agent: e.target.value }))}>
+                                                <option value="all">All Mentors</option>
+                                                {mentorList.map(m => <option key={m} value={m}>{m}</option>)}
+                                            </select>
+                                        </div>
+                                        <div><label className="text-[10px] font-bold text-slate-400 uppercase">Start Date</label>
+                                            <input type="date" className="w-full p-2.5 bg-slate-50 border rounded-lg text-sm outline-none" value={reportFilters.startDate} onChange={e => setReportFilters(f => ({ ...f, startDate: e.target.value }))} />
+                                        </div>
+                                        <div><label className="text-[10px] font-bold text-slate-400 uppercase">End Date</label>
+                                            <input type="date" className="w-full p-2.5 bg-slate-50 border rounded-lg text-sm outline-none" value={reportFilters.endDate} onChange={e => setReportFilters(f => ({ ...f, endDate: e.target.value }))} />
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-end pt-2">
+                                        <button onClick={handleGenerateReport} className="px-6 py-2.5 bg-slate-900 text-white font-bold rounded-lg hover:bg-slate-800 shadow-lg">GENERATE REPORT</button>
+                                    </div>
+                                </Card>
+                                {generatedReport && (
+                                    <div className="space-y-4 animate-fade-in">
+                                        <div className="flex justify-between items-center">
+                                            <h3 className="font-bold text-lg">Results ({generatedReport.length})</h3>
+                                            <button onClick={downloadCSV} className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 font-bold rounded-lg text-sm hover:bg-slate-50">
+                                                <Download className="h-4 w-4" /> Export CSV
+                                            </button>
+                                        </div>
+                                        <Card className="overflow-x-auto">
+                                            <table className="w-full text-left text-sm">
+                                                <thead className="bg-slate-50 border-b">
+                                                    <tr>
+                                                        <th className="px-6 py-3">Type</th>
+                                                        <th className="px-6 py-3">Agent</th>
+                                                        <th className="px-6 py-3">Date</th>
+                                                        <th className="px-6 py-3 text-right">Status</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y">
+                                                    {generatedReport.map(r => (
+                                                        <tr key={r.id} className="hover:bg-slate-50">
+                                                            <td className="px-6 py-4 font-medium">{categories[r.type]?.label}</td>
+                                                            <td className="px-6 py-4">{r.agent}</td>
+                                                            <td className="px-6 py-4 text-slate-400">{new Date(r.date).toLocaleDateString()}</td>
+                                                            <td className="px-6 py-4 text-right"><Badge color={r.status === 'Pending' ? 'amber' : 'green'}>{r.status}</Badge></td>
+                                                        </tr>
+                                                    ))}
+                                                    {generatedReport.length === 0 && <tr><td colSpan="4" className="p-8 text-center text-slate-400">No records found matching filters.</td></tr>}
+                                                </tbody>
+                                            </table>
+                                        </Card>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </main>
@@ -532,7 +638,7 @@
                                                 </div>
                                             );
 
-                                            // Correction Module (Weekly Quiz) Logic
+                                            // Correction Module Logic
                                             if (field === 'correctionModule') return (
                                                 <div key={field} className="space-y-6 pt-2">
                                                     <div className="flex justify-between items-center"><h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Correction Module</h3><Badge color="cyan">AVG: {formData.overallScore || '0.0'}</Badge></div>
@@ -566,14 +672,12 @@
                                                 </div>
                                             );
 
-                                            // HIP dependent dropdown logic
+                                            // HIP dependent dropdown logic (3 Levels)
                                             if (newTaskType === 'hip_request' && field === 'hipProduct') {
                                                 return (
                                                     <div key={field}>
                                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Product</label>
-                                                        <select className="w-full p-3 bg-white border border-slate-200 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500" 
-                                                            value={formData.hipProduct || ''} 
-                                                            onChange={e => setFormData(prev => ({ ...prev, hipProduct: e.target.value, hipCategory: '', hipRequestType: '' }))}>
+                                                        <select className="w-full p-3 bg-white border border-slate-200 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500" value={formData.hipProduct || ''} onChange={e => setFormData(prev => ({ ...prev, hipProduct: e.target.value, hipCategory: '', hipRequestType: '' }))}>
                                                             <option value="">Select Product...</option>
                                                             {Object.keys(HIP_HIERARCHY).map(k => <option key={k} value={k}>{k}</option>)}
                                                         </select>
@@ -582,16 +686,13 @@
                                             }
 
                                             if (newTaskType === 'hip_request' && field === 'hipCategory') {
-                                                const options = formData.hipProduct ? Object.keys(HIP_HIERARCHY[formData.hipProduct] || {}) : [];
+                                                const catOptions = formData.hipProduct ? Object.keys(HIP_HIERARCHY[formData.hipProduct] || {}) : [];
                                                 return (
                                                     <div key={field}>
                                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Category</label>
-                                                        <select className="w-full p-3 bg-white border border-slate-200 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500" 
-                                                            disabled={!formData.hipProduct}
-                                                            value={formData.hipCategory || ''} 
-                                                            onChange={e => setFormData(prev => ({ ...prev, hipCategory: e.target.value, hipRequestType: '' }))}>
+                                                        <select className="w-full p-3 bg-white border border-slate-200 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500" disabled={!formData.hipProduct} value={formData.hipCategory || ''} onChange={e => setFormData(prev => ({ ...prev, hipCategory: e.target.value, hipRequestType: '' }))}>
                                                             <option value="">Select Category...</option>
-                                                            {options.map(o => <option key={o} value={o}>{o}</option>)}
+                                                            {catOptions.map(c => <option key={c} value={c}>{c}</option>)}
                                                         </select>
                                                     </div>
                                                 );
@@ -602,10 +703,7 @@
                                                 return (
                                                     <div key={field}>
                                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Request Type</label>
-                                                        <select className="w-full p-3 bg-white border border-slate-200 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500" 
-                                                            disabled={!formData.hipCategory}
-                                                            value={formData.hipRequestType || ''} 
-                                                            onChange={e => handleInputChange(field, e.target.value)}>
+                                                        <select className="w-full p-3 bg-white border border-slate-200 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500" disabled={!formData.hipCategory} value={formData.hipRequestType || ''} onChange={e => handleInputChange(field, e.target.value)}>
                                                             <option value="">Select Request Type...</option>
                                                             {options.map(o => <option key={o} value={o}>{o}</option>)}
                                                         </select>
@@ -613,7 +711,7 @@
                                                 );
                                             }
 
-                                            const isDropdown = ['associateName', 'mentorName', 'team', 'productType', 'surpriseAndDelightType', 'resolution', 'pendingReason', 'disputeReason', 'reasonForSupport', 'requestType', 'validHip', 'validRequest', 'subscriptionStatus', 'emailSent', 'disputedProduct', 'invalidReason', 'surpriseAndDelightReason'].includes(field);
+                                            const isDropdown = ['associateName', 'associateEmail', 'mentorName', 'team', 'productType', 'surpriseAndDelightType', 'resolution', 'pendingReason', 'disputeReason', 'reasonForSupport', 'requestType', 'validHip', 'validRequest', 'subscriptionStatus', 'emailSent', 'disputedProduct', 'invalidReason', 'surpriseAndDelightReason'].includes(field);
                                             
                                             return (
                                                 <div key={field}>
@@ -622,7 +720,7 @@
                                                         <div className="space-y-2">
                                                             <select className="w-full p-3 bg-white border border-slate-200 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500" value={formData[field] || ''} onChange={e => handleInputChange(field, e.target.value)}>
                                                                 <option value="">Select...</option>
-                                                                {field === 'associateName' && associateList.map(a => <option key={a} value={a}>{a}</option>)}
+                                                                {(field === 'associateName' || field === 'associateEmail') && associateList.map(a => <option key={a} value={a}>{a}</option>)}
                                                                 {field === 'mentorName' && ["Noha Radwan", "Rashad Mohamed", "Emad Mohamed"].map(a => <option key={a} value={a}>{a}</option>)}
                                                                 {customOptions[field]?.map(o => <option key={o} value={o}>{o}</option>)}
                                                                 <option value="ADD_NEW_CUSTOM" className="text-blue-600 font-bold">+ Add New Item...</option>
