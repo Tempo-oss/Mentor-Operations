@@ -112,27 +112,22 @@
             const [tasks, setTasks] = useState([]);
             const [connectionStatus, setConnectionStatus] = useState('connecting');
             
-            // UI State
             const [isFormOpen, setIsFormOpen] = useState(false);
             const [searchTerm, setSearchTerm] = useState('');
             const [editingTaskId, setEditingTaskId] = useState(null);
             const [newTaskType, setNewTaskType] = useState('disputes');
             const [formData, setFormData] = useState({});
             
-            // Reports & Pagination
             const [currentPage, setCurrentPage] = useState(1);
             const itemsPerPage = 10;
             const [reportFilters, setReportFilters] = useState({ category: 'all', agent: 'all', startDate: '', endDate: '' });
             const [generatedReport, setGeneratedReport] = useState(null);
 
-            // Dynamic Lists
-            const [pendingReasonsList, setPendingReasonsList] = useState(["Not delivered", "Delivered but not updated.", "Returned or canceled order"]);
-            const [disputeReasonsList, setDisputeReasonsList] = useState(["Subscription claim", "Unauthorized purchase", "Defective product", "Credit not processed"]);
-            const [fwReasonsList, setFwReasonsList] = useState(["SOP Guidance", "Process education", "System Navigation"]);
-            const [fwRequestTypesList, setFwRequestTypesList] = useState(["Membership", "Billing", "Account Access", "Technical Support", "Order Support"]);
-            const [customInputs, setCustomInputs] = useState({ pending: '', dispute: '', fwReason: '', fwType: '' });
+            const [pendingReasonsList] = useState(["Not delivered", "Delivered but not updated.", "Returned or canceled order"]);
+            const [disputeReasonsList] = useState(["Subscription claim", "Unauthorized purchase", "Defective product", "Credit not processed"]);
+            const [fwReasonsList] = useState(["SOP Guidance", "Process education", "System Navigation"]);
+            const [fwRequestTypesList] = useState(["Membership", "Billing", "Account Access", "Technical Support", "Order Support"]);
 
-            // Fetch & Sync
             const fetchTasks = async () => {
                 setConnectionStatus('connecting');
                 const { data, error } = await supabase.from('tasks').select('*').order('date', { ascending: false });
@@ -146,12 +141,10 @@
                 return () => supabase.removeChannel(channel);
             }, []);
 
-            // Handlers
             const handleAddTask = async (e) => {
                 e.preventDefault();
                 let status = formData.status || 'Pending';
                 
-                // Smart Resolution Mapping
                 if (!editingTaskId) {
                     if (newTaskType === 'disputes' && (formData.resolution === 'Won' || formData.resolution === 'Lost')) status = 'Resolved';
                     else if (newTaskType === 'pending_subs' && (formData.resolution === 'Activated' || formData.resolution === 'Cancelled')) status = 'Resolved';
@@ -164,12 +157,12 @@
                     if (newTaskType === 'floorwalker') details.mentorName = currentUser;
                 }
 
+                // Construction without 'priority' field to avoid Supabase schema errors
                 const taskData = {
                     type: newTaskType,
                     title: `${categories[newTaskType].label} Log`,
                     agent: currentUser,
                     status,
-                    priority: 'Medium',
                     date: editingTaskId ? undefined : new Date().toISOString(),
                     details
                 };
@@ -484,7 +477,6 @@
                                         })}
                                     </div>
 
-                                    {/* Global Status (only for certain types) */}
                                     {!['weekly_quiz', 'hip_request', 'duplicate_iap'].includes(newTaskType) && (
                                         <div><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Record Status</label>
                                             <select className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm font-bold" value={formData.status || 'Pending'} onChange={e => handleInputChange('status', e.target.value)}>
