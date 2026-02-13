@@ -252,7 +252,8 @@
                         await supabase.from('users_registry').insert([initial]);
                         setUserProfile(initial);
                     } else {
-                        alert("Access Denied: Unregistered email.");
+                        // Display error in UI instead of silent fail
+                        setUserProfile({ error: true, message: "Email not enabled in project registry." });
                         supabase.auth.signOut();
                     }
                 }
@@ -289,7 +290,7 @@
             };
 
             useEffect(() => {
-                if (userProfile) fetchData();
+                if (userProfile && !userProfile.error) fetchData();
                 const channel = supabase.channel('tasks-channel').on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, fetchData).subscribe();
                 return () => supabase.removeChannel(channel);
             }, [userProfile]);
@@ -352,7 +353,17 @@
             };
 
             const handleLogin = async () => {
-                await supabase.auth.signInWithOAuth({ provider: 'google', options: { queryParams: { prompt: 'select_account' } } });
+                const { error } = await supabase.auth.signInWithOAuth({ 
+                    provider: 'google', 
+                    options: { queryParams: { prompt: 'select_account' } } 
+                });
+                if (error) {
+                    if (error.message.includes("not enabled")) {
+                        alert("ERROR: Google Provider is not enabled in your Supabase Dashboard. Go to Authentication > Providers > Google and enable it.");
+                    } else {
+                        alert(error.message);
+                    }
+                }
             };
 
             const handleAddUser = async () => {
@@ -413,9 +424,10 @@
 
             const downloadCSV = () => {
                 if (!generatedReport) return;
-                const csv = [selectedReportColumns.map(c => c.toUpperCase()).join(','), ...generatedReport.map(t => {
-                    return selectedReportColumns.map(c => {
-                        const val = ['id','type','agent','status','date'].includes(c) ? (c === 'date' ? new Date(t[c]).toLocaleDateString() : t[c]) : (t.details?.[c] || 'N/A');
+                const headers = selectedReportColumns;
+                const csv = [headers.map(h => h.toUpperCase()).join(','), ...generatedReport.map(t => {
+                    return headers.map(h => {
+                        const val = ['id', 'type', 'agent', 'status', 'date'].includes(h) ? (h === 'date' ? new Date(t[h]).toLocaleDateString() : t[h]) : (t.details?.[h] || 'N/A');
                         return `"${val.toString().replace(/"/g, '""')}"`;
                     }).join(',');
                 })].join('\n');
@@ -431,15 +443,28 @@
             // --- View Logic ---
             if (!session) {
                 return (
-                    <div className="fixed inset-0 bg-slate-900 z-50 flex items-center justify-center p-4">
-                        <Card className="p-10 max-w-md w-full text-center">
+                    <div className="fixed inset-0 bg-slate-900 z-50 flex items-center justify-center p-4 text-center">
+                        <Card className="p-10 max-w-md w-full">
                             <h1 className="text-4xl font-black tracking-tighter mb-2 italic">TEMPO</h1>
                             <p className="text-slate-500 mb-8 font-medium uppercase text-[10px] tracking-widest">Mentor Operations Center</p>
                             <button onClick={handleLogin} className="w-full flex items-center justify-center gap-3 py-4 bg-white border border-slate-200 rounded-2xl shadow-xl hover:bg-slate-50 transition-all font-bold">
                                 <img src="https://www.google.com/favicon.ico" className="h-5 w-5" />
                                 Sign in with Google
                             </button>
+                            <p className="mt-4 text-[10px] text-slate-400">Restricted to @tempo.fit accounts</p>
                         </Card>
+                    </div>
+                );
+            }
+
+            if (userProfile?.error) {
+                return (
+                    <div className="fixed inset-0 bg-slate-900 z-50 flex items-center justify-center p-4 text-center text-white">
+                        <div className="max-w-md">
+                            <h2 className="text-2xl font-bold mb-4">Unauthorized</h2>
+                            <p className="mb-6">{userProfile.message}</p>
+                            <button onClick={() => supabase.auth.signOut()} className="px-6 py-2 bg-blue-600 rounded-lg font-bold">Logout</button>
+                        </div>
                     </div>
                 );
             }
@@ -500,7 +525,7 @@
                                 <div className="flex justify-between bg-white p-4 rounded-xl border">
                                     <div className="relative flex-1 max-w-md">
                                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                                        <input type="text" placeholder="Search logs..." className="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                                        <input type="text" placeholder="Search..." className="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                                     </div>
                                     <button onClick={() => { setEditingTaskId(null); setFormData({}); setIsFormOpen(true); }} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-black uppercase">+ NEW ENTRY</button>
                                 </div>
@@ -580,8 +605,8 @@
                                 <Card className="p-8">
                                     <div className="flex items-center gap-3 mb-6"><Shield className="h-6 w-6 text-indigo-600" /><h2 className="text-xl font-black uppercase">Admin Control Panel</h2></div>
                                     <div className="flex gap-4 mb-10 bg-slate-50 p-6 rounded-2xl border border-dashed">
-                                        <input type="email" placeholder="tempo.fit email" className="flex-1 p-3 border rounded-xl outline-none" onChange={e => setFormData(p => ({...p, newEmail: e.target.value}))} />
-                                        <select className="p-3 border rounded-xl outline-none" onChange={e => setFormData(p => ({...p, newRole: e.target.value}))}><option value="Mentor">Mentor</option><option value="Admin">Admin</option></select>
+                                        <input type="email" placeholder="tempo.fit email" className="flex-1 p-3 border rounded-xl outline-none" onChange={e => setFormData(p => ({...p, newEmail: e.target.value}))} value={formData.newEmail || ''} />
+                                        <select className="p-3 border rounded-xl outline-none" onChange={e => setFormData(p => ({...p, newRole: e.target.value}))} value={formData.newRole || 'Mentor'}><option value="Mentor">Mentor</option><option value="Admin">Admin</option></select>
                                         <button onClick={handleAddUser} className="px-8 py-3 bg-indigo-600 text-white rounded-xl font-black uppercase text-xs">Register User</button>
                                     </div>
                                     <div className="overflow-x-auto">
