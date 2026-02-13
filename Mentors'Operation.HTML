@@ -3,10 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tempo MentorOps | Full System Integration</title>
+    <title>Tempo MentorOps | Integrated System</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        tempo: {
+                            blue: '#2563EB',
+                            dark: '#111827',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     
     <!-- React & ReactDOM -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
@@ -26,12 +41,7 @@
         
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #F9FAFB;
-        }
-
-        :root {
-            --tempo-blue: #2563EB;
-            --tempo-dark: #111827;
+            transition: background-color 0.3s ease;
         }
 
         .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
@@ -40,17 +50,16 @@
         @keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
         
         ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .dark ::-webkit-scrollbar-thumb { background: #475569; }
 
         canvas {
             max-width: 100% !important;
-            height: auto !important;
         }
     </style>
 </head>
-<body class="text-slate-900">
+<body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
     <div id="root"></div>
 
     <script type="text/babel">
@@ -64,7 +73,7 @@
         // --- Core UI Components ---
         function Card({ children, className = "" }) {
             return (
-                <div className={`bg-white rounded-xl border border-slate-200 shadow-sm ${className}`}>
+                <div className={`bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm ${className}`}>
                     {children}
                 </div>
             );
@@ -72,16 +81,16 @@
 
         function Badge({ children, color = "slate" }) {
             const colors = { 
-                slate: "bg-slate-100 text-slate-700", 
-                red: "bg-rose-100 text-rose-700", 
-                blue: "bg-blue-100 text-blue-700", 
-                green: "bg-emerald-100 text-emerald-700", 
-                amber: "bg-amber-100 text-amber-700", 
-                teal: "bg-teal-100 text-teal-700", 
-                cyan: "bg-cyan-100 text-cyan-700", 
-                purple: "bg-purple-100 text-purple-700", 
-                emerald: "bg-emerald-100 text-emerald-700",
-                indigo: "bg-indigo-100 text-indigo-700"
+                slate: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300", 
+                red: "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400", 
+                blue: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400", 
+                green: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400", 
+                amber: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400", 
+                teal: "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400", 
+                cyan: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400", 
+                purple: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400", 
+                emerald: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+                indigo: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400"
             };
             const selectedColor = colors[color] || colors.slate;
             return (
@@ -116,8 +125,11 @@
         const Filter = (props) => <Icon {...props} path={<React.Fragment><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></React.Fragment>} />;
         const CheckCircle2 = (props) => <Icon {...props} path={<React.Fragment><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></React.Fragment>} />;
         const Clock = (props) => <Icon {...props} path={<React.Fragment><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></React.Fragment>} />;
+        const Moon = (props) => <Icon {...props} path={<><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></>} />;
+        const Sun = (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></>} />;
+        const SettingsIcon = (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></>} />;
 
-        // --- Configuration & Data ---
+        // --- Constants ---
         const associateList = [ "Ariath Piol", "Job James", "Lina Hesham", "Mohab Magdy", "Marwa Ahmed", "Ramadan Philip", "Aida Clement", "Hassan Khallaf", "Nada Ashraf", "Ruben Joseph", "Esraa Tarek Eroq", "Ahmed Abdelghany", "Nour Ayman", "Ashraf Essam", "Hala Ayman", "Rania Mohamed", "Salma Ahmed", "Marwan Hassan", "Osama M. Adam", "Marwan Zakaria", "Shahd Emad", "Ahmed Nasser abdelhakim" ];
         const mentorList = [ "Noha Radwan", "Rashad Mohamed", "Emad Mohamed", "Mohamed Mounir" ];
         const defaultTabs = ['dashboard', 'logs', 'analytics', 'reports'];
@@ -127,17 +139,28 @@
             { id: 'professionalism', label: 'Professionalism', weight: 10, desc: 'Mentor conduct.' },
             { id: 'clarity', label: 'Clarity', weight: 20, desc: 'Assess ability to explain clearly.' },
             { id: 'workflow', label: 'Workflow', weight: 20, desc: 'Reviews correct workflow usage.' },
-            { id: 'documentation', label: 'Documentation', weight: 10, desc: 'consistency of notes.' },
+            { id: 'documentation', label: 'Documentation', weight: 10, desc: 'Consistency of notes.' },
             { id: 'resolution', label: 'Resolution', weight: 30, desc: 'Efficient issue resolution.' }
         ];
 
         const quizModules = [
-            { id: 'productExpert', title: 'Product Expert', desc: 'Associate demonstration of product expertise.' },
+            { id: 'productExpert', title: 'Product Expert', desc: 'Associate expertise demo.' },
             { id: 'processAwareness', title: 'Process Awareness', desc: 'Comprehending process vs procedures.' },
-            { id: 'communication', title: 'Communication', desc: 'Effectiveness in customer interaction.' },
-            { id: 'customerConcern', title: 'Identify customer Concern', desc: 'Comprehending concern effectively.' },
-            { id: 'fcr', title: 'FCR', desc: 'Ability to anticipate questions.' }
+            { id: 'communication', title: 'Communication', desc: 'Reflect effectiveness in communication.' },
+            { id: 'customerConcern', title: 'Identify customer Concern', desc: 'Comprehend concerns effectively.' },
+            { id: 'fcr', title: 'FCR', desc: 'Anticipate all questions.' }
         ];
+
+        const categories = {
+            disputes: { label: 'Disputes', icon: AlertCircle, color: 'red', fields: ['customerName', 'customerEmail', 'disputeAmount', 'disputeDate', 'disputeReason', 'disputedProduct', 'disputeLink', 'resolution'] },
+            pending_subs: { label: 'Pending Subs', icon: CreditCard, color: 'blue', fields: ['customerName', 'customerEmail', 'pendingReason', 'resolution'] },
+            floorwalker: { label: 'FloorWalker', icon: Footprints, color: 'amber', fields: ['associateName', 'ticketLink', 'reasonForSupport', 'requestType', 'validRequest', 'invalidReason', 'slackLink', 'comment'] },
+            hip_request: { label: 'HIP Request', icon: MessageCircle, color: 'teal', fields: ['associateName', 'ticketLink', 'slackLink', 'validHip', 'invalidReason', 'hipProduct', 'hipCategory', 'hipRequestType'] },
+            weekly_quiz: { label: 'Weekly Quiz', icon: ClipboardList, color: 'cyan', fields: ['associateName', 'associateEmail', 'date', 'correctionModule'] },
+            duplicate_iap: { label: 'Duplicate IAP', icon: FileText, color: 'indigo', fields: ['customerEmail', 'emailSent', 'subscriptionStatus'] },
+            surprise_delight: { label: 'Surprise & Delight', icon: Gift, color: 'purple', fields: ['associateName', 'team', 'customerName', 'customerEmail', 'productType', 'ticketUrl', 'surpriseAndDelightReason', 'surpriseAndDelightType', 'amount', 'date', 'notes'] },
+            mentor_audit: { label: 'Mentor Audit', icon: UserCheck, color: 'emerald', fields: ['mentorName', 'hipLogReference', 'auditModule'] },
+        };
 
         const HIP_HIERARCHY = {
             "Move": {
@@ -166,21 +189,13 @@
                 "Delivery": ["Core Standalone Delay", "Plates Delivery Delay", "Barbell Delivery Delay", "Apparel Missing Item"],
                 "Quality & Damage": ["Collar Damage", "Quick Lock Damage", "Competition Plates Damage", "Barbell Damage", "Workout Mat Damage"],
                 "Setup & Specs": ["Kettlebell Setup", "Folding Rack Setup", "Folding Rack Lock Issue", "Collar Specs", "HRM Replacement", "HRM Charger Replacement"]
+            },
+            "Membership": {
+                "Account Management": ["Cancel (Immediate/Scheduled/Request/Prevented)", "Reactivate", "Pause Injury", "Refund (Inquiry/Applied)", "Billing Update", "Charges Dispute", "Contact Info Update", "Access Setup", "Change Ownership", "Add/Remove Family", "Password Reset", "Referral Inquiry", "Single Login"]
             }
         };
 
-        const categories = {
-            disputes: { label: 'Disputes', icon: AlertCircle, color: 'red', fields: ['customerName', 'customerEmail', 'disputeAmount', 'disputeDate', 'disputeReason', 'disputedProduct', 'disputeLink', 'resolution'] },
-            pending_subs: { label: 'Pending Subs', icon: CreditCard, color: 'blue', fields: ['customerName', 'customerEmail', 'pendingReason', 'resolution'] },
-            floorwalker: { label: 'FloorWalker', icon: Footprints, color: 'amber', fields: ['associateName', 'ticketLink', 'reasonForSupport', 'requestType', 'validRequest', 'invalidReason', 'slackLink', 'comment'] },
-            hip_request: { label: 'HIP Request', icon: MessageCircle, color: 'teal', fields: ['associateName', 'ticketLink', 'slackLink', 'validHip', 'invalidReason', 'hipProduct', 'hipCategory', 'hipRequestType'] },
-            weekly_quiz: { label: 'Weekly Quiz', icon: ClipboardList, color: 'cyan', fields: ['associateName', 'associateEmail', 'date', 'correctionModule'] },
-            duplicate_iap: { label: 'Duplicate IAP', icon: FileText, color: 'indigo', fields: ['customerEmail', 'emailSent', 'subscriptionStatus'] },
-            surprise_delight: { label: 'Surprise & Delight', icon: Gift, color: 'purple', fields: ['associateName', 'team', 'customerName', 'customerEmail', 'productType', 'ticketUrl', 'surpriseAndDelightReason', 'surpriseAndDelightType', 'amount', 'date', 'notes'] },
-            mentor_audit: { label: 'Mentor Audit', icon: UserCheck, color: 'emerald', fields: ['mentorName', 'hipLogReference', 'auditModule'] },
-        };
-
-        // --- App Implementation ---
+        // --- App Component ---
         function MentorOpsCenter() {
             const [userProfile, setUserProfile] = useState(null);
             const [session, setSession] = useState(null);
@@ -189,6 +204,8 @@
             const [registry, setRegistry] = useState([]);
             const [connectionStatus, setConnectionStatus] = useState('connecting');
             const [isFormOpen, setIsFormOpen] = useState(false);
+            const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+            const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('theme') === 'dark');
             const [searchTerm, setSearchTerm] = useState('');
             const [editingTaskId, setEditingTaskId] = useState(null);
             const [newTaskType, setNewTaskType] = useState('disputes');
@@ -197,10 +214,20 @@
             const itemsPerPage = 10;
             
             // Auth State
-            const [authView, setAuthView] = useState('login'); // login, signup, forgot, reset
+            const [authView, setAuthView] = useState('login'); 
             const [authLoading, setAuthLoading] = useState(false);
             const [authEmail, setAuthEmail] = useState('');
             const [authPassword, setAuthPassword] = useState('');
+
+            // Analytics State
+            const [analyticsCategory, setAnalyticsCategory] = useState('disputes');
+            const [analyticsField, setAnalyticsField] = useState('status');
+            const [analyticsDateRange, setAnalyticsDateRange] = useState({ start: '', end: '' });
+            const chartRef = useRef(null);
+            const chartInstance = useRef(null);
+
+            // Settings State
+            const [newInternalPassword, setNewInternalPassword] = useState('');
 
             const [customOptions, setCustomOptions] = useState({
                 pendingReason: ["Not delivered", "Delivered but not updated.", "Returned or canceled order"],
@@ -217,19 +244,22 @@
             });
 
             const [customInputTarget, setCustomInputTarget] = useState(null);
-            const [analyticsCategory, setAnalyticsCategory] = useState('disputes');
-            const [analyticsField, setAnalyticsField] = useState('status');
-            const [analyticsDateRange, setAnalyticsDateRange] = useState({ start: '', end: '' });
             const [reportFilters, setReportFilters] = useState({ category: 'all', agent: 'all', startDate: '', endDate: '' });
             const [generatedReport, setGeneratedReport] = useState(null);
             const [selectedReportColumns, setSelectedReportColumns] = useState(['type', 'agent', 'status', 'date']);
-            const [showLogFilters, setShowLogFilters] = useState(false);
-            const [logFilters, setLogFilters] = useState({ category: 'all', agent: 'all', startDate: '', endDate: '' });
-            
-            const chartRef = useRef(null);
-            const chartInstance = useRef(null);
 
-            // --- Authentication Implementation ---
+            // --- Theme Logic ---
+            useEffect(() => {
+                if (isDarkMode) {
+                    document.documentElement.classList.add('dark');
+                    localStorage.setItem('theme', 'dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                    localStorage.setItem('theme', 'light');
+                }
+            }, [isDarkMode]);
+
+            // --- Authentication implementation ---
             useEffect(() => {
                 supabase.auth.getSession().then(({ data: { session } }) => {
                     setSession(session);
@@ -256,7 +286,7 @@
                         await supabase.from('users_registry').insert([initial]);
                         setUserProfile(initial);
                     } else {
-                        setUserProfile({ error: true, message: "Registry Error: This email is not authorized in the registry. Please contact mohamed.abdelmagid@tempo.fit." });
+                        setUserProfile({ error: true, message: "Your email is not authorized. Please contact mohamed.abdelmagid@tempo.fit." });
                     }
                 }
             };
@@ -300,46 +330,107 @@
                 e.preventDefault();
                 setAuthLoading(true);
                 let error = null;
-
-                // Important: window.location.origin + window.location.pathname captures the full GitHub Pages URL
                 const redirectTo = window.location.origin + window.location.pathname;
 
                 if (authView === 'login') {
                     const res = await supabase.auth.signInWithPassword({ email: authEmail, password: authPassword });
                     error = res.error;
                 } else if (authView === 'signup') {
-                    const res = await supabase.auth.signUp({ 
-                        email: authEmail, 
-                        password: authPassword,
-                        options: { emailRedirectTo: redirectTo }
-                    });
+                    const res = await supabase.auth.signUp({ email: authEmail, password: authPassword, options: { emailRedirectTo: redirectTo } });
                     error = res.error;
-                    if (!error) alert("Account created! Check your email for confirmation before logging in.");
+                    if (!error) alert("Verification email sent!");
                 } else if (authView === 'forgot') {
                     const res = await supabase.auth.resetPasswordForEmail(authEmail, { redirectTo: redirectTo });
                     error = res.error;
-                    if (!error) alert("Reset link sent! If the link in your email gives a 404, please ensure the Site URL in Supabase dashboard matches this page.");
+                    if (!error) alert("Reset link sent!");
                 } else if (authView === 'reset') {
                     const res = await supabase.auth.updateUser({ password: authPassword });
                     error = res.error;
-                    if (!error) { alert("Password updated successfully!"); setAuthView('login'); }
+                    if (!error) { alert("Updated!"); setAuthView('login'); }
                 }
 
                 if (error) alert(error.message);
                 setAuthLoading(false);
             };
 
-            const handleGoogleLogin = async () => {
-                const redirectTo = window.location.origin + window.location.pathname;
-                const { error } = await supabase.auth.signInWithOAuth({
-                    provider: 'google',
-                    options: { 
-                        redirectTo: redirectTo,
-                        queryParams: { prompt: 'select_account' } 
-                    }
-                });
-                if (error) alert(error.message);
+            const handleUpdatePasswordInternal = async () => {
+                if (newInternalPassword.length < 6) return alert("Min 6 chars.");
+                const { error } = await supabase.auth.updateUser({ password: newInternalPassword });
+                if (!error) {
+                    alert("Password updated successfully!");
+                    setNewInternalPassword('');
+                    setIsSettingsOpen(false);
+                } else {
+                    alert(error.message);
+                }
             };
+
+            // --- Analytics Lifecycle Fix ---
+            useEffect(() => {
+                if (activeTab === 'analytics' && chartRef.current) {
+                    // Destroy existing chart to prevent canvas context errors
+                    if (chartInstance.current) {
+                        chartInstance.current.destroy();
+                    }
+
+                    let filteredData = tasks.filter(t => t.type === analyticsCategory);
+                    if (analyticsDateRange.start) filteredData = filteredData.filter(t => new Date(t.date) >= new Date(analyticsDateRange.start));
+                    if (analyticsDateRange.end) {
+                        const end = new Date(analyticsDateRange.end); end.setHours(23,59,59);
+                        filteredData = filteredData.filter(t => new Date(t.date) <= end);
+                    }
+
+                    const counts = {};
+                    filteredData.forEach(t => {
+                        let value = ['status', 'agent'].includes(analyticsField) ? t[analyticsField] : t.details?.[analyticsField] || 'N/A';
+                        counts[value] = (counts[value] || 0) + 1;
+                    });
+
+                    const ctx = chartRef.current.getContext('2d');
+                    chartInstance.current = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: Object.keys(counts),
+                            datasets: [{
+                                label: analyticsField.replace(/([A-Z])/g, ' $1'),
+                                data: Object.values(counts),
+                                backgroundColor: isDarkMode ? 'rgba(37, 99, 235, 0.8)' : 'rgba(37, 99, 235, 0.7)',
+                                borderRadius: 6,
+                                borderWidth: 0
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    backgroundColor: isDarkMode ? '#1e293b' : '#ffffff',
+                                    titleColor: isDarkMode ? '#f8fafc' : '#0f172a',
+                                    bodyColor: isDarkMode ? '#f8fafc' : '#0f172a',
+                                    borderColor: isDarkMode ? '#334155' : '#e2e8f0',
+                                    borderWidth: 1
+                                }
+                            },
+                            scales: {
+                                y: { 
+                                    beginAtZero: true, 
+                                    grid: { color: isDarkMode ? '#334155' : '#f1f5f9' },
+                                    ticks: { color: isDarkMode ? '#94a3b8' : '#64748b' }
+                                },
+                                x: {
+                                    grid: { display: false },
+                                    ticks: { color: isDarkMode ? '#94a3b8' : '#64748b' }
+                                }
+                            }
+                        }
+                    });
+                }
+                
+                return () => {
+                    if (chartInstance.current) chartInstance.current.destroy();
+                };
+            }, [activeTab, analyticsCategory, analyticsField, analyticsDateRange, tasks, isDarkMode]);
 
             // --- Evaluation Logic ---
             const handleAuditScore = (attrId, achieved) => {
@@ -351,12 +442,10 @@
 
             const handleQuizScore = (mId, s) => {
                 const scores = { ...(formData.quizScores || {}), [mId]: parseInt(s) };
-                const values = Object.values(scores);
-                const avg = values.length ? (values.reduce((a, b) => a + b, 0) / values.length).toFixed(1) : '0.0';
+                const avg = (Object.values(scores).reduce((a, b) => a + b, 0) / Object.values(scores).length).toFixed(1);
                 setFormData(prev => ({ ...prev, quizScores: scores, overallScore: avg }));
             };
 
-            // --- Other Handlers ---
             const handleAddTask = async (e) => {
                 e.preventDefault();
                 const requiredFields = categories[newTaskType].fields;
@@ -374,16 +463,25 @@
                         missingFields.push(f.replace(/([A-Z])/g, ' $1'));
                     }
                 });
-
-                if (missingFields.length > 0) { alert("Please complete: " + missingFields.join(', ')); return; }
-
+                if (missingFields.length > 0) return alert("Missing entries: " + missingFields.join(', '));
                 const taskData = { 
                     type: newTaskType, title: categories[newTaskType].label + ' Log', 
                     agent: session.user.email.split('@')[0], status: formData.status || 'Pending', 
                     details: formData, date: new Date().toISOString() 
                 };
                 const { error } = editingTaskId ? await supabase.from('tasks').update(taskData).eq('id', editingTaskId) : await supabase.from('tasks').insert([taskData]);
-                if (!error) { setIsFormOpen(false); setFormData({}); setEditingTaskId(null); }
+                if (!error) { setIsFormOpen(false); setFormData({}); setEditingTaskId(null); fetchData(); }
+            };
+
+            const handleAddUser = async () => {
+                if (!formData.newEmail?.endsWith('@tempo.fit')) return alert("Only @tempo.fit emails.");
+                const initial = { email: formData.newEmail, role: formData.newRole || 'Mentor', allowed_tabs: defaultTabs };
+                const { error } = await supabase.from('users_registry').insert([initial]);
+                if (!error) fetchData();
+            };
+
+            const toggleReportColumn = (col) => {
+                setSelectedReportColumns(prev => prev.includes(col) ? prev.filter(c => c !== col) : [...prev, col]);
             };
 
             const pickRandomHIP = () => {
@@ -404,10 +502,6 @@
                 handleInputChange(field, newValue);
             };
 
-            const toggleReportColumn = (col) => {
-                setSelectedReportColumns(prev => prev.includes(col) ? prev.filter(c => c !== col) : [...prev, col]);
-            };
-
             const handleEditTask = (task) => {
                 setNewTaskType(task.type);
                 setFormData({ ...(task.details || {}), status: task.status });
@@ -424,27 +518,12 @@
                 setGeneratedReport(filtered);
             };
 
-            const downloadCSV = () => {
-                if (!generatedReport) return;
-                const csv = [selectedReportColumns.map(c => c.toUpperCase()).join(','), ...generatedReport.map(t => {
-                    return selectedReportColumns.map(c => {
-                        const val = ['id','type','agent','status','date'].includes(c) ? (c === 'date' ? new Date(t[c]).toLocaleDateString() : t[c]) : (t.details?.[c] || 'N/A');
-                        return `"${val.toString().replace(/"/g, '""')}"`;
-                    }).join(',');
-                })].join('\n');
-                const blob = new Blob([csv], { type: 'text/csv' });
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a'); a.href = url; a.download = 'mentor_ops_export.csv'; a.click();
-            };
-
-            // --- Authentication Views ---
             if (!session) {
                 return (
-                    <div className="fixed inset-0 bg-slate-900 z-50 flex items-center justify-center p-4 text-center">
-                        <Card className="p-10 max-w-md w-full shadow-2xl">
+                    <div className="fixed inset-0 bg-slate-900 z-50 flex items-center justify-center p-4">
+                        <Card className="p-10 max-w-md w-full text-center shadow-2xl">
                             <h1 className="text-4xl font-black italic tracking-tighter mb-2">TEMPO</h1>
                             <p className="text-slate-500 mb-8 font-medium uppercase text-[10px] tracking-widest">Mentor Operations Center</p>
-                            
                             <form onSubmit={handleAuth} className="space-y-4 text-left">
                                 {authView !== 'reset' && (
                                     <div>
@@ -459,68 +538,54 @@
                                     </div>
                                 )}
                                 <button type="submit" disabled={authLoading} className="w-full py-4 bg-blue-600 text-white font-black rounded-xl uppercase tracking-widest hover:bg-blue-700 transition-all shadow-xl">
-                                    {authLoading ? '...' : (authView === 'login' ? 'Sign In' : authView === 'signup' ? 'Create Account' : authView === 'forgot' ? 'Send Link' : 'Update')}
+                                    {authLoading ? '...' : (authView === 'login' ? 'Sign In' : authView === 'signup' ? 'Create Account' : authView === 'forgot' ? 'Send Reset link' : 'Update Password')}
                                 </button>
                             </form>
-
-                            {authView === 'login' && (
-                                <div className="mt-4">
-                                    <div className="relative py-4">
-                                        <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-slate-200"></span></div>
-                                        <div className="relative flex justify-center text-xs uppercase font-bold"><span className="bg-white px-2 text-slate-400">Or continue with</span></div>
-                                    </div>
-                                    <button onClick={handleGoogleLogin} className="w-full flex items-center justify-center gap-3 py-3 border border-slate-200 rounded-xl hover:bg-slate-50 transition-all font-bold">
-                                        <img src="https://www.google.com/favicon.ico" className="h-4 w-4" />
-                                        Google Account
-                                    </button>
-                                </div>
-                            )}
-
                             <div className="mt-6 pt-6 border-t flex flex-col gap-3">
                                 {authView === 'login' ? (
                                     <React.Fragment>
-                                        <button onClick={() => setAuthView('signup')} className="text-xs font-bold text-slate-400 hover:text-blue-600 uppercase">New User? Register</button>
+                                        <button onClick={() => setAuthView('signup')} className="text-xs font-bold text-slate-400 hover:text-blue-600 uppercase">First Time? Create Account</button>
                                         <button onClick={() => setAuthView('forgot')} className="text-xs font-bold text-slate-400 hover:text-blue-600 uppercase tracking-tighter">Forgot Password?</button>
                                     </React.Fragment>
                                 ) : (
                                     <button onClick={() => setAuthView('login')} className="text-xs font-bold text-slate-400 hover:text-blue-600 uppercase">Back to Login</button>
                                 )}
                             </div>
-                            
-                            <div className="mt-10 p-4 bg-amber-50 border border-amber-100 rounded-xl text-[10px] font-bold text-amber-700 uppercase tracking-tighter">
-                                Note: tempo2026 is the temporary setup password
-                            </div>
                         </Card>
                     </div>
                 );
             }
 
-            if (userProfile?.error) return <div className="flex flex-col h-screen items-center justify-center font-bold gap-4 p-8 text-center text-slate-900 bg-slate-50">{userProfile.message} <button onClick={() => supabase.auth.signOut()} className="px-8 py-2 bg-blue-600 text-white rounded-lg uppercase text-xs shadow-xl">Logout</button></div>;
-            if (!userProfile) return <div className="flex h-screen items-center justify-center font-bold">Verifying authorization profile...</div>;
+            if (userProfile?.error) return <div className="flex flex-col h-screen items-center justify-center font-bold gap-4 p-8 text-center">{userProfile.message} <button onClick={() => supabase.auth.signOut()} className="px-8 py-2 bg-blue-600 text-white rounded">Logout</button></div>;
+            if (!userProfile) return <div className="flex h-screen items-center justify-center font-bold">Verifying Registry...</div>;
 
             const visibleTabs = userProfile.allowed_tabs || defaultTabs;
+            const filteredLogs = tasks.filter(t => (categories[t.type]?.label || '').toLowerCase().includes(searchTerm.toLowerCase()) || t.agent.toLowerCase().includes(searchTerm.toLowerCase()));
 
             return (
-                <div className="min-h-screen bg-slate-50 pb-20">
-                    <header className="bg-white border-b sticky top-0 z-20">
+                <div className="min-h-screen pb-20">
+                    <header className="bg-white dark:bg-slate-900 border-b dark:border-slate-800 sticky top-0 z-20">
                         <div className="max-w-7xl mx-auto px-6 flex justify-between items-center h-16">
                             <div className="flex items-center gap-3">
-                                <h1 className="text-xl font-bold tracking-widest text-slate-900 uppercase italic">Tempo</h1>
+                                <h1 className="text-xl font-bold tracking-widest uppercase italic">Tempo</h1>
                                 <Badge color={userProfile.role === 'Admin' ? 'purple' : 'slate'}>{userProfile.role}</Badge>
                             </div>
                             <nav className="flex gap-1">
                                 {visibleTabs.map(tab => (
-                                    <button key={tab} onClick={() => setActiveTab(tab)} className={`px-4 py-2 text-xs font-black rounded-lg transition-colors uppercase tracking-widest ${activeTab === tab ? 'bg-slate-100 text-slate-900' : 'text-slate-400 hover:bg-slate-50'}`}>{tab}</button>
+                                    <button key={tab} onClick={() => setActiveTab(tab)} className={`px-4 py-2 text-xs font-black rounded-lg transition-colors uppercase tracking-widest ${activeTab === tab ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white' : 'text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>{tab}</button>
                                 ))}
-                                {userProfile.role === 'Admin' && <button onClick={() => setActiveTab('admin')} className={`px-4 py-2 text-xs font-black rounded-lg transition-colors uppercase tracking-widest ${activeTab === 'admin' ? 'bg-slate-100 text-slate-900' : 'text-slate-400 hover:bg-slate-50'}`}>Admin</button>}
                             </nav>
                             <div className="flex items-center gap-4">
+                                <button onClick={() => setIsDarkMode(!isDarkMode)} className="p-2 text-slate-400 hover:text-blue-500 transition-colors">
+                                    {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+                                </button>
+                                <button onClick={() => setIsSettingsOpen(true)} className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"><SettingsIcon className="h-5 w-5" /></button>
                                 <div className={`h-2 w-2 rounded-full ${connectionStatus === 'online' ? 'bg-emerald-500' : 'bg-rose-500 animate-pulse'}`} />
                                 <div className="text-right hidden md:block">
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter leading-none">Logged as</p>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter leading-none">Identity</p>
                                     <p className="text-xs font-black leading-none">{userProfile.email.split('@')[0]}</p>
                                 </div>
-                                <button onClick={() => supabase.auth.signOut()} className="p-2 text-slate-400 hover:text-rose-500 transition-colors"><LogOut className="h-4 w-4" /></button>
+                                <button onClick={() => supabase.auth.signOut()} className="p-2 text-slate-400 hover:text-rose-500"><LogOut className="h-4 w-4" /></button>
                             </div>
                         </div>
                     </header>
@@ -529,14 +594,14 @@
                         {activeTab === 'dashboard' && (
                             <div className="space-y-8 animate-fade-in">
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                    <Card className="p-6 bg-slate-900 text-white shadow-xl"><p className="text-slate-400 text-[10px] font-black uppercase mb-1">Total Logs</p><h3 className="text-4xl font-bold">{tasks.length}</h3></Card>
+                                    <Card className="p-6 bg-slate-900 text-white shadow-xl dark:border-blue-500/20"><p className="text-slate-400 text-[10px] font-black uppercase mb-1">Total Logs</p><h3 className="text-4xl font-bold">{tasks.length}</h3></Card>
                                     <Card className="p-6 border-l-4 border-l-rose-500"><p className="text-slate-400 text-[10px] font-black uppercase mb-1">Pending Follow-ups</p><h3 className="text-4xl font-bold text-rose-600">{tasks.filter(t => t.status === 'Pending').length}</h3></Card>
                                     <Card className="p-6 border-l-4 border-l-emerald-500"><p className="text-slate-400 text-[10px] font-black uppercase mb-1">Resolved Today</p><h3 className="text-4xl font-bold text-emerald-600">{tasks.filter(t => t.status !== 'Pending' && new Date(t.date).toDateString() === new Date().toDateString()).length}</h3></Card>
                                 </div>
                                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
                                     {Object.entries(categories).map(([key, cfg]) => (
-                                        <button key={key} onClick={() => { setNewTaskType(key); setEditingTaskId(null); setFormData({}); setIsFormOpen(true); }} className="p-4 bg-white border rounded-xl text-center hover:shadow-md transition-all group">
-                                            <div className={`h-10 w-10 mx-auto rounded-lg flex items-center justify-center mb-2 bg-${cfg.color}-100`}>{React.createElement(cfg.icon, { className: `h-5 w-5 text-${cfg.color}-600` })}</div>
+                                        <button key={key} onClick={() => { setNewTaskType(key); setEditingTaskId(null); setFormData({}); setIsFormOpen(true); }} className="p-4 bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-xl text-center hover:shadow-md transition-all group">
+                                            <div className={`h-10 w-10 mx-auto rounded-lg flex items-center justify-center mb-2 bg-${cfg.color}-100 dark:bg-${cfg.color}-900/30`}>{React.createElement(cfg.icon, { className: `h-5 w-5 text-${cfg.color}-600` })}</div>
                                             <p className="text-[9px] font-black text-slate-500 uppercase">{cfg.label}</p>
                                             <p className="text-lg font-black">{tasks.filter(t => t.type === key).length}</p>
                                         </button>
@@ -547,14 +612,14 @@
 
                         {activeTab === 'logs' && (
                             <div className="space-y-4 animate-fade-in">
-                                <div className="flex justify-between bg-white p-4 rounded-xl border">
-                                    <div className="relative flex-1 max-w-md"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" /><input type="text" placeholder="Search..." className="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} /></div>
+                                <div className="flex justify-between bg-white dark:bg-slate-900 p-4 rounded-xl border dark:border-slate-800">
+                                    <div className="relative flex-1 max-w-md"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" /><input type="text" placeholder="Search..." className="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-lg outline-none" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} /></div>
                                     <button onClick={() => { setEditingTaskId(null); setFormData({}); setIsFormOpen(true); }} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-black uppercase tracking-widest">+ NEW ENTRY</button>
                                 </div>
                                 <Card className="overflow-hidden">
                                     <table className="w-full text-left text-sm">
-                                        <thead className="bg-slate-50 border-b"><tr><th className="px-6 py-4">Category</th><th className="px-6 py-4">Agent</th><th className="px-6 py-4">Status</th><th className="px-6 py-4 text-right">Actions</th></tr></thead>
-                                        <tbody className="divide-y">{filteredLogs.slice((currentPage-1)*itemsPerPage, currentPage*itemsPerPage).map(t => (<tr key={t.id} className="hover:bg-slate-50"><td className="px-6 py-4 font-bold">{categories[t.type]?.label}</td><td className="px-6 py-4">{t.agent}</td><td className="px-6 py-4"><Badge color={t.status === 'Pending' ? 'amber' : (['Resolved', 'Won', 'Activated'].includes(t.status) ? 'green' : 'slate')}>{t.status}</Badge></td><td className="px-6 py-4 text-right"><button onClick={() => handleEditTask(t)} className="p-2 text-slate-400 hover:text-blue-600 transition-colors"><Edit className="h-4 w-4" /></button></td></tr>))}</tbody>
+                                        <thead className="bg-slate-50 dark:bg-slate-800 border-b dark:border-slate-700"><tr><th className="px-6 py-4">Category</th><th className="px-6 py-4">Agent</th><th className="px-6 py-4">Status</th><th className="px-6 py-4 text-right">Actions</th></tr></thead>
+                                        <tbody className="divide-y dark:divide-slate-800">{filteredLogs.slice((currentPage-1)*itemsPerPage, currentPage*itemsPerPage).map(t => (<tr key={t.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50"><td className="px-6 py-4 font-bold">{categories[t.type]?.label}</td><td className="px-6 py-4">{t.agent}</td><td className="px-6 py-4"><Badge color={t.status === 'Pending' ? 'amber' : (['Resolved', 'Won', 'Activated'].includes(t.status) ? 'green' : 'slate')}>{t.status}</Badge></td><td className="px-6 py-4 text-right"><button onClick={() => handleEditTask(t)} className="p-2 text-slate-400 hover:text-blue-600 transition-colors"><Edit className="h-4 w-4" /></button></td></tr>))}</tbody>
                                     </table>
                                 </Card>
                             </div>
@@ -563,14 +628,16 @@
                         {activeTab === 'analytics' && (
                             <div className="space-y-6 animate-fade-in">
                                 <Card className="p-6">
-                                    <div className="flex items-center gap-3 mb-6"><BarChart3 className="h-6 w-6 text-blue-600" /><h2 className="text-xl font-bold uppercase tracking-widest">Analytics Dashboard</h2></div>
+                                    <div className="flex items-center gap-3 mb-6"><BarChart3 className="h-6 w-6 text-blue-600" /><h2 className="text-xl font-bold uppercase tracking-widest">Visual Analytics Dashboard</h2></div>
                                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-                                        <select className="p-2.5 bg-slate-50 border rounded-lg text-sm outline-none" value={analyticsCategory} onChange={e => setAnalyticsCategory(e.target.value)}>{Object.entries(categories).map(([k, c]) => <option key={k} value={k}>{c.label}</option>)}</select>
-                                        <select className="p-2.5 bg-slate-50 border rounded-lg text-sm outline-none" value={analyticsField} onChange={e => setAnalyticsField(e.target.value)}><option value="status">Status</option><option value="agent">Agent</option>{categories[analyticsCategory]?.fields.filter(f => !f.includes('Module')).map(f => <option key={f} value={f}>{f.replace(/([A-Z])/g, ' $1')}</option>)}</select>
-                                        <input type="date" className="p-2.5 bg-slate-50 border rounded-lg text-sm outline-none" value={analyticsDateRange.start} onChange={e => setAnalyticsDateRange(p => ({...p, start: e.target.value}))} />
-                                        <input type="date" className="p-2.5 bg-slate-50 border rounded-lg text-sm outline-none" value={analyticsDateRange.end} onChange={e => setAnalyticsDateRange(p => ({...p, end: e.target.value}))} />
+                                        <select className="p-2.5 bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-lg text-sm outline-none" value={analyticsCategory} onChange={e => setAnalyticsCategory(e.target.value)}>{Object.entries(categories).map(([k, c]) => <option key={k} value={k}>{c.label}</option>)}</select>
+                                        <select className="p-2.5 bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-lg text-sm outline-none" value={analyticsField} onChange={e => setAnalyticsField(e.target.value)}><option value="status">Status</option><option value="agent">Agent</option>{categories[analyticsCategory]?.fields.filter(f => !f.includes('Module')).map(f => <option key={f} value={f}>{f.replace(/([A-Z])/g, ' $1')}</option>)}</select>
+                                        <input type="date" className="p-2.5 bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-lg text-sm outline-none" value={analyticsDateRange.start} onChange={e => setAnalyticsDateRange(p => ({...p, start: e.target.value}))} />
+                                        <input type="date" className="p-2.5 bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-lg text-sm outline-none" value={analyticsDateRange.end} onChange={e => setAnalyticsDateRange(p => ({...p, end: e.target.value}))} />
                                     </div>
-                                    <div className="h-[400px] flex items-center justify-center p-4 bg-slate-50 rounded-xl"><canvas ref={chartRef}></canvas></div>
+                                    <div className="h-[400px] flex items-center justify-center p-4 bg-slate-50 dark:bg-slate-800 rounded-xl relative">
+                                        <canvas ref={chartRef}></canvas>
+                                    </div>
                                 </Card>
                             </div>
                         )}
@@ -579,26 +646,26 @@
                             <div className="space-y-6 animate-fade-in">
                                 <Card className="p-6 space-y-6">
                                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                        <select className="w-full p-2.5 border rounded-lg text-sm outline-none" value={reportFilters.category} onChange={e => setReportFilters(f => ({ ...f, category: e.target.value }))}><option value="all">All Types</option>{Object.entries(categories).map(([k, c]) => <option key={k} value={k}>{c.label}</option>)}</select>
-                                        <select className="w-full p-2.5 border rounded-lg text-sm outline-none" value={reportFilters.agent} onChange={e => setReportFilters(f => ({ ...f, agent: e.target.value }))}><option value="all">All Mentors</option>{mentorList.map(m => <option key={m} value={m}>{m}</option>)}</select>
-                                        <input type="date" className="w-full p-2.5 border rounded-lg text-sm outline-none" value={reportFilters.startDate} onChange={e => setReportFilters(f => ({ ...f, startDate: e.target.value }))} />
-                                        <input type="date" className="w-full p-2.5 border rounded-lg text-sm outline-none" value={reportFilters.endDate} onChange={e => setReportFilters(f => ({ ...f, endDate: e.target.value }))} />
+                                        <select className="w-full p-2.5 border dark:border-slate-700 dark:bg-slate-800 rounded-lg text-sm outline-none" value={reportFilters.category} onChange={e => setReportFilters(f => ({ ...f, category: e.target.value }))}><option value="all">All Types</option>{Object.entries(categories).map(([k, c]) => <option key={k} value={k}>{c.label}</option>)}</select>
+                                        <select className="w-full p-2.5 border dark:border-slate-700 dark:bg-slate-800 rounded-lg text-sm outline-none" value={reportFilters.agent} onChange={e => setReportFilters(f => ({ ...f, agent: e.target.value }))}><option value="all">All Mentors</option>{mentorList.map(m => <option key={m} value={m}>{m}</option>)}</select>
+                                        <input type="date" className="w-full p-2.5 border dark:border-slate-700 dark:bg-slate-800 rounded-lg text-sm outline-none" value={reportFilters.startDate} onChange={e => setReportFilters(f => ({ ...f, startDate: e.target.value }))} />
+                                        <input type="date" className="w-full p-2.5 border dark:border-slate-700 dark:bg-slate-800 rounded-lg text-sm outline-none" value={reportFilters.endDate} onChange={e => setReportFilters(f => ({ ...f, endDate: e.target.value }))} />
                                     </div>
-                                    <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-100">
+                                    <div className="flex flex-wrap gap-2 pt-2 border-t dark:border-slate-800 border-slate-100">
                                         {['agent', 'status', 'date', ...(reportFilters.category !== 'all' ? categories[reportFilters.category].fields : [])].filter(col => !col.includes('Module')).map(col => (
-                                            <button key={col} onClick={() => toggleReportColumn(col)} className={`px-3 py-1.5 rounded-full text-[10px] font-bold border ${selectedReportColumns.includes(col) ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-200 text-slate-500'}`}>{col.toUpperCase()}</button>
+                                            <button key={col} onClick={() => toggleReportColumn(col)} className={`px-3 py-1.5 rounded-full text-[10px] font-bold border ${selectedReportColumns.includes(col) ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500'}`}>{col.toUpperCase()}</button>
                                         ))}
                                     </div>
-                                    <div className="flex justify-end pt-2"><button onClick={handleGenerateReport} className="px-6 py-2.5 bg-slate-900 text-white font-bold rounded-lg shadow-lg">GENERATE REPORT</button></div>
+                                    <div className="flex justify-end pt-2"><button onClick={handleGenerateReport} className="px-6 py-2.5 bg-slate-900 dark:bg-slate-100 dark:text-slate-900 text-white font-bold rounded-lg shadow-lg">GENERATE REPORT</button></div>
                                 </Card>
                                 {generatedReport && (
                                     <div className="space-y-4 animate-fade-in">
-                                        <div className="flex justify-between items-center"><h3 className="font-bold">Results ({generatedReport.length})</h3><button onClick={downloadCSV} className="flex items-center gap-2 px-4 py-2 bg-white border rounded-lg text-sm font-bold"><Download className="h-4 w-4" /> Export CSV</button></div>
+                                        <div className="flex justify-between items-center"><h3 className="font-bold">Results ({generatedReport.length})</h3><button onClick={downloadCSV} className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-lg text-sm font-bold"><Download className="h-4 w-4" /> Export CSV</button></div>
                                         <Card className="overflow-x-auto">
                                             <table className="w-full text-left text-sm">
-                                                <thead className="bg-slate-50 border-b"><tr>{selectedReportColumns.map(c => <th key={c} className="px-6 py-3 uppercase text-[10px] font-black">{c.replace(/([A-Z])/g, ' $1')}</th>)}</tr></thead>
-                                                <tbody className="divide-y">{generatedReport.map(r => (
-                                                    <tr key={r.id} className="hover:bg-slate-50">{selectedReportColumns.map(c => <td key={c} className="px-6 py-4 truncate max-w-xs text-xs">{['id','type','agent','status','date'].includes(c) ? (c === 'date' ? new Date(r[c]).toLocaleDateString() : r[c]) : (r.details?.[c] || 'N/A')}</td>)}</tr>
+                                                <thead className="bg-slate-50 dark:bg-slate-800 border-b dark:border-slate-700"><tr>{selectedReportColumns.map(c => <th key={c} className="px-6 py-3 uppercase text-[10px] font-black">{c.replace(/([A-Z])/g, ' $1')}</th>)}</tr></thead>
+                                                <tbody className="divide-y dark:divide-slate-800">{generatedReport.map(r => (
+                                                    <tr key={r.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">{selectedReportColumns.map(c => <td key={c} className="px-6 py-4 truncate max-w-xs text-xs">{['id','type','agent','status','date'].includes(c) ? (c === 'date' ? new Date(r[c]).toLocaleDateString() : r[c]) : (r.details?.[c] || 'N/A')}</td>)}</tr>
                                                 ))}</tbody>
                                             </table>
                                         </Card>
@@ -611,27 +678,27 @@
                             <div className="space-y-8 animate-fade-in">
                                 <Card className="p-8">
                                     <div className="flex items-center gap-3 mb-6"><Shield className="h-6 w-6 text-indigo-600" /><h2 className="text-xl font-black uppercase tracking-tight">Admin Control Panel</h2></div>
-                                    <div className="flex gap-4 mb-10 bg-slate-50 p-6 rounded-2xl border border-dashed">
-                                        <input type="email" placeholder="tempo.fit email" className="flex-1 p-3 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 bg-white font-bold" onChange={e => setFormData(p => ({...p, newEmail: e.target.value}))} value={formData.newEmail || ''} />
-                                        <select className="p-3 border rounded-xl outline-none bg-white font-bold" onChange={e => setFormData(p => ({...p, newRole: e.target.value}))} value={formData.newRole || 'Mentor'}><option value="Mentor">Mentor</option><option value="Admin">Admin</option></select>
+                                    <div className="flex gap-4 mb-10 bg-slate-50 dark:bg-slate-800/50 p-6 rounded-2xl border border-dashed dark:border-slate-700">
+                                        <input type="email" placeholder="tempo.fit email" className="flex-1 p-3 border dark:border-slate-700 dark:bg-slate-900 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 bg-white font-bold" onChange={e => setFormData(p => ({...p, newEmail: e.target.value}))} value={formData.newEmail || ''} />
+                                        <select className="p-3 border dark:border-slate-700 dark:bg-slate-900 rounded-xl outline-none bg-white font-bold" onChange={e => setFormData(p => ({...p, newRole: e.target.value}))} value={formData.newRole || 'Mentor'}><option value="Mentor">Mentor</option><option value="Admin">Admin</option></select>
                                         <button onClick={handleAddUser} className="px-8 py-3 bg-indigo-600 text-white rounded-xl font-black uppercase text-xs hover:bg-indigo-700 transition-all shadow-xl">Authorize Email</button>
                                     </div>
                                     <div className="overflow-x-auto text-xs font-black uppercase">
                                         <table className="w-full text-left">
-                                            <thead className="bg-slate-50 border-b text-slate-400"><tr><th className="px-6 py-4">Authorized User</th><th className="px-6 py-4">System Role</th><th className="px-6 py-4 text-center">Permitted Tabs</th><th className="px-6 py-4"></th></tr></thead>
-                                            <tbody className="divide-y">{registry.map(u => (
-                                                <tr key={u.id} className="hover:bg-slate-50">
-                                                    <td className="px-6 py-4 lowercase font-bold text-slate-600">{u.email}</td>
+                                            <thead className="bg-slate-50 dark:bg-slate-800 border-b dark:border-slate-700 text-slate-400"><tr><th className="px-6 py-4">Authorized User</th><th className="px-6 py-4">Role</th><th className="px-6 py-4 text-center">Permitted Tabs</th><th className="px-6 py-4"></th></tr></thead>
+                                            <tbody className="divide-y dark:divide-slate-800">{registry.map(u => (
+                                                <tr key={u.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                                                    <td className="px-6 py-4 lowercase font-bold text-slate-600 dark:text-slate-400">{u.email}</td>
                                                     <td className="px-6 py-4"><Badge color={u.role === 'Admin' ? 'purple' : 'slate'}>{u.role}</Badge></td>
                                                     <td className="px-6 py-4 flex gap-2 justify-center">
                                                         {['dashboard', 'logs', 'analytics', 'reports'].map(t => (
-                                                            <label key={t} className="flex items-center gap-1.5 cursor-pointer bg-white px-2 py-1 border rounded shadow-sm hover:border-blue-400 transition-all">
+                                                            <label key={t} className="flex items-center gap-1.5 cursor-pointer bg-white dark:bg-slate-800 px-2 py-1 border dark:border-slate-700 rounded shadow-sm hover:border-blue-400 transition-all">
                                                                 <input type="checkbox" checked={u.allowed_tabs?.includes(t)} onChange={() => toggleTabForUser(u.email, t)} />
                                                                 <span className="text-[9px]">{t}</span>
                                                             </label>
                                                         ))}
                                                     </td>
-                                                    <td className="px-6 py-4 text-right">{u.email !== 'mohamed.abdelmagid@tempo.fit' && <button onClick={async () => { if(confirm("Revoke access for " + u.email + "?")) { await supabase.from('users_registry').delete().eq('id', u.id); fetchData(); } }} className="text-rose-400 hover:text-rose-600"><Trash className="h-4 w-4" /></button>}</td>
+                                                    <td className="px-6 py-4 text-right">{u.email !== 'mohamed.abdelmagid@tempo.fit' && <button onClick={async () => { if(confirm("Revoke access?")) { await supabase.from('users_registry').delete().eq('id', u.id); fetchData(); } }} className="text-rose-400"><Trash className="h-4 w-4" /></button>}</td>
                                                 </tr>
                                             ))}</tbody>
                                         </table>
@@ -641,14 +708,15 @@
                         )}
                     </main>
 
+                    {/* Form Modal Layer */}
                     {isFormOpen && (
                         <div className="fixed inset-0 z-50 flex justify-end">
-                            <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsFormOpen(false)} />
-                            <div className="relative w-full max-w-md bg-white h-full shadow-2xl p-8 overflow-y-auto animate-slide-in-right">
-                                <div className="flex justify-between items-center mb-8"><h2 className="text-2xl font-black italic uppercase tracking-tighter">{editingTaskId ? 'EDIT' : 'NEW'} {categories[newTaskType].label}</h2><button onClick={() => setIsFormOpen(false)} className="text-slate-400 font-black uppercase text-[10px] hover:text-slate-800">Close</button></div>
+                            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsFormOpen(false)} />
+                            <div className="relative w-full max-w-md bg-white dark:bg-slate-900 h-full shadow-2xl p-8 overflow-y-auto animate-slide-in-right">
+                                <div className="flex justify-between items-center mb-8"><h2 className="text-2xl font-black italic uppercase tracking-tighter">{editingTaskId ? 'EDIT' : 'NEW'} {categories[newTaskType].label}</h2><button onClick={() => setIsFormOpen(false)} className="text-slate-400 font-black uppercase text-[10px] hover:text-slate-800 dark:hover:text-white">Close</button></div>
                                 <form onSubmit={handleAddTask} className="space-y-6">
-                                    {!editingTaskId && <div><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Category Type</label><select className="w-full p-3 bg-slate-50 border rounded-xl outline-none font-bold" value={newTaskType} onChange={e => { setNewTaskType(e.target.value); setFormData({}); }}>{Object.entries(categories).map(([k, c]) => <option key={k} value={k}>{c.label}</option>)}</select></div>}
-                                    <div className="bg-slate-50 p-4 rounded-2xl border space-y-4">
+                                    {!editingTaskId && <div><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Category Type</label><select className="w-full p-3 bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-xl outline-none font-bold" value={newTaskType} onChange={e => { setNewTaskType(e.target.value); setFormData({}); }}>{Object.entries(categories).map(([k, c]) => <option key={k} value={k}>{c.label}</option>)}</select></div>}
+                                    <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border dark:border-slate-700 space-y-4">
                                         {categories[newTaskType].fields.map(field => {
                                             const isValidNo = (newTaskType === 'floorwalker' && formData.validRequest === 'No') || (newTaskType === 'hip_request' && formData.validHip === 'No');
                                             if (field === 'invalidReason' && !isValidNo) return null;
@@ -657,19 +725,23 @@
                                                 const items = field === 'auditModule' ? auditAttributes : quizModules;
                                                 return (
                                                     <div key={field} className="space-y-6 pt-2">
-                                                        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest uppercase tracking-widest">{field.replace('Module','')} Scoring Metrics</h3>
+                                                        <div className="flex justify-between items-center mb-2">
+                                                            <h3 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">{field.replace('Module','')} Quality Metrics</h3>
+                                                            {field === 'correctionModule' && <Badge color="cyan">AVG: {formData.overallScore || '0.0'}</Badge>}
+                                                            {field === 'auditModule' && <Badge color="green">Score: {formData.overallAuditScore || '0'}%</Badge>}
+                                                        </div>
                                                         {items.map(m => (
-                                                            <div key={m.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                                                            <div key={m.id} className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
                                                                 <p className="font-bold text-sm mb-1">{m.title || m.label}</p>
                                                                 <p className="text-[10px] text-slate-400 mb-4">{m.desc}</p>
                                                                 <div className="flex justify-center gap-2 mb-4">
                                                                     {field === 'auditModule' ? ['Yes', 'No'].map(s => (
-                                                                        <button key={s} type="button" onClick={() => handleAuditScore(m.id, s)} className={`px-4 py-1.5 rounded-lg border-2 text-[10px] font-black transition-all ${formData.auditScores?.[m.id] === s ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white border-slate-200 text-slate-400'}`}>{s.toUpperCase()}</button>
+                                                                        <button key={s} type="button" onClick={() => handleAuditScore(m.id, s)} className={`px-4 py-1.5 rounded-lg border-2 text-[10px] font-black transition-all ${formData.auditScores?.[m.id] === s ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400'}`}>{s.toUpperCase()}</button>
                                                                     )) : [1, 2, 3, 4, 5].map(s => (
-                                                                        <button key={s} type="button" onClick={() => handleQuizScore(m.id, s)} className={`w-8 h-8 rounded-full border-2 text-xs font-bold transition-all ${formData.quizScores?.[m.id] === s ? 'bg-cyan-500 border-cyan-500 text-white shadow-lg shadow-cyan-100' : 'bg-white border-slate-200 text-slate-400'}`}>{s}</button>
+                                                                        <button key={s} type="button" onClick={() => handleQuizScore(m.id, s)} className={`w-8 h-8 rounded-full border-2 text-xs font-bold transition-all ${formData.quizScores?.[m.id] === s ? 'bg-cyan-500 border-cyan-500 text-white shadow-lg shadow-cyan-100' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400'}`}>{s}</button>
                                                                     ))}
                                                                 </div>
-                                                                <input type="text" placeholder="Comment..." className="w-full p-2 bg-slate-50 border-b text-[10px] outline-none focus:border-blue-500 transition-colors" onChange={e => setFormData(p => ({...p, quizComments: {...(p.quizComments || {}), [m.id]: e.target.value}}))} value={formData.quizComments?.[m.id] || ''} />
+                                                                <input type="text" placeholder="Comment..." className="w-full p-2 bg-slate-50 dark:bg-slate-800 border-b dark:border-slate-700 text-[10px] outline-none" onChange={e => setFormData(p => ({...p, quizComments: {...(p.quizComments || {}), [m.id]: e.target.value}}))} value={formData.quizComments?.[m.id] || ''} />
                                                             </div>
                                                         ))}
                                                     </div>
@@ -679,24 +751,24 @@
                                             if (field === 'hipLogReference' && newTaskType === 'mentor_audit') return (
                                                 <div key={field} className="pt-2">
                                                     <label className="text-[10px] font-black text-slate-400 uppercase block mb-1.5">Audit Target</label>
-                                                    <div className="flex gap-2"><div className="flex-1 p-3 bg-white border rounded-xl text-sm font-medium">{formData.auditedTicket || 'No Log Selected'}</div>
-                                                    <button type="button" onClick={pickRandomHIP} className="p-3 bg-blue-100 text-blue-600 rounded-xl"><Dice className="h-5 w-5" /></button></div>
+                                                    <div className="flex gap-2"><div className="flex-1 p-3 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-xl text-sm font-medium">{formData.auditedTicket || 'No Log Selected'}</div>
+                                                    <button type="button" onClick={pickRandomHIP} className="p-3 bg-blue-100 dark:bg-blue-900/30 text-blue-600 rounded-xl"><Dice className="h-5 w-5" /></button></div>
                                                 </div>
                                             );
 
                                             if (newTaskType === 'hip_request' && field === 'hipProduct') return (
                                                 <div key={field}><label className="text-[10px] font-black text-slate-400 uppercase block mb-1.5">Product</label>
-                                                <select className="w-full p-3 bg-white border border-slate-200 rounded-xl outline-none text-sm" value={formData.hipProduct || ''} onChange={e => setFormData(p => ({ ...p, hipProduct: e.target.value, hipCategory: '', hipRequestType: '' }))}>
+                                                <select className="w-full p-3 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-xl outline-none text-sm" value={formData.hipProduct || ''} onChange={e => setFormData(p => ({ ...p, hipProduct: e.target.value, hipCategory: '', hipRequestType: '' }))}>
                                                 <option value="">Select...</option>{Object.keys(HIP_HIERARCHY).map(k => <option key={k} value={k}>{k}</option>)}</select></div>
                                             );
                                             if (newTaskType === 'hip_request' && field === 'hipCategory') return (
                                                 <div key={field}><label className="text-[10px] font-black text-slate-400 uppercase block mb-1.5">Category</label>
-                                                <select className="w-full p-3 bg-white border border-slate-200 rounded-xl outline-none text-sm" disabled={!formData.hipProduct} value={formData.hipCategory || ''} onChange={e => setFormData(p => ({ ...p, hipCategory: e.target.value, hipRequestType: '' }))}>
+                                                <select className="w-full p-3 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-xl outline-none text-sm" disabled={!formData.hipProduct} value={formData.hipCategory || ''} onChange={e => setFormData(p => ({ ...p, hipCategory: e.target.value, hipRequestType: '' }))}>
                                                 <option value="">Select...</option>{formData.hipProduct && Object.keys(HIP_HIERARCHY[formData.hipProduct] || {}).map(c => <option key={c} value={c}>{c}</option>)}</select></div>
                                             );
                                             if (newTaskType === 'hip_request' && field === 'hipRequestType') return (
                                                 <div key={field}><label className="text-[10px] font-black text-slate-400 uppercase block mb-1.5">Request Type</label>
-                                                <select className="w-full p-3 bg-white border border-slate-200 rounded-xl outline-none text-sm" disabled={!formData.hipCategory} value={formData.hipRequestType || ''} onChange={e => handleInputChange(field, e.target.value)}>
+                                                <select className="w-full p-3 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-xl outline-none text-sm" disabled={!formData.hipCategory} value={formData.hipRequestType || ''} onChange={e => handleInputChange(field, e.target.value)}>
                                                 <option value="">Select...</option>{(formData.hipProduct && formData.hipCategory) && HIP_HIERARCHY[formData.hipProduct][formData.hipCategory].map(o => <option key={o} value={o}>{o}</option>)}</select></div>
                                             );
 
@@ -707,7 +779,7 @@
                                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">{field.replace(/([A-Z])/g, ' $1')}</label>
                                                     {isDropdown ? (
                                                         <div className="space-y-2">
-                                                            <select className="w-full p-3 bg-white border border-slate-200 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500" value={formData[field] || ''} onChange={e => handleInputChange(field, e.target.value)}>
+                                                            <select className="w-full p-3 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500" value={formData[field] || ''} onChange={e => handleInputChange(field, e.target.value)}>
                                                                 <option value="">Select...</option>
                                                                 {(field === 'associateName' || field === 'associateEmail') && associateList.map(a => <option key={a} value={a}>{a}</option>)}
                                                                 {field === 'mentorName' && mentorList.map(a => <option key={a} value={a}>{a}</option>)}
@@ -716,11 +788,11 @@
                                                                 <option value="ADD_NEW_CUSTOM" className="text-blue-600 font-bold">+ Add New Item...</option>
                                                             </select>
                                                             {customInputTarget === field && (
-                                                                <div className="flex gap-2 animate-fade-in"><input type="text" id={`custom-${field}`} placeholder={`New value...`} className="flex-1 p-2 text-xs border rounded-lg outline-none focus:ring-1 focus:ring-blue-500" /><button type="button" onClick={() => handleAddCustomValue(field, document.getElementById(`custom-${field}`).value)} className="px-4 py-2 bg-blue-600 text-white text-[10px] font-bold rounded-lg uppercase">Add</button></div>
+                                                                <div className="flex gap-2 animate-fade-in"><input type="text" id={`custom-${field}`} placeholder={`New value...`} className="flex-1 p-2 text-xs border rounded-lg outline-none bg-white dark:bg-slate-800 dark:border-slate-700" /><button type="button" onClick={() => handleAddCustomValue(field, document.getElementById(`custom-${field}`).value)} className="px-4 py-2 bg-blue-600 text-white text-[10px] font-bold rounded-lg uppercase">Add</button></div>
                                                             )}
                                                         </div>
                                                     ) : (
-                                                        <input type={field.toLowerCase().includes('date') ? 'date' : 'text'} className="w-full p-3 bg-white border border-slate-200 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500" value={formData[field] || ''} onChange={e => handleInputChange(field, e.target.value)} />
+                                                        <input type={field.toLowerCase().includes('date') ? 'date' : 'text'} className="w-full p-3 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500" value={formData[field] || ''} onChange={e => handleInputChange(field, e.target.value)} />
                                                     )}
                                                 </div>
                                             );
@@ -728,12 +800,44 @@
                                     </div>
                                     {!['weekly_quiz', 'hip_request', 'duplicate_iap', 'mentor_audit'].includes(newTaskType) && (
                                         <div><label className="text-[10px] font-black text-slate-400 uppercase block mb-1.5">Record Status</label>
-                                            <select className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm font-bold" value={formData.status || 'Pending'} onChange={e => handleInputChange('status', e.target.value)}><option value="Pending">Pending</option><option value="Resolved">Resolved</option><option value="In Progress">In Progress</option></select>
+                                            <select className="w-full p-3 bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-xl outline-none text-sm font-bold" value={formData.status || 'Pending'} onChange={e => handleInputChange('status', e.target.value)}><option value="Pending">Pending</option><option value="Resolved">Resolved</option><option value="In Progress">In Progress</option></select>
                                         </div>
                                     )}
                                     <button type="submit" className="w-full py-4 bg-blue-600 text-white font-black rounded-2xl shadow-xl hover:bg-blue-700 transition-all uppercase tracking-widest shadow-blue-100">Commit Record Entry</button>
                                 </form>
                             </div>
+                        </div>
+                    )}
+
+                    {/* Settings Modal (Internal Password Reset) */}
+                    {isSettingsOpen && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsSettingsOpen(false)} />
+                            <Card className="relative w-full max-w-md p-8 animate-fade-in">
+                                <div className="flex justify-between items-center mb-6">
+                                    <h2 className="text-xl font-black uppercase tracking-tight">Security Settings</h2>
+                                    <button onClick={() => setIsSettingsOpen(false)} className="text-slate-400">&times;</button>
+                                </div>
+                                <div className="space-y-6">
+                                    <div>
+                                        <label className="text-[10px] font-black text-slate-400 uppercase mb-2 block">Change Password</label>
+                                        <input 
+                                            type="password" 
+                                            className="w-full p-3 border dark:border-slate-700 dark:bg-slate-800 rounded-xl outline-none bg-slate-50 font-bold" 
+                                            placeholder="Enter new password"
+                                            value={newInternalPassword}
+                                            onChange={e => setNewInternalPassword(e.target.value)}
+                                        />
+                                        <p className="mt-2 text-[9px] text-slate-400">Minimum 6 characters required.</p>
+                                    </div>
+                                    <button 
+                                        onClick={handleUpdatePasswordInternal}
+                                        className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold uppercase text-xs shadow-lg shadow-blue-100"
+                                    >
+                                        Update Password
+                                    </button>
+                                </div>
+                            </Card>
                         </div>
                     )}
                 </div>
