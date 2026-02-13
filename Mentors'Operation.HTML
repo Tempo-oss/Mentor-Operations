@@ -63,8 +63,7 @@
         const CreditCard = (props) => <Icon {...props} path={<><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></>} />;
         const Footprints = (props) => <Icon {...props} path={<><path d="M4 16v-2.38C4 11.5 2.97 10.5 3 8c.03-2.72 1.49-6 4.5-6C9.37 2 11 3.8 11 8c0 2.25-.79 4.33-2 6"/><path d="M20 20v-2.38c0-2.12 1.03-3.12 1-5.62-.03-2.72-1.49-6-4.5-6C14.63 6 13 7.8 13 12c0 2.25.79 4.33 2 6"/><path d="M16 17h4"/><path d="M4 13h4"/></>} />;
         const Gift = (props) => <Icon {...props} path={<><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5"/></>} />;
-        const Megaphone = (props) => <Icon {...props} path={<><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></>} />;
-        const Plus = (props) => <Icon {...props} path={<><path d="M5 12h14"/><path d="M12 5v14"/></>} />;
+        const UserCheck = (props) => <Icon {...props} path={<><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/></>} />;
         const Search = (props) => <Icon {...props} path={<><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></>} />;
         const CheckCircle2 = (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></>} />;
         const Clock = (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></>} />;
@@ -76,10 +75,21 @@
         const MessageCircle = (props) => <Icon {...props} path={<><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></>} />;
         const Download = (props) => <Icon {...props} path={<><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></>} />;
         const Edit = (props) => <Icon {...props} path={<><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></>} />;
+        const Dice = (props) => <Icon {...props} path={<><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><circle cx="15.5" cy="15.5" r="1.5"/><circle cx="15.5" cy="8.5" r="1.5"/><circle cx="8.5" cy="15.5" r="1.5"/><circle cx="12" cy="12" r="1.5"/></>} />;
 
         // --- Static Data ---
         const mentorList = [ "Noha Radwan", "Rashad Mohamed", "Emad Mohamed", "Mohamed Mounir" ];
         const associateList = [ "Ariath Piol", "Job James", "Lina Hesham", "Mohab Magdy", "Marwa Ahmed", "Ramadan Philip", "Aida Clement", "Hassan Khallaf", "Nada Ashraf", "Ruben Joseph", "Esraa Tarek Eroq", "Ahmed Abdelghany", "Nour Ayman", "Ashraf Essam", "Hala Ayman", "Rania Mohamed", "Salma Ahmed", "Marwan Hassan", "Osama M. Adam", "Marwan Zakaria", "Shahd Emad", "Ahmed Nasser abdelhakim" ];
+        
+        const auditAttributes = [
+            { id: 'responsiveness', label: 'Responsiveness', weight: 10, desc: 'Measures how promptly and effectively the mentor responds.' },
+            { id: 'professionalism', label: 'Professionalism', weight: 10, desc: 'Evaluates conduct, tone, and ability to maintain respectful interactions.' },
+            { id: 'clarity', label: 'Clarity', weight: 20, desc: 'Assess ability to explain concepts/instructions clearly.' },
+            { id: 'workflow', label: 'Workflow', weight: 20, desc: 'Reviews how well the mentor followed the correct workflow.' },
+            { id: 'documentation', label: 'Documentation', weight: 10, desc: 'Examines quality and consistency of notes and updates.' },
+            { id: 'resolution', label: 'Resolution', weight: 30, desc: 'Evaluates ability to help resolve issues and close loops.' }
+        ];
+
         const quizModules = [
             { id: 'productExpert', title: 'Product Expert', desc: 'Is the associate able to demonstrate product expertise when queried by the customer?' },
             { id: 'processAwareness', title: 'Process Awareness', desc: 'Comprehending the process, rather than just adhering to its procedures.' },
@@ -88,21 +98,53 @@
             { id: 'fcr', title: 'FCR', desc: 'Was the associate able to anticipate all the customer questions?' }
         ];
 
+        const HIP_HIERARCHY = {
+            "Move": {
+                "Order Modifications": ["Change Color", "Change Address", "Upgrade", "Downgrade", "Core Modification", "Order Receipt", "Mispick"],
+                "Shipping": ["Delivery ETA", "Delivery Details", "Delivery Hold", "Failed Delivery", "Delayed Delivery", "Delayed Accessories"],
+                "Returns & Claims": ["Return Request", "Missing Items", "Damaged Unit", "DOA"],
+                "Billing & Membership": ["Cancel (Immediate/Scheduled/Request/Prevented)", "Reactivate", "Pause Injury", "Refund (Inquiry/Applied)", "Billing Update", "Charges Dispute"],
+                "Payments & Offers": ["HSA/FSA", "Invoice Request", "Bundled Inquiry", "Bundled Code Applied", "Personal Training"],
+                "Account Management": ["Contact Info Update", "Access Setup", "Change Ownership", "Add/Remove Family", "Password Reset", "Referral Inquiry", "Single Login", "Current Promotions"],
+                "Content": ["Challenges", "Workout History", "Feedback", "Training Plan Inquiry", "Baseline Issue"],
+                "Prospective": ["Purchasing Info", "Membership Requirements", "HSA/FSA Inquiry", "Referral Program", "Holiday Promotion", "Current Offers"]
+            },
+            "Core": {
+                "Product Support": ["Android Support", "Connection Unstable", "Hardware Connection Issue", "Start Class Error", "Incomplete Class"],
+                "Hardware Support": ["Physical Damage", "Standalone Availability", "Standalone Delivery Delay"],
+                "Shipping": ["Missing Items", "Delayed Accessories"]
+            },
+            "Studio": {
+                "Shipping": ["Delivery ETA", "Delivery Details", "Delivery Hold", "Failed Delivery", "Delayed Delivery", "Missing Items", "Delayed Accessories"],
+                "Returns & Claims": ["Return Request", "Damaged Unit", "DOA"],
+                "Order Mods": ["Change Address", "Order Receipt", "Mispick"],
+                "Billing": ["Cancel (Immediate/Scheduled/Request/Prevented)", "Reactivate", "Refund Inquiry"]
+            },
+            "Accessory": {
+                "Purchasing": ["Cabinet Info", "Core Standalone Availability", "Kettlebell Availability"],
+                "Delivery": ["Core Standalone Delay", "Plates Delivery Delay", "Barbell Delivery Delay", "Apparel Missing Item"],
+                "Quality & Damage": ["Collar Damage", "Quick Lock Damage", "Competition Plates Damage", "Barbell Damage", "Workout Mat Damage"],
+                "Setup & Specs": ["Kettlebell Setup", "Folding Rack Setup", "Folding Rack Lock Issue", "Collar Specs", "HRM Replacement", "HRM Charger Replacement"]
+            },
+            "Membership": {
+                "Account Management": ["Cancel (Immediate/Scheduled/Request/Prevented)", "Reactivate", "Pause Injury", "Refund (Inquiry/Applied)", "Billing Update", "Charges Dispute", "Contact Info Update", "Access Setup", "Change Ownership", "Add/Remove Family", "Password Reset", "Referral Inquiry", "Single Login"]
+            }
+        };
+
         const categories = {
             disputes: { label: 'Disputes', icon: AlertCircle, color: 'red', fields: ['customerName', 'customerEmail', 'disputeAmount', 'disputeDate', 'disputeReason', 'disputedProduct', 'disputeLink', 'resolution'] },
             pending_subs: { label: 'Pending Subs', icon: CreditCard, color: 'blue', fields: ['customerName', 'customerEmail', 'pendingReason', 'resolution'] },
-            floorwalker: { label: 'FloorWalker', icon: Footprints, color: 'amber', fields: ['associateName', 'ticketLink', 'reasonForSupport', 'requestType', 'validRequest', 'slackLink', 'comment'] },
-            hip_request: { label: 'HIP Request', icon: MessageCircle, color: 'teal', fields: ['associateName', 'ticketLink', 'slackLink', 'validHip', 'invalidReason', 'hipRequestType'] },
+            floorwalker: { label: 'FloorWalker', icon: Footprints, color: 'amber', fields: ['associateName', 'ticketLink', 'reasonForSupport', 'requestType', 'validRequest', 'invalidReason', 'slackLink', 'comment'] },
+            hip_request: { label: 'HIP Request', icon: MessageCircle, color: 'teal', fields: ['associateName', 'ticketLink', 'slackLink', 'validHip', 'invalidReason', 'hipProduct', 'hipCategory', 'hipRequestType'] },
             weekly_quiz: { label: 'Weekly Quiz', icon: ClipboardList, color: 'cyan', fields: ['associateName', 'associateEmail', 'date', 'correctionModule'] },
             duplicate_iap: { label: 'Duplicate IAP', icon: FileText, color: 'indigo', fields: ['customerEmail', 'emailSent', 'subscriptionStatus'] },
-            surprise_delight: { label: 'Surprise & Delight', icon: Gift, color: 'purple', fields: ['agent', 'team', 'customerName', 'customerEmail', 'productType', 'ticketUrl', 'surpriseAndDelightReason', 'surpriseAndDelightType', 'amount', 'date', 'notes'] },
-            mx_announcement: { label: 'MX Announcement', icon: Megaphone, color: 'emerald', fields: ['title', 'channel', 'readReceipts'] },
+            surprise_delight: { label: 'Surprise & Delight', icon: Gift, color: 'purple', fields: ['associateName', 'team', 'customerName', 'customerEmail', 'productType', 'ticketUrl', 'surpriseAndDelightReason', 'surpriseAndDelightType', 'amount', 'date', 'notes'] },
+            mentor_audit: { label: 'Mentor Audit', icon: UserCheck, color: 'emerald', fields: ['mentorName', 'hipLogReference', 'auditModule'] },
         };
 
-        // --- Components ---
         const Card = ({ children, className = "" }) => <div className={`bg-white rounded-xl border border-slate-200 shadow-sm ${className}`}>{children}</div>;
         const Badge = ({ children, color = "slate" }) => {
-            const colors = { slate: "bg-slate-100 text-slate-700", red: "bg-rose-100 text-rose-700", blue: "bg-blue-100 text-blue-700", green: "bg-emerald-100 text-emerald-700", amber: "bg-amber-100 text-amber-700", teal: "bg-teal-100 text-teal-700", cyan: "bg-cyan-100 text-cyan-700" };
+            const colors = { slate: "bg-slate-100 text-slate-700", red: "bg-rose-100 text-rose-700", blue: "bg-blue-100 text-blue-700", green: "bg-emerald-100 text-emerald-700", amber: "bg-amber-100 text-amber-700", teal: "bg-teal-100 text-teal-700", cyan: "bg-cyan-100 text-cyan-700", purple: "bg-purple-100 text-purple-700", emerald: "bg-emerald-100 text-emerald-700" };
             return <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${colors[color] || colors.slate}`}>{children}</span>;
         };
 
@@ -111,22 +153,39 @@
             const [activeTab, setActiveTab] = useState('dashboard');
             const [tasks, setTasks] = useState([]);
             const [connectionStatus, setConnectionStatus] = useState('connecting');
-            
             const [isFormOpen, setIsFormOpen] = useState(false);
             const [searchTerm, setSearchTerm] = useState('');
             const [editingTaskId, setEditingTaskId] = useState(null);
             const [newTaskType, setNewTaskType] = useState('disputes');
             const [formData, setFormData] = useState({});
             
-            const [currentPage, setCurrentPage] = useState(1);
-            const itemsPerPage = 10;
-            const [reportFilters, setReportFilters] = useState({ category: 'all', agent: 'all', startDate: '', endDate: '' });
-            const [generatedReport, setGeneratedReport] = useState(null);
+            // Flexible Lists State
+            const [customOptions, setCustomOptions] = useState({
+                pendingReason: ["Not delivered", "Delivered but not updated.", "Returned or canceled order"],
+                disputeReason: ["Subscription claim", "Unauthorized purchase", "Defective product", "Credit not processed"],
+                reasonForSupport: ["SOP Guidance", "Process education", "System Navigation"],
+                requestType: ["Membership", "Billing", "Account Access", "Technical Support", "Order Support"],
+                invalidReason: ["Already documented in SOP", "Training issue", "Incomplete info", "Duplicate request", "Not an Ops matter"],
+                team: ["T1", "Social Media", "Mentor", "Order Support", "Product Support"],
+                productType: ["Studio", "Move", "Core", "Accessories", "Membership"],
+                surpriseAndDelightReason: [
+                    "Delivery ETA (Within the lead time)", "Customer Ordered Wrong color by mistake", 
+                    "Technical issues that was resolved by the normal TS", "Bundle Accessory Delay", 
+                    "SRLimited access after cancelation", "Missing a discount/promo", 
+                    "Complains about compatibility", "Form Feedback/Weight Recommendations", 
+                    "Android Health compatibility", "Lack of features", "Lack of new content", 
+                    "Accessory Support", "Leaderboard"
+                ],
+                surpriseAndDelightType: [
+                    "Water Bottle", "Tempo Sweat Towel", "Yoga Block", "Yoga Strap", "Recovery Roller", 
+                    "Gift Box", "axis-performance-hat-black", "axis-performance-hat-slate-grey", 
+                    "tempo-workout-gloves", "motive-training-tee-black", "motive-training-tee-1", 
+                    "Pinnacle Knit Beanie"
+                ]
+            });
 
-            const [pendingReasonsList] = useState(["Not delivered", "Delivered but not updated.", "Returned or canceled order"]);
-            const [disputeReasonsList] = useState(["Subscription claim", "Unauthorized purchase", "Defective product", "Credit not processed"]);
-            const [fwReasonsList] = useState(["SOP Guidance", "Process education", "System Navigation"]);
-            const [fwRequestTypesList] = useState(["Membership", "Billing", "Account Access", "Technical Support", "Order Support"]);
+            // Input field visibility for custom entry
+            const [customInputTarget, setCustomInputTarget] = useState(null);
 
             const fetchTasks = async () => {
                 setConnectionStatus('connecting');
@@ -145,24 +204,19 @@
                 e.preventDefault();
                 let status = formData.status || 'Pending';
                 
-                // Smart Resolution Logic for Root Status
                 if (!editingTaskId) {
                     if (newTaskType === 'disputes' && (formData.resolution === 'Won' || formData.resolution === 'Lost')) status = 'Resolved';
                     else if (newTaskType === 'pending_subs' && (formData.resolution === 'Activated' || formData.resolution === 'Cancelled')) status = 'Resolved';
-                    else if (['weekly_quiz', 'hip_request', 'duplicate_iap'].includes(newTaskType)) status = 'Resolved';
+                    else if (['weekly_quiz', 'hip_request', 'duplicate_iap', 'mentor_audit'].includes(newTaskType)) status = 'Resolved';
                 }
 
                 const details = { ...formData };
-                // Clean details to ensure it only contains form-specific values
                 delete details.status;
 
                 if (!editingTaskId) {
-                    if (newTaskType === 'surprise_delight') details.submitterName = currentUser;
                     if (newTaskType === 'floorwalker') details.mentorName = currentUser;
                 }
 
-                // Strictly construction for DB Columns. 
-                // We NEVER send 'id' or 'priority' here.
                 const taskData = {
                     type: newTaskType,
                     title: `${categories[newTaskType].label} Log`,
@@ -171,40 +225,48 @@
                     details: details
                 };
 
-                let result;
-                if (editingTaskId) {
-                    result = await supabase.from('tasks').update(taskData).eq('id', editingTaskId);
-                } else {
-                    // ID and date are handled by DB defaults (if you ran the SQL fix)
-                    result = await supabase.from('tasks').insert([taskData]);
-                }
+                if (!editingTaskId) { taskData.date = new Date().toISOString(); }
 
-                if (result.error) {
-                    console.error("Supabase Error:", result.error);
-                    // More descriptive alert for common failures
-                    if (result.error.message.includes("priority")) {
-                        alert("Error: Schema Cache out of sync. Please run the SQL command 'NOTIFY pgrst, reload schema;' in Supabase.");
-                    } else if (result.error.message.includes("null value in column id")) {
-                        alert("Error: Table ID is not auto-generating. Please run the SQL fix script provided.");
-                    } else {
-                        alert(`Database Error: ${result.error.message}`);
-                    }
-                } else {
-                    setIsFormOpen(false);
-                    setFormData({});
-                    setEditingTaskId(null);
-                }
+                const { error } = editingTaskId 
+                    ? await supabase.from('tasks').update(taskData).eq('id', editingTaskId)
+                    : await supabase.from('tasks').insert([taskData]);
+
+                if (error) alert("Error: " + error.message);
+                else { setIsFormOpen(false); setFormData({}); setEditingTaskId(null); }
             };
 
             const handleEditTask = (task) => {
                 setNewTaskType(task.type);
-                // Populate form with existing details and current status
                 setFormData({ ...(task.details || {}), status: task.status });
                 setEditingTaskId(task.id);
                 setIsFormOpen(true);
             };
 
-            const handleInputChange = (field, value) => setFormData(prev => ({ ...prev, [field]: value }));
+            const handleInputChange = (field, value) => {
+                if (value === 'ADD_NEW_CUSTOM') {
+                    setCustomInputTarget(field);
+                } else {
+                    setFormData(prev => ({ ...prev, [field]: value }));
+                    setCustomInputTarget(null);
+                }
+            };
+
+            const handleAddCustomValue = (field, newValue) => {
+                if (!newValue.trim()) return;
+                setCustomOptions(prev => ({
+                    ...prev,
+                    [field]: [...(prev[field] || []), newValue]
+                }));
+                handleInputChange(field, newValue);
+            };
+
+            const handleAuditScore = (attrId, achieved) => {
+                const scores = { ...(formData.auditScores || {}) };
+                scores[attrId] = achieved;
+                let total = 0;
+                auditAttributes.forEach(attr => { if (scores[attr.id] === 'Yes') total += attr.weight; });
+                setFormData(prev => ({ ...prev, auditScores: scores, overallAuditScore: total }));
+            };
 
             const handleQuizScore = (moduleId, score) => {
                 const scores = { ...(formData.quizScores || {}), [moduleId]: parseInt(score) };
@@ -213,25 +275,16 @@
                 setFormData(prev => ({ ...prev, quizScores: scores, overallScore: avg }));
             };
 
-            const handleGenerateReport = () => {
-                let filtered = tasks;
-                if (reportFilters.category !== 'all') filtered = filtered.filter(t => t.type === reportFilters.category);
-                if (reportFilters.agent !== 'all') filtered = filtered.filter(t => t.agent === reportFilters.agent);
-                if (reportFilters.startDate) filtered = filtered.filter(t => new Date(t.date) >= new Date(reportFilters.startDate));
-                if (reportFilters.endDate) {
-                    const end = new Date(reportFilters.endDate); end.setHours(23,59,59);
-                    filtered = filtered.filter(t => new Date(t.date) <= end);
-                }
-                setGeneratedReport(filtered);
-            };
-
-            const downloadCSV = () => {
-                if (!generatedReport) return;
-                const headers = ['ID', 'Type', 'Owner', 'Status', 'Date', 'Details'];
-                const csv = [headers.join(','), ...generatedReport.map(t => [t.id, t.type, t.agent, t.status, new Date(t.date).toLocaleDateString(), JSON.stringify(t.details).replace(/,/g, ';')].join(','))].join('\n');
-                const blob = new Blob([csv], { type: 'text/csv' });
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a'); a.href = url; a.download = 'mentor_ops_report.csv'; a.click();
+            const pickRandomHIP = () => {
+                const hipLogs = tasks.filter(t => t.type === 'hip_request');
+                if (hipLogs.length === 0) { alert("No HIP logs available to audit yet."); return; }
+                const random = hipLogs[Math.floor(Math.random() * hipLogs.length)];
+                setFormData(prev => ({ 
+                    ...prev, 
+                    hipLogReference: random.id,
+                    auditedTicket: random.details.ticketLink,
+                    mentorName: random.agent
+                }));
             };
 
             const stats = useMemo(() => ({
@@ -245,7 +298,6 @@
                 (categories[t.type]?.label || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
                 (t.agent || '').toLowerCase().includes(searchTerm.toLowerCase())
             );
-            const paginatedLogs = filteredLogs.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
             if (!currentUser) {
                 return (
@@ -257,7 +309,7 @@
                             <h2 className="text-2xl font-bold mb-2">MentorOps Center</h2>
                             <p className="text-slate-500 mb-8">Select your identity to continue</p>
                             <select className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" onChange={(e) => setCurrentUser(e.target.value)} defaultValue="">
-                                <option value="" disabled>Select Mentor...</option>
+                                <option value="" disabled>Select User...</option>
                                 {mentorList.map(name => <option key={name} value={name}>{name}</option>)}
                             </select>
                         </Card>
@@ -275,7 +327,7 @@
                                 <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Mentor Ops</span>
                             </div>
                             <nav className="flex gap-1">
-                                {['dashboard', 'logs', 'reports'].map(tab => (
+                                {['dashboard', 'logs'].map(tab => (
                                     <button key={tab} onClick={() => setActiveTab(tab)} className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${activeTab === tab ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:bg-slate-50'}`}>
                                         {tab.toUpperCase()}
                                     </button>
@@ -301,11 +353,11 @@
                                         <h3 className="text-4xl font-bold">{stats.total}</h3>
                                     </Card>
                                     <Card className="p-6 border-l-4 border-l-rose-500">
-                                        <p className="text-slate-400 text-xs font-bold uppercase mb-1">Follow-ups Req.</p>
+                                        <p className="text-slate-400 text-xs font-bold uppercase mb-1">Pending Follow-ups</p>
                                         <h3 className="text-4xl font-bold text-rose-600">{stats.pending}</h3>
                                     </Card>
                                     <Card className="p-6 border-l-4 border-l-emerald-500">
-                                        <p className="text-slate-400 text-xs font-bold uppercase mb-1">Resolved</p>
+                                        <p className="text-slate-400 text-xs font-bold uppercase mb-1">Resolved Today</p>
                                         <h3 className="text-4xl font-bold text-emerald-600">{stats.resolved}</h3>
                                     </Card>
                                 </div>
@@ -346,7 +398,7 @@
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">
-                                            {paginatedLogs.map(task => (
+                                            {filteredLogs.map(task => (
                                                 <tr key={task.id} className="hover:bg-slate-50 transition-colors">
                                                     <td className="px-6 py-4">
                                                         <div className="flex items-center gap-3">
@@ -370,59 +422,7 @@
                                             ))}
                                         </tbody>
                                     </table>
-                                    <div className="p-4 bg-slate-50 flex justify-between items-center text-xs font-bold text-slate-500">
-                                        <span>Showing {(currentPage-1)*itemsPerPage+1} to {Math.min(currentPage*itemsPerPage, filteredLogs.length)} of {filteredLogs.length}</span>
-                                        <div className="flex gap-2">
-                                            <button disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)} className="px-3 py-1 bg-white border rounded hover:bg-slate-100 disabled:opacity-50">Prev</button>
-                                            <button disabled={currentPage * itemsPerPage >= filteredLogs.length} onClick={() => setCurrentPage(p => p + 1)} className="px-3 py-1 bg-white border rounded hover:bg-slate-100 disabled:opacity-50">Next</button>
-                                        </div>
-                                    </div>
                                 </Card>
-                            </div>
-                        )}
-
-                        {activeTab === 'reports' && (
-                            <div className="space-y-6 animate-fade-in">
-                                <Card className="p-6 space-y-4">
-                                    <div className="flex items-center gap-3 mb-2">
-                                        <div className="h-8 w-8 bg-blue-100 rounded-lg flex items-center justify-center"><Filter className="h-5 w-5 text-blue-600" /></div>
-                                        <h2 className="text-lg font-bold">Report Generator</h2>
-                                    </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                        <div><label className="text-[10px] font-bold text-slate-400 uppercase">Category</label>
-                                            <select className="w-full p-2.5 bg-slate-50 border rounded-lg text-sm outline-none" value={reportFilters.category} onChange={e => setReportFilters(f => ({ ...f, category: e.target.value }))}>
-                                                <option value="all">All Types</option>
-                                                {Object.entries(categories).map(([k, c]) => <option key={k} value={k}>{c.label}</option>)}
-                                            </select>
-                                        </div>
-                                        <div><label className="text-[10px] font-bold text-slate-400 uppercase">Mentor</label>
-                                            <select className="w-full p-2.5 bg-slate-50 border rounded-lg text-sm outline-none" value={reportFilters.agent} onChange={e => setReportFilters(f => ({ ...f, agent: e.target.value }))}>
-                                                <option value="all">All Mentors</option>
-                                                {mentorList.map(m => <option key={m} value={m}>{m}</option>)}
-                                            </select>
-                                        </div>
-                                        <div><label className="text-[10px] font-bold text-slate-400 uppercase">Start Date</label>
-                                            <input type="date" className="w-full p-2.5 bg-slate-50 border rounded-lg text-sm outline-none" value={reportFilters.startDate} onChange={e => setReportFilters(f => ({ ...f, startDate: e.target.value }))} />
-                                        </div>
-                                        <div><label className="text-[10px] font-bold text-slate-400 uppercase">End Date</label>
-                                            <input type="date" className="w-full p-2.5 bg-slate-50 border rounded-lg text-sm outline-none" value={reportFilters.endDate} onChange={e => setReportFilters(f => ({ ...f, endDate: e.target.value }))} />
-                                        </div>
-                                    </div>
-                                    <div className="flex justify-end pt-2">
-                                        <button onClick={handleGenerateReport} className="px-6 py-2.5 bg-slate-900 text-white font-bold rounded-lg hover:bg-slate-800 shadow-lg">GENERATE REPORT</button>
-                                    </div>
-                                </Card>
-                                {generatedReport && (
-                                    <div className="space-y-4 animate-fade-in">
-                                        <div className="flex justify-between items-center">
-                                            <h3 className="font-bold text-lg">Results ({generatedReport.length})</h3>
-                                            <button onClick={downloadCSV} className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 font-bold rounded-lg text-sm hover:bg-slate-50">
-                                                <Download className="h-4 w-4" /> Export CSV
-                                            </button>
-                                        </div>
-                                        <Card className="overflow-x-auto"><table className="w-full text-left text-sm"><thead className="bg-slate-50 border-b"><tr><th className="px-6 py-3">Type</th><th className="px-6 py-3">Agent</th><th className="px-6 py-3">Date</th><th className="px-6 py-3 text-right">Status</th></tr></thead><tbody className="divide-y">{generatedReport.map(r => (<tr key={r.id} className="hover:bg-slate-50"><td className="px-6 py-4 font-medium">{categories[r.type]?.label}</td><td className="px-6 py-4">{r.agent}</td><td className="px-6 py-4 text-slate-400">{new Date(r.date).toLocaleDateString()}</td><td className="px-6 py-4 text-right"><Badge color={r.status === 'Pending' ? 'amber' : 'green'}>{r.status}</Badge></td></tr>))}</tbody></table></Card>
-                                    </div>
-                                )}
                             </div>
                         )}
                     </main>
@@ -443,7 +443,7 @@
                                 <form onSubmit={handleAddTask} className="space-y-6">
                                     {!editingTaskId && (
                                         <div><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Change Category</label>
-                                            <select className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm font-bold" value={newTaskType} onChange={e => setNewTaskType(e.target.value)}>
+                                            <select className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm font-bold" value={newTaskType} onChange={e => { setNewTaskType(e.target.value); setFormData({}); }}>
                                                 {Object.entries(categories).map(([k, c]) => <option key={k} value={k}>{c.label}</option>)}
                                             </select>
                                         </div>
@@ -451,9 +451,37 @@
 
                                     <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-4">
                                         {categories[newTaskType].fields.map(field => {
+                                            const isValidNo = (newTaskType === 'floorwalker' && formData.validRequest === 'No') || 
+                                                              (newTaskType === 'hip_request' && formData.validHip === 'No');
+                                            
+                                            if (field === 'invalidReason' && !isValidNo) return null;
+
+                                            // Audit Module Logic
+                                            if (field === 'auditModule') return (
+                                                <div key={field} className="space-y-4 pt-2">
+                                                    <div className="flex justify-between items-center"><h3 className="text-[10px] font-black text-slate-400 uppercase">Scoring Criteria</h3><Badge color="green">Score: {formData.overallAuditScore || '0'}%</Badge></div>
+                                                    {auditAttributes.map(attr => (
+                                                        <div key={attr.id} className="bg-white p-4 rounded-xl border border-slate-200">
+                                                            <div className="flex justify-between items-start mb-2">
+                                                                <div>
+                                                                    <p className="font-bold text-sm">{attr.label} ({attr.weight}%)</p>
+                                                                    <p className="text-[10px] text-slate-400">{attr.desc}</p>
+                                                                </div>
+                                                                <div className="flex gap-1">
+                                                                    <button type="button" onClick={() => handleAuditScore(attr.id, 'Yes')} className={`px-3 py-1 rounded-md text-[10px] font-bold border ${formData.auditScores?.[attr.id] === 'Yes' ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white border-slate-200 text-slate-400'}`}>YES</button>
+                                                                    <button type="button" onClick={() => handleAuditScore(attr.id, 'No')} className={`px-3 py-1 rounded-md text-[10px] font-bold border ${formData.auditScores?.[attr.id] === 'No' ? 'bg-rose-500 border-rose-500 text-white' : 'bg-white border-slate-200 text-slate-400'}`}>NO</button>
+                                                                </div>
+                                                            </div>
+                                                            <input type="text" placeholder="Comment..." className="w-full p-2 bg-slate-50 border-b text-[11px] outline-none" onChange={e => setFormData(prev => ({...prev, auditComments: {...(prev.auditComments || {}), [attr.id]: e.target.value}}))} value={formData.auditComments?.[attr.id] || ''} />
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            );
+
+                                            // Correction Module (Weekly Quiz) Logic
                                             if (field === 'correctionModule') return (
                                                 <div key={field} className="space-y-6 pt-2">
-                                                    <div className="flex justify-between items-center"><h3 className="text-[10px] font-black text-slate-400 uppercase">Correction Module</h3><Badge color="cyan">AVG: {formData.overallScore || '0.0'}</Badge></div>
+                                                    <div className="flex justify-between items-center"><h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Correction Module</h3><Badge color="cyan">AVG: {formData.overallScore || '0.0'}</Badge></div>
                                                     {quizModules.map(m => (
                                                         <div key={m.id} className="bg-white p-4 rounded-xl border border-slate-200">
                                                             <p className="font-bold text-sm mb-1">{m.title}</p>
@@ -472,25 +500,86 @@
                                                 </div>
                                             );
 
-                                            const isDropdown = ['associateName', 'agent', 'team', 'productType', 'surpriseAndDelightType', 'resolution', 'pendingReason', 'disputeReason', 'reasonForSupport', 'requestType', 'validHip', 'validRequest', 'subscriptionStatus', 'emailSent'].includes(field);
+                                            if (field === 'hipLogReference' && newTaskType === 'mentor_audit') return (
+                                                <div key={field} className="pt-2">
+                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Audit Target (Randomly Selected)</label>
+                                                    <div className="flex gap-2">
+                                                        <div className="flex-1 p-3 bg-white border border-slate-200 rounded-xl text-sm font-medium">
+                                                            {formData.auditedTicket ? `Ticket: ${formData.auditedTicket}` : 'No Log Picked'}
+                                                        </div>
+                                                        <button type="button" onClick={pickRandomHIP} className="p-3 bg-blue-100 text-blue-600 rounded-xl hover:bg-blue-200"><Dice className="h-5 w-5" /></button>
+                                                    </div>
+                                                </div>
+                                            );
+
+                                            // HIP dependent dropdown logic
+                                            if (newTaskType === 'hip_request' && field === 'hipProduct') {
+                                                return (
+                                                    <div key={field}>
+                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Product</label>
+                                                        <select className="w-full p-3 bg-white border border-slate-200 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500" 
+                                                            value={formData.hipProduct || ''} 
+                                                            onChange={e => setFormData(prev => ({ ...prev, hipProduct: e.target.value, hipCategory: '', hipRequestType: '' }))}>
+                                                            <option value="">Select Product...</option>
+                                                            {Object.keys(HIP_HIERARCHY).map(k => <option key={k} value={k}>{k}</option>)}
+                                                        </select>
+                                                    </div>
+                                                );
+                                            }
+
+                                            if (newTaskType === 'hip_request' && field === 'hipCategory') {
+                                                const options = formData.hipProduct ? Object.keys(HIP_HIERARCHY[formData.hipProduct] || {}) : [];
+                                                return (
+                                                    <div key={field}>
+                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Category</label>
+                                                        <select className="w-full p-3 bg-white border border-slate-200 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500" 
+                                                            disabled={!formData.hipProduct}
+                                                            value={formData.hipCategory || ''} 
+                                                            onChange={e => setFormData(prev => ({ ...prev, hipCategory: e.target.value, hipRequestType: '' }))}>
+                                                            <option value="">Select Category...</option>
+                                                            {options.map(o => <option key={o} value={o}>{o}</option>)}
+                                                        </select>
+                                                    </div>
+                                                );
+                                            }
+
+                                            if (newTaskType === 'hip_request' && field === 'hipRequestType') {
+                                                const options = (formData.hipProduct && formData.hipCategory) ? HIP_HIERARCHY[formData.hipProduct][formData.hipCategory] : [];
+                                                return (
+                                                    <div key={field}>
+                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Request Type</label>
+                                                        <select className="w-full p-3 bg-white border border-slate-200 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500" 
+                                                            disabled={!formData.hipCategory}
+                                                            value={formData.hipRequestType || ''} 
+                                                            onChange={e => handleInputChange(field, e.target.value)}>
+                                                            <option value="">Select Request Type...</option>
+                                                            {options.map(o => <option key={o} value={o}>{o}</option>)}
+                                                        </select>
+                                                    </div>
+                                                );
+                                            }
+
+                                            const isDropdown = ['associateName', 'mentorName', 'team', 'productType', 'surpriseAndDelightType', 'resolution', 'pendingReason', 'disputeReason', 'reasonForSupport', 'requestType', 'validHip', 'validRequest', 'subscriptionStatus', 'emailSent', 'disputedProduct', 'invalidReason', 'surpriseAndDelightReason'].includes(field);
                                             
                                             return (
                                                 <div key={field}>
                                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">{field.replace(/([A-Z])/g, ' $1')}</label>
                                                     {isDropdown ? (
-                                                        <select className="w-full p-3 bg-white border border-slate-200 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500" value={formData[field] || ''} onChange={e => handleInputChange(field, e.target.value)}>
-                                                            <option value="">Select...</option>
-                                                            {field === 'associateName' && associateList.map(a => <option key={a} value={a}>{a}</option>)}
-                                                            {field === 'team' && ['Mentor', 'Social Media', 'T1', 'Order Support', 'Product Support'].map(t => <option key={t} value={t}>{t}</option>)}
-                                                            {field === 'productType' && ['Accessories', 'Membership', 'Tempo Move', 'Tempo Core', 'Tempo Studio'].map(p => <option key={p} value={p}>{p}</option>)}
-                                                            {field === 'pendingReason' && pendingReasonsList.map(r => <option key={r} value={r}>{r}</option>)}
-                                                            {field === 'disputeReason' && disputeReasonsList.map(r => <option key={r} value={r}>{r}</option>)}
-                                                            {field === 'reasonForSupport' && fwReasonsList.map(r => <option key={r} value={r}>{r}</option>)}
-                                                            {field === 'requestType' && fwRequestTypesList.map(r => <option key={r} value={r}>{r}</option>)}
-                                                            {field === 'resolution' && (newTaskType === 'disputes' ? ['Pending', 'Won', 'Lost'] : (newTaskType === 'pending_subs' ? ['Pending', 'Activated', 'Cancelled'] : ['Pending', 'Resolved'])).map(r => <option key={r} value={r}>{r}</option>)}
-                                                            {['validHip', 'validRequest', 'emailSent'].includes(field) && ['Yes', 'No'].map(v => <option key={v} value={v}>{v}</option>)}
-                                                            {field === 'subscriptionStatus' && ['Active', 'Cancelled'].map(v => <option key={v} value={v}>{v}</option>)}
-                                                        </select>
+                                                        <div className="space-y-2">
+                                                            <select className="w-full p-3 bg-white border border-slate-200 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500" value={formData[field] || ''} onChange={e => handleInputChange(field, e.target.value)}>
+                                                                <option value="">Select...</option>
+                                                                {field === 'associateName' && associateList.map(a => <option key={a} value={a}>{a}</option>)}
+                                                                {field === 'mentorName' && ["Noha Radwan", "Rashad Mohamed", "Emad Mohamed"].map(a => <option key={a} value={a}>{a}</option>)}
+                                                                {customOptions[field]?.map(o => <option key={o} value={o}>{o}</option>)}
+                                                                <option value="ADD_NEW_CUSTOM" className="text-blue-600 font-bold">+ Add New Item...</option>
+                                                            </select>
+                                                            {customInputTarget === field && (
+                                                                <div className="flex gap-2 animate-fade-in">
+                                                                    <input type="text" id={`custom-${field}`} placeholder={`Enter new ${field}...`} className="flex-1 p-2 text-xs border rounded-lg outline-none" />
+                                                                    <button type="button" onClick={() => handleAddCustomValue(field, document.getElementById(`custom-${field}`).value)} className="px-4 py-2 bg-blue-600 text-white text-[10px] font-bold rounded-lg uppercase">Add</button>
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     ) : (
                                                         <input type={field.toLowerCase().includes('date') ? 'date' : 'text'} className="w-full p-3 bg-white border border-slate-200 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500" value={formData[field] || ''} onChange={e => handleInputChange(field, e.target.value)} />
                                                     )}
@@ -499,7 +588,7 @@
                                         })}
                                     </div>
 
-                                    {!['weekly_quiz', 'hip_request', 'duplicate_iap'].includes(newTaskType) && (
+                                    {!['weekly_quiz', 'hip_request', 'duplicate_iap', 'mentor_audit'].includes(newTaskType) && (
                                         <div><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Record Status</label>
                                             <select className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm font-bold" value={formData.status || 'Pending'} onChange={e => handleInputChange('status', e.target.value)}>
                                                 <option value="Pending">Pending</option>
