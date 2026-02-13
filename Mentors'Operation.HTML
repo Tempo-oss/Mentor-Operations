@@ -18,6 +18,9 @@
     <!-- Supabase JS Library -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
+    <!-- Chart.js for Data Visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
         
@@ -40,63 +43,80 @@
         ::-webkit-scrollbar-track { background: #f1f5f9; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        canvas {
+            max-width: 100% !important;
+            height: auto !important;
+        }
     </style>
 </head>
 <body class="text-slate-900">
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useMemo } = React;
+        const { useState, useEffect, useMemo, useRef } = React;
 
         // --- Supabase Config ---
         const SUPABASE_URL = "https://mifbpckstfwphkwtqksa.supabase.co";
         const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1pZmJwY2tzdGZ3cGhrd3Rxa3NhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5MzcyMDksImV4cCI6MjA4NjUxMzIwOX0.PDZwE9hII9kPOjrBeJAI8T28oetruK-ogFtKOICMlOQ";
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // --- Icons ---
+        // --- Icon Components ---
         const Icon = ({ path, className = "" }) => (
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{path}</svg>
         );
 
-        const LayoutDashboard = (props) => <Icon {...props} path={<><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></>} />;
-        const AlertCircle = (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></>} />;
-        const CreditCard = (props) => <Icon {...props} path={<><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></>} />;
-        const Footprints = (props) => <Icon {...props} path={<><path d="M4 16v-2.38C4 11.5 2.97 10.5 3 8c.03-2.72 1.49-6 4.5-6C9.37 2 11 3.8 11 8c0 2.25-.79 4.33-2 6"/><path d="M20 20v-2.38c0-2.12 1.03-3.12 1-5.62-.03-2.72-1.49-6-4.5-6C14.63 6 13 7.8 13 12c0 2.25.79 4.33 2 6"/><path d="M16 17h4"/><path d="M4 13h4"/></>} />;
-        const Gift = (props) => <Icon {...props} path={<><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5"/></>} />;
-        const UserCheck = (props) => <Icon {...props} path={<><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/></>} />;
-        const FileText = (props) => <Icon {...props} path={<><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></>} />;
-        const Search = (props) => <Icon {...props} path={<><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></>} />;
-        const CheckCircle2 = (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></>} />;
-        const Clock = (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></>} />;
-        const Filter = (props) => <Icon {...props} path={<><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></>} />;
-        const User = (props) => <Icon {...props} path={<><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></>} />;
-        const LogOut = (props) => <Icon {...props} path={<><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></>} />;
-        const ClipboardList = (props) => <Icon {...props} path={<><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></>} />;
-        const MessageCircle = (props) => <Icon {...props} path={<><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></>} />;
-        const Download = (props) => <Icon {...props} path={<><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></>} />;
-        const Edit = (props) => <Icon {...props} path={<><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></>} />;
-        const Dice = (props) => <Icon {...props} path={<><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><circle cx="15.5" cy="15.5" r="1.5"/><circle cx="15.5" cy="8.5" r="1.5"/><circle cx="8.5" cy="15.5" r="1.5"/><circle cx="12" cy="12" r="1.5"/></>} />;
-        const Plus = (props) => <Icon {...props} path={<><path d="M5 12h14"/><path d="M12 5v14"/></>} />;
+        const LayoutDashboard = (props) => <Icon {...props} path={<React.Fragment><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></React.Fragment>} />;
+        const AlertCircle = (props) => <Icon {...props} path={<React.Fragment><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></React.Fragment>} />;
+        const CreditCard = (props) => <Icon {...props} path={<React.Fragment><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></React.Fragment>} />;
+        const Footprints = (props) => <Icon {...props} path={<React.Fragment><path d="M4 16v-2.38C4 11.5 2.97 10.5 3 8c.03-2.72 1.49-6 4.5-6C9.37 2 11 3.8 11 8c0 2.25-.79 4.33-2 6"/><path d="M20 20v-2.38c0-2.12 1.03-3.12 1-5.62-.03-2.72-1.49-6-4.5-6C14.63 6 13 7.8 13 12c0 2.25.79 4.33 2 6"/><path d="M16 17h4"/><path d="M4 13h4"/></React.Fragment>} />;
+        const Gift = (props) => <Icon {...props} path={<React.Fragment><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5"/></React.Fragment>} />;
+        const UserCheck = (props) => <Icon {...props} path={<React.Fragment><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/></React.Fragment>} />;
+        const FileText = (props) => <Icon {...props} path={<React.Fragment><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></React.Fragment>} />;
+        const Search = (props) => <Icon {...props} path={<React.Fragment><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></React.Fragment>} />;
+        const Edit = (props) => <Icon {...props} path={<React.Fragment><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></React.Fragment>} />;
+        const Dice = (props) => <Icon {...props} path={<React.Fragment><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><circle cx="15.5" cy="15.5" r="1.5"/><circle cx="15.5" cy="8.5" r="1.5"/><circle cx="8.5" cy="15.5" r="1.5"/><circle cx="12" cy="12" r="1.5"/></React.Fragment>} />;
+        const Plus = (props) => <Icon {...props} path={<React.Fragment><path d="M5 12h14"/><path d="M12 5v14"/></React.Fragment>} />;
+        const BarChart3 = (props) => <Icon {...props} path={<React.Fragment><line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/></React.Fragment>} />;
+        const MessageCircle = (props) => <Icon {...props} path={<React.Fragment><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></React.Fragment>} />;
+        const Clock = (props) => <Icon {...props} path={<React.Fragment><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></React.Fragment>} />;
+        const CheckCircle2 = (props) => <Icon {...props} path={<React.Fragment><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></React.Fragment>} />;
+        const Filter = (props) => <Icon {...props} path={<React.Fragment><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></React.Fragment>} />;
+        const LogOut = (props) => <Icon {...props} path={<React.Fragment><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></React.Fragment>} />;
+        const Download = (props) => <Icon {...props} path={<React.Fragment><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></React.Fragment>} />;
+        const ClipboardList = (props) => <Icon {...props} path={<React.Fragment><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></React.Fragment>} />;
+        const User = (props) => <Icon {...props} path={<React.Fragment><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></React.Fragment>} />;
+
+        // --- Common Components ---
+        const Card = ({ children, className = "" }) => <div className={`bg-white rounded-xl border border-slate-200 shadow-sm ${className}`}>{children}</div>;
+        const Badge = ({ children, color = "slate" }) => {
+            const colors = { 
+                slate: "bg-slate-100 text-slate-700", red: "bg-rose-100 text-rose-700", blue: "bg-blue-100 text-blue-700", green: "bg-emerald-100 text-emerald-700", 
+                amber: "bg-amber-100 text-amber-700", teal: "bg-teal-100 text-teal-700", cyan: "bg-cyan-100 text-cyan-700", purple: "bg-purple-100 text-purple-700", 
+                emerald: "bg-emerald-100 text-emerald-700" 
+            };
+            return <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${colors[color] || colors.slate}`}>{children}</span>;
+        };
 
         // --- Static Data ---
         const mentorList = [ "Noha Radwan", "Rashad Mohamed", "Emad Mohamed", "Mohamed Mounir" ];
         const associateList = [ "Ariath Piol", "Job James", "Lina Hesham", "Mohab Magdy", "Marwa Ahmed", "Ramadan Philip", "Aida Clement", "Hassan Khallaf", "Nada Ashraf", "Ruben Joseph", "Esraa Tarek Eroq", "Ahmed Abdelghany", "Nour Ayman", "Ashraf Essam", "Hala Ayman", "Rania Mohamed", "Salma Ahmed", "Marwan Hassan", "Osama M. Adam", "Marwan Zakaria", "Shahd Emad", "Ahmed Nasser abdelhakim" ];
         
         const auditAttributes = [
-            { id: 'responsiveness', label: 'Responsiveness', weight: 10, desc: 'Measures how promptly and effectively the mentor responds to queries, guidance requests, or escalations.' },
-            { id: 'professionalism', label: 'Professionalism', weight: 10, desc: 'Evaluates the mentor’s conduct, tone, and ability to maintain respectful, constructive, and supportive interactions.' },
-            { id: 'clarity', label: 'Clarity', weight: 20, desc: 'Assesses the mentor’s ability to explain concepts, instructions, or feedback in a clear, concise, and understandable manner.' },
-            { id: 'workflow', label: 'Workflow', weight: 20, desc: 'Reviews how well the mentor follows the correct workflow.' },
-            { id: 'documentation', label: 'Documentation', weight: 10, desc: 'Examines the quality and consistency of documentation provided by the mentor, including notes, guides, or process updates.' },
-            { id: 'resolution', label: 'Resolution', weight: 30, desc: 'Evaluates the mentor’s ability to help resolve issues, provide effective solutions, and close feedback loops efficiently.' }
+            { id: 'responsiveness', label: 'Responsiveness', weight: 10, desc: 'Measures promptly mentor responds.' },
+            { id: 'professionalism', label: 'Professionalism', weight: 10, desc: 'Mentor conduct and supportive interactions.' },
+            { id: 'clarity', label: 'Clarity', weight: 20, desc: 'Assess ability to explain concepts/instructions clearly.' },
+            { id: 'workflow', label: 'Workflow', weight: 20, desc: 'Reviews correct workflow usage.' },
+            { id: 'documentation', label: 'Documentation', weight: 10, desc: 'Quality and consistency of notes.' },
+            { id: 'resolution', label: 'Resolution', weight: 30, desc: 'Effective solutions and efficient closure.' }
         ];
 
         const quizModules = [
-            { id: 'productExpert', title: 'Product Expert', desc: 'Is the associate able to demonstrate product expertise when queried by the customer?' },
-            { id: 'processAwareness', title: 'Process Awareness', desc: 'Comprehending the process, rather than just adhering to its procedures.' },
-            { id: 'communication', title: 'Communication', desc: 'Did the associate reflect effectiveness in communicating with the customer?' },
-            { id: 'customerConcern', title: 'Able to identify customer Concern', desc: 'Did the associate comprehend all of the customer\'s concerns effectively?' },
-            { id: 'fcr', title: 'FCR', desc: 'Was the associate able to anticipate all the customer questions?' }
+            { id: 'productExpert', title: 'Product Expert', desc: 'demonstrate product expertise when queried?' },
+            { id: 'processAwareness', title: 'Process Awareness', desc: 'Comprehending process vs adhering to procedures.' },
+            { id: 'communication', title: 'Communication', desc: 'Reflect effectiveness in communicating.' },
+            { id: 'customerConcern', title: 'Identify customer Concern', desc: 'Comprehend all concerns effectively?' },
+            { id: 'fcr', title: 'FCR', desc: 'Was the associate able to anticipate all questions?' }
         ];
 
         const HIP_HIERARCHY = {
@@ -143,12 +163,6 @@
             mentor_audit: { label: 'Mentor Audit', icon: UserCheck, color: 'emerald', fields: ['mentorName', 'hipLogReference', 'auditModule'] },
         };
 
-        const Card = ({ children, className = "" }) => <div className={`bg-white rounded-xl border border-slate-200 shadow-sm ${className}`}>{children}</div>;
-        const Badge = ({ children, color = "slate" }) => {
-            const colors = { slate: "bg-slate-100 text-slate-700", red: "bg-rose-100 text-rose-700", blue: "bg-blue-100 text-blue-700", green: "bg-emerald-100 text-emerald-700", amber: "bg-amber-100 text-amber-700", teal: "bg-teal-100 text-teal-700", cyan: "bg-cyan-100 text-cyan-700", purple: "bg-purple-100 text-purple-700", emerald: "bg-emerald-100 text-emerald-700" };
-            return <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${colors[color] || colors.slate}`}>{children}</span>;
-        };
-
         function MentorOpsCenter() {
             const [currentUser, setCurrentUser] = useState(null);
             const [activeTab, setActiveTab] = useState('dashboard');
@@ -160,20 +174,16 @@
             const [newTaskType, setNewTaskType] = useState('disputes');
             const [formData, setFormData] = useState({});
             
-            // Flexible Lists State
+            // Flexible Lists State with Discovery
             const [customOptions, setCustomOptions] = useState({
                 pendingReason: ["Not delivered", "Delivered but not updated.", "Returned or canceled order"],
-                disputeReason: ["Subscription claim", "Unauthorized purchase", "Defective product", "Credit not processed"],
+                disputeReason: ["Subscription claim", "Unauthorized purchase", "Defective product", "Credit not processed", "Fraud", "Subscription Cancelled", "Product Unacceptable"],
                 reasonForSupport: ["SOP Guidance", "Process education", "System Navigation"],
                 requestType: ["Membership", "Billing", "Account Access", "Technical Support", "Order Support"],
                 invalidReason: ["Already documented in SOP", "Training issue", "Incomplete info", "Duplicate request", "Not an Ops matter"],
                 team: ["T1", "Social Media", "Mentor", "Order Support", "Product Support"],
                 productType: ["Studio", "Move", "Core", "Accessories", "Membership"],
                 disputedProduct: ["Move", "Core", "Membership", "Accessories"],
-                validRequest: ["Yes", "No"],
-                validHip: ["Yes", "No"],
-                emailSent: ["Yes", "No"],
-                subscriptionStatus: ["Active", "Cancelled"],
                 surpriseAndDelightReason: [
                     "Delivery ETA (Within the lead time)", "Customer Ordered Wrong color by mistake", 
                     "Technical issues that was resolved by the normal TS", "Bundle Accessory Delay", 
@@ -187,26 +197,57 @@
                     "Gift Box", "axis-performance-hat-black", "axis-performance-hat-slate-grey", 
                     "tempo-workout-gloves", "motive-training-tee-black", "motive-training-tee-1", 
                     "Pinnacle Knit Beanie"
-                ]
+                ],
+                validRequest: ["Yes", "No"],
+                validHip: ["Yes", "No"],
+                emailSent: ["Yes", "No"],
+                subscriptionStatus: ["Active", "Cancelled"]
             });
 
-            // Logs Filters State
-            const [showLogFilters, setShowLogFilters] = useState(false);
-            const [logFilters, setLogFilters] = useState({ category: 'all', agent: 'all', startDate: '', endDate: '' });
-
-            // Pagination & Reports
+            // Pagination State
             const [currentPage, setCurrentPage] = useState(1);
             const itemsPerPage = 10;
+
+            // Analytics State
+            const [analyticsCategory, setAnalyticsCategory] = useState('disputes');
+            const [analyticsField, setAnalyticsField] = useState('status');
+            const [analyticsDateRange, setAnalyticsDateRange] = useState({ start: '', end: '' });
+            const chartRef = useRef(null);
+            const chartInstance = useRef(null);
+
+            // Reports state
             const [reportFilters, setReportFilters] = useState({ category: 'all', agent: 'all', startDate: '', endDate: '' });
             const [generatedReport, setGeneratedReport] = useState(null);
+            const [selectedReportColumns, setSelectedReportColumns] = useState(['type', 'agent', 'status', 'date']);
+            const [showLogFilters, setShowLogFilters] = useState(false);
+            const [logFilters, setLogFilters] = useState({ category: 'all', agent: 'all', startDate: '', endDate: '' });
 
             const [customInputTarget, setCustomInputTarget] = useState(null);
 
             const fetchTasks = async () => {
                 setConnectionStatus('connecting');
                 const { data, error } = await supabase.from('tasks').select('*').order('date', { ascending: false });
-                if (!error) { setTasks(data || []); setConnectionStatus('online'); }
+                if (!error) { 
+                    setTasks(data || []); 
+                    setConnectionStatus('online'); 
+                    discoverCustomOptions(data || []);
+                }
                 else { setConnectionStatus('offline'); }
+            };
+
+            const discoverCustomOptions = (allTasks) => {
+                setCustomOptions(prev => {
+                    const newDiscovery = { ...prev };
+                    allTasks.forEach(t => {
+                        Object.keys(newDiscovery).forEach(key => {
+                            const val = t.details?.[key];
+                            if (val && !newDiscovery[key].includes(val)) {
+                                newDiscovery[key].push(val);
+                            }
+                        });
+                    });
+                    return newDiscovery;
+                });
             };
 
             useEffect(() => {
@@ -215,10 +256,43 @@
                 return () => supabase.removeChannel(channel);
             }, []);
 
+            useEffect(() => {
+                if (activeTab === 'analytics' && chartRef.current) {
+                    if (chartInstance.current) chartInstance.current.destroy();
+
+                    let filteredData = tasks.filter(t => t.type === analyticsCategory);
+                    if (analyticsDateRange.start) filteredData = filteredData.filter(t => new Date(t.date) >= new Date(analyticsDateRange.start));
+                    if (analyticsDateRange.end) {
+                        const end = new Date(analyticsDateRange.end); end.setHours(23,59,59);
+                        filteredData = filteredData.filter(t => new Date(t.date) <= end);
+                    }
+
+                    const counts = {};
+                    filteredData.forEach(t => {
+                        let value = 'N/A';
+                        if (['status', 'agent', 'type'].includes(analyticsField)) { value = t[analyticsField] || 'N/A'; }
+                        else { value = t.details?.[analyticsField] || 'N/A'; }
+                        counts[value] = (counts[value] || 0) + 1;
+                    });
+
+                    const ctx = chartRef.current.getContext('2d');
+                    chartInstance.current = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: Object.keys(counts),
+                            datasets: [{ data: Object.values(counts), backgroundColor: 'rgba(37, 99, 235, 0.7)', borderRadius: 6 }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: { legend: { display: false } },
+                            scales: { y: { beginAtZero: true, grid: { display: false } }, x: { grid: { display: false } } }
+                        }
+                    });
+                }
+            }, [activeTab, analyticsCategory, analyticsField, analyticsDateRange, tasks]);
+
             const handleAddTask = async (e) => {
                 e.preventDefault();
-
-                // --- GLOBAL MANDATORY FIELD VALIDATION ---
                 const requiredFields = categories[newTaskType].fields;
                 const missingFields = [];
 
@@ -262,9 +336,7 @@
                 const details = { ...formData };
                 delete details.status;
 
-                if (!editingTaskId) {
-                    if (newTaskType === 'floorwalker') details.mentorName = currentUser;
-                }
+                if (!editingTaskId && newTaskType === 'floorwalker') details.mentorName = currentUser;
 
                 const taskData = {
                     type: newTaskType,
@@ -319,17 +391,10 @@
 
             const pickRandomHIP = () => {
                 const hipLogs = tasks.filter(t => t.type === 'hip_request');
-                if (hipLogs.length === 0) { alert("No HIP logs available to audit yet."); return; }
+                if (hipLogs.length === 0) { alert("No HIP logs available."); return; }
                 const random = hipLogs[Math.floor(Math.random() * hipLogs.length)];
                 setFormData(prev => ({ ...prev, hipLogReference: random.id, auditedTicket: random.details.ticketLink, mentorName: random.agent }));
             };
-
-            const stats = useMemo(() => ({
-                total: tasks.length,
-                pending: tasks.filter(t => t.status === 'Pending').length,
-                resolved: tasks.filter(t => ['Resolved', 'Activated', 'Won'].includes(t.status)).length,
-                byType: Object.keys(categories).reduce((acc, key) => { acc[key] = tasks.filter(t => t.type === key).length; return acc; }, {})
-            }), [tasks]);
 
             const filteredLogs = tasks.filter(t => {
                 const matchesSearch = (categories[t.type]?.label || '').toLowerCase().includes(searchTerm.toLowerCase()) || (t.agent || '').toLowerCase().includes(searchTerm.toLowerCase());
@@ -354,43 +419,34 @@
 
             const downloadCSV = () => {
                 if (!generatedReport) return;
-                const headers = ['ID', 'Type', 'Owner', 'Status', 'Date', 'Details'];
-                const csv = [headers.join(','), ...generatedReport.map(t => [t.id, t.type, t.agent, t.status, new Date(t.date).toLocaleDateString(), JSON.stringify(t.details).replace(/,/g, ';')].join(','))].join('\n');
+                const headers = selectedReportColumns;
+                const csv = [headers.join(','), ...generatedReport.map(t => {
+                    return headers.map(h => {
+                        const val = ['id', 'type', 'agent', 'status', 'date'].includes(h) ? (h === 'date' ? new Date(t[h]).toLocaleDateString() : r[h]) : (t.details?.[h] || 'N/A');
+                        return `"${val.toString().replace(/"/g, '""')}"`;
+                    }).join(',');
+                })].join('\n');
                 const blob = new Blob([csv], { type: 'text/csv' });
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a'); a.href = url; a.download = 'mentor_ops_report.csv'; a.click();
             };
 
-            if (!currentUser) {
-                return (
-                    <div className="fixed inset-0 bg-slate-900 z-50 flex items-center justify-center p-4">
-                        <Card className="p-8 max-w-md w-full text-center">
-                            <div className="h-16 w-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                                <User className="h-8 w-8" />
-                            </div>
-                            <h2 className="text-2xl font-bold mb-2">MentorOps Center</h2>
-                            <p className="text-slate-500 mb-8">Select your identity to continue</p>
-                            <select className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" onChange={(e) => setCurrentUser(e.target.value)} defaultValue="">
-                                <option value="" disabled>Select User...</option>
-                                {mentorList.map(name => <option key={name} value={name}>{name}</option>)}
-                            </select>
-                        </Card>
-                    </div>
-                );
-            }
+            const toggleReportColumn = (col) => {
+                setSelectedReportColumns(prev => prev.includes(col) ? prev.filter(c => c !== col) : [...prev, col]);
+            };
 
             return (
                 <div className="min-h-screen bg-slate-50 pb-20">
                     <header className="bg-white border-b border-slate-200 sticky top-0 z-20">
                         <div className="max-w-7xl mx-auto px-6 flex justify-between items-center h-16">
                             <div className="flex items-center gap-3">
-                                <h1 className="text-xl font-bold tracking-[0.2em] text-slate-900">TEMPO</h1>
+                                <h1 className="text-xl font-bold tracking-widest text-slate-900 uppercase">Tempo</h1>
                                 <span className="h-6 w-px bg-slate-200" />
                                 <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Mentor Ops</span>
                             </div>
                             <nav className="flex gap-1">
-                                {['dashboard', 'logs', 'reports'].map(tab => (
-                                    <button key={tab} onClick={() => setActiveTab(tab)} className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${activeTab === tab ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:bg-slate-50'}`}>
+                                {['dashboard', 'logs', 'analytics', 'reports'].map(tab => (
+                                    <button key={tab} onClick={() => setActiveTab(tab)} className={`px-4 py-2 text-sm font-bold rounded-lg transition-colors ${activeTab === tab ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:bg-slate-50'}`}>
                                         {tab.toUpperCase()}
                                     </button>
                                 ))}
@@ -401,7 +457,7 @@
                                     <p className="text-[10px] font-bold text-slate-400 uppercase">Logged In</p>
                                     <p className="text-sm font-bold leading-none">{currentUser}</p>
                                 </div>
-                                <button onClick={() => setCurrentUser(null)} className="p-2 text-slate-400 hover:text-rose-500"><LogOut className="h-4 w-4" /></button>
+                                <button onClick={() => setCurrentUser(null)} className="p-2 text-slate-400 hover:text-rose-500 transition-colors"><LogOut className="h-4 w-4" /></button>
                             </div>
                         </div>
                     </header>
@@ -410,17 +466,17 @@
                         {activeTab === 'dashboard' && (
                             <div className="space-y-8 animate-fade-in">
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                    <Card className="p-6 bg-slate-900 text-white border-none shadow-xl">
-                                        <p className="text-slate-400 text-xs font-bold uppercase mb-1">Total Records</p>
-                                        <h3 className="text-4xl font-bold">{stats.total}</h3>
+                                    <Card className="p-6 bg-slate-900 text-white shadow-xl">
+                                        <p className="text-slate-400 text-xs font-bold uppercase mb-1">Total Logs</p>
+                                        <h3 className="text-4xl font-bold">{tasks.length}</h3>
                                     </Card>
                                     <Card className="p-6 border-l-4 border-l-rose-500">
                                         <p className="text-slate-400 text-xs font-bold uppercase mb-1">Pending Follow-ups</p>
-                                        <h3 className="text-4xl font-bold text-rose-600">{stats.pending}</h3>
+                                        <h3 className="text-4xl font-bold text-rose-600">{tasks.filter(t => t.status === 'Pending').length}</h3>
                                     </Card>
                                     <Card className="p-6 border-l-4 border-l-emerald-500">
                                         <p className="text-slate-400 text-xs font-bold uppercase mb-1">Resolved Today</p>
-                                        <h3 className="text-4xl font-bold text-emerald-600">{stats.resolved}</h3>
+                                        <h3 className="text-4xl font-bold text-emerald-600">{tasks.filter(t => t.status !== 'Pending' && new Date(t.date).toDateString() === new Date().toDateString()).length}</h3>
                                     </Card>
                                 </div>
                                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
@@ -430,7 +486,7 @@
                                                 {React.createElement(cfg.icon, { className: `h-5 w-5 text-${cfg.color}-600` })}
                                             </div>
                                             <p className="text-[10px] font-bold text-slate-500 uppercase">{cfg.label}</p>
-                                            <p className="text-xl font-bold">{stats.byType[key]}</p>
+                                            <p className="text-xl font-bold">{tasks.filter(t => t.type === key).length}</p>
                                         </button>
                                     ))}
                                 </div>
@@ -439,7 +495,7 @@
 
                         {activeTab === 'logs' && (
                             <div className="space-y-4 animate-fade-in">
-                                <div className="flex flex-col md:flex-row gap-4 justify-between bg-white p-4 rounded-xl border border-slate-200">
+                                <div className="flex flex-col md:flex-row gap-4 justify-between bg-white p-4 rounded-xl border">
                                     <div className="relative flex-1 max-w-md">
                                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                                         <input type="text" placeholder="Search logs..." className="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
@@ -484,7 +540,6 @@
                                                 <th className="px-6 py-4">Category</th>
                                                 <th className="px-6 py-4">Agent</th>
                                                 <th className="px-6 py-4">Status</th>
-                                                <th className="px-6 py-4">Date</th>
                                                 <th className="px-6 py-4 text-right">Actions</th>
                                             </tr>
                                         </thead>
@@ -505,7 +560,6 @@
                                                             {task.status}
                                                         </Badge>
                                                     </td>
-                                                    <td className="px-6 py-4 text-slate-400">{new Date(task.date).toLocaleDateString()}</td>
                                                     <td className="px-6 py-4 text-right">
                                                         <button onClick={() => handleEditTask(task)} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"><Edit className="h-4 w-4" /></button>
                                                     </td>
@@ -524,65 +578,73 @@
                             </div>
                         )}
 
-                        {activeTab === 'reports' && (
+                        {activeTab === 'analytics' && (
                             <div className="space-y-6 animate-fade-in">
-                                <Card className="p-6 space-y-4">
-                                    <div className="flex items-center gap-3 mb-2">
-                                        <div className="h-8 w-8 bg-blue-100 rounded-lg flex items-center justify-center"><Filter className="h-5 w-5 text-blue-600" /></div>
-                                        <h2 className="text-lg font-bold">Report Generator</h2>
-                                    </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                        <div><label className="text-[10px] font-bold text-slate-400 uppercase">Category</label>
-                                            <select className="w-full p-2.5 bg-slate-50 border rounded-lg text-sm outline-none" value={reportFilters.category} onChange={e => setReportFilters(f => ({ ...f, category: e.target.value }))}>
-                                                <option value="all">All Types</option>
+                                <Card className="p-6">
+                                    <div className="flex items-center gap-3 mb-6"><BarChart3 className="h-6 w-6 text-blue-600" /><h2 className="text-xl font-bold">Analytics</h2></div>
+                                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                                        <div><label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Category</label>
+                                            <select className="w-full p-2.5 bg-slate-50 border rounded-lg text-sm" value={analyticsCategory} onChange={e => setAnalyticsCategory(e.target.value)}>
                                                 {Object.entries(categories).map(([k, c]) => <option key={k} value={k}>{c.label}</option>)}
                                             </select>
                                         </div>
-                                        <div><label className="text-[10px] font-bold text-slate-400 uppercase">Mentor</label>
-                                            <select className="w-full p-2.5 bg-slate-50 border rounded-lg text-sm outline-none" value={reportFilters.agent} onChange={e => setReportFilters(f => ({ ...f, agent: e.target.value }))}>
-                                                <option value="all">All Mentors</option>
-                                                {mentorList.map(m => <option key={m} value={m}>{m}</option>)}
+                                        <div><label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Metric</label>
+                                            <select className="w-full p-2.5 bg-slate-50 border rounded-lg text-sm" value={analyticsField} onChange={e => setAnalyticsField(e.target.value)}>
+                                                <option value="status">Status</option><option value="agent">Agent</option>
+                                                {categories[analyticsCategory]?.fields.filter(f => !f.includes('Module')).map(f => <option key={f} value={f}>{f.replace(/([A-Z])/g, ' $1')}</option>)}
                                             </select>
                                         </div>
-                                        <div><label className="text-[10px] font-bold text-slate-400 uppercase">Start Date</label>
-                                            <input type="date" className="w-full p-2.5 bg-slate-50 border rounded-lg text-sm outline-none" value={reportFilters.startDate} onChange={e => setReportFilters(f => ({ ...f, startDate: e.target.value }))} />
+                                        <div><label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">From</label>
+                                            <input type="date" className="w-full p-2.5 bg-slate-50 border rounded-lg text-sm" value={analyticsDateRange.start} onChange={e => setAnalyticsDateRange(p => ({...p, start: e.target.value}))} />
                                         </div>
-                                        <div><label className="text-[10px] font-bold text-slate-400 uppercase">End Date</label>
-                                            <input type="date" className="w-full p-2.5 bg-slate-50 border rounded-lg text-sm outline-none" value={reportFilters.endDate} onChange={e => setReportFilters(f => ({ ...f, endDate: e.target.value }))} />
+                                        <div><label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">To</label>
+                                            <input type="date" className="w-full p-2.5 bg-slate-50 border rounded-lg text-sm" value={analyticsDateRange.end} onChange={e => setAnalyticsDateRange(p => ({...p, end: e.target.value}))} />
                                         </div>
                                     </div>
-                                    <div className="flex justify-end pt-2">
-                                        <button onClick={handleGenerateReport} className="px-6 py-2.5 bg-slate-900 text-white font-bold rounded-lg hover:bg-slate-800 shadow-lg">GENERATE REPORT</button>
-                                    </div>
+                                    <div className="h-[400px] flex items-center justify-center p-4 bg-slate-50 rounded-xl"><canvas ref={chartRef}></canvas></div>
                                 </Card>
-                                {generatedReport && (
-                                    <div className="space-y-4 animate-fade-in">
-                                        <div className="flex justify-between items-center">
-                                            <h3 className="font-bold text-lg">Results ({generatedReport.length})</h3>
-                                            <button onClick={downloadCSV} className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 font-bold rounded-lg text-sm hover:bg-slate-50">
-                                                <Download className="h-4 w-4" /> Export CSV
+                            </div>
+                        )}
+
+                        {activeTab === 'reports' && (
+                            <div className="space-y-6 animate-fade-in">
+                                <Card className="p-6 space-y-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                        <select className="w-full p-2.5 border rounded-lg text-sm" value={reportFilters.category} onChange={e => setReportFilters(f => ({ ...f, category: e.target.value }))}><option value="all">All Types</option>{Object.entries(categories).map(([k, c]) => <option key={k} value={k}>{c.label}</option>)}</select>
+                                        <select className="w-full p-2.5 border rounded-lg text-sm" value={reportFilters.agent} onChange={e => setReportFilters(f => ({ ...f, agent: e.target.value }))}><option value="all">All Mentors</option>{mentorList.map(m => <option key={m} value={m}>{m}</option>)}</select>
+                                        <input type="date" className="w-full p-2.5 border rounded-lg text-sm" value={reportFilters.startDate} onChange={e => setReportFilters(f => ({ ...f, startDate: e.target.value }))} />
+                                        <input type="date" className="w-full p-2.5 border rounded-lg text-sm" value={reportFilters.endDate} onChange={e => setReportFilters(f => ({ ...f, endDate: e.target.value }))} />
+                                    </div>
+                                    <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-100">
+                                        {['agent', 'status', 'date', ...(reportFilters.category !== 'all' ? categories[reportFilters.category].fields : [])].filter(col => !col.includes('Module')).map(col => (
+                                            <button key={col} onClick={() => toggleReportColumn(col)} className={`px-3 py-1.5 rounded-full text-[10px] font-bold border ${selectedReportColumns.includes(col) ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-200 text-slate-500'}`}>
+                                                {col.replace(/([A-Z])/g, ' $1').toUpperCase()}
                                             </button>
-                                        </div>
+                                        ))}
+                                    </div>
+                                    <div className="flex justify-end pt-2"><button onClick={handleGenerateReport} className="px-6 py-2.5 bg-slate-900 text-white font-bold rounded-lg shadow-lg">GENERATE REPORT</button></div>
+                                </Card>
+
+                                {generatedReport && (
+                                    <div className="space-y-4">
+                                        <div className="flex justify-between items-center"><h3 className="font-bold">Results ({generatedReport.length})</h3><button onClick={downloadCSV} className="flex items-center gap-2 px-4 py-2 bg-white border rounded-lg text-sm font-bold"><Download className="h-4 w-4" /> Export CSV</button></div>
                                         <Card className="overflow-x-auto">
                                             <table className="w-full text-left text-sm">
                                                 <thead className="bg-slate-50 border-b">
                                                     <tr>
-                                                        <th className="px-6 py-3">Type</th>
-                                                        <th className="px-6 py-3">Agent</th>
-                                                        <th className="px-6 py-3">Date</th>
-                                                        <th className="px-6 py-3 text-right">Status</th>
+                                                        {selectedReportColumns.map(c => <th key={c} className="px-6 py-3 uppercase text-[10px] font-black">{c.replace(/([A-Z])/g, ' $1')}</th>)}
                                                     </tr>
                                                 </thead>
                                                 <tbody className="divide-y">
                                                     {generatedReport.map(r => (
                                                         <tr key={r.id} className="hover:bg-slate-50">
-                                                            <td className="px-6 py-4 font-medium">{categories[r.type]?.label}</td>
-                                                            <td className="px-6 py-4">{r.agent}</td>
-                                                            <td className="px-6 py-4 text-slate-400">{new Date(r.date).toLocaleDateString()}</td>
-                                                            <td className="px-6 py-4 text-right"><Badge color={r.status === 'Pending' ? 'amber' : 'green'}>{r.status}</Badge></td>
+                                                            {selectedReportColumns.map(c => (
+                                                                <td key={c} className="px-6 py-4 max-w-xs truncate">
+                                                                    {['type','agent','status','date'].includes(c) ? (c === 'date' ? new Date(r[c]).toLocaleDateString() : r[c]) : (r.details?.[c] || 'N/A')}
+                                                                </td>
+                                                            ))}
                                                         </tr>
                                                     ))}
-                                                    {generatedReport.length === 0 && <tr><td colSpan="4" className="p-8 text-center text-slate-400">No records found matching filters.</td></tr>}
                                                 </tbody>
                                             </table>
                                         </Card>
@@ -596,124 +658,59 @@
                         <div className="fixed inset-0 z-50 flex justify-end">
                             <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsFormOpen(false)} />
                             <div className="relative w-full max-w-md bg-white h-full shadow-2xl p-8 overflow-y-auto animate-slide-in-right">
-                                <div className="flex justify-between items-center mb-8">
-                                    <div className="flex items-center gap-3">
-                                        <div className={`p-2 rounded-lg bg-${categories[newTaskType].color}-100`}>
-                                            {React.createElement(categories[newTaskType].icon, { className: `h-6 w-6 text-${categories[newTaskType].color}-600` })}
-                                        </div>
-                                        <h2 className="text-2xl font-black italic">{editingTaskId ? 'EDIT' : 'NEW'} {categories[newTaskType].label.toUpperCase()}</h2>
-                                    </div>
-                                    <button onClick={() => setIsFormOpen(false)} className="text-slate-400 hover:text-slate-600 uppercase text-[10px] font-black">Close</button>
-                                </div>
+                                <div className="flex justify-between items-center mb-8"><h2 className="text-2xl font-black italic uppercase">{editingTaskId ? 'EDIT' : 'NEW'} {categories[newTaskType].label}</h2><button onClick={() => setIsFormOpen(false)} className="text-slate-400 uppercase text-[10px] font-black">Close</button></div>
                                 <form onSubmit={handleAddTask} className="space-y-6">
-                                    {!editingTaskId && (
-                                        <div><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Change Category</label>
-                                            <select className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm font-bold" value={newTaskType} onChange={e => { setNewTaskType(e.target.value); setFormData({}); }}>
-                                                {Object.entries(categories).map(([k, c]) => <option key={k} value={k}>{c.label}</option>)}
-                                            </select>
-                                        </div>
-                                    )}
-
-                                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-4">
+                                    <div className="bg-slate-50 p-4 rounded-2xl border space-y-4">
                                         {categories[newTaskType].fields.map(field => {
-                                            const isValidNo = (newTaskType === 'floorwalker' && formData.validRequest === 'No') || 
-                                                              (newTaskType === 'hip_request' && formData.validHip === 'No');
-                                            
+                                            const isValidNo = (newTaskType === 'floorwalker' && formData.validRequest === 'No') || (newTaskType === 'hip_request' && formData.validHip === 'No');
                                             if (field === 'invalidReason' && !isValidNo) return null;
 
-                                            // Audit Module
-                                            if (field === 'auditModule') return (
-                                                <div key={field} className="space-y-4 pt-2">
-                                                    <div className="flex justify-between items-center"><h3 className="text-[10px] font-black text-slate-400 uppercase">Scoring Criteria</h3><Badge color="green">Score: {formData.overallAuditScore || '0'}%</Badge></div>
-                                                    {auditAttributes.map(attr => (
-                                                        <div key={attr.id} className="bg-white p-4 rounded-xl border border-slate-200">
-                                                            <div className="flex justify-between items-start mb-2">
-                                                                <div>
-                                                                    <p className="font-bold text-sm">{attr.label} ({attr.weight}%)</p>
-                                                                    <p className="text-[10px] text-slate-400">{attr.desc}</p>
-                                                                </div>
-                                                                <div className="flex gap-1">
-                                                                    <button type="button" onClick={() => handleAuditScore(attr.id, 'Yes')} className={`px-3 py-1 rounded-md text-[10px] font-bold border ${formData.auditScores?.[attr.id] === 'Yes' ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white border-slate-200 text-slate-400'}`}>YES</button>
-                                                                    <button type="button" onClick={() => handleAuditScore(attr.id, 'No')} className={`px-3 py-1 rounded-md text-[10px] font-bold border ${formData.auditScores?.[attr.id] === 'No' ? 'bg-rose-500 border-rose-500 text-white' : 'bg-white border-slate-200 text-slate-400'}`}>NO</button>
-                                                                </div>
-                                                            </div>
-                                                            <input type="text" placeholder="Comment..." className="w-full p-2 bg-slate-50 border-b text-[11px] outline-none" onChange={e => setFormData(prev => ({...prev, auditComments: {...(prev.auditComments || {}), [attr.id]: e.target.value}}))} value={formData.auditComments?.[attr.id] || ''} />
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            );
-
-                                            // Weekly Quiz Module
-                                            if (field === 'correctionModule') return (
-                                                <div key={field} className="space-y-6 pt-2">
-                                                    <div className="flex justify-between items-center"><h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Correction Module</h3><Badge color="cyan">AVG: {formData.overallScore || '0.0'}</Badge></div>
-                                                    {quizModules.map(m => (
-                                                        <div key={m.id} className="bg-white p-4 rounded-xl border border-slate-200">
-                                                            <p className="font-bold text-sm mb-1">{m.title}</p>
-                                                            <p className="text-[10px] text-slate-400 mb-4">{m.desc}</p>
-                                                            <div className="flex justify-between items-center mb-4">
-                                                                <span className="text-[10px] font-bold text-slate-300">1</span>
-                                                                <div className="flex gap-2">
-                                                                    {[1, 2, 3, 4, 5].map(s => (
+                                            if (field === 'auditModule' || field === 'correctionModule') {
+                                                const items = field === 'auditModule' ? auditAttributes : quizModules;
+                                                return (
+                                                    <div key={field} className="space-y-6 pt-2">
+                                                        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{field.replace('Module','')} Scoring</h3>
+                                                        {items.map(m => (
+                                                            <div key={m.id} className="bg-white p-4 rounded-xl border border-slate-200">
+                                                                <p className="font-bold text-sm mb-1">{m.title || m.label}</p>
+                                                                <p className="text-[10px] text-slate-400 mb-4">{m.desc}</p>
+                                                                <div className="flex justify-center gap-2 mb-4">
+                                                                    {field === 'auditModule' ? ['Yes', 'No'].map(s => (
+                                                                        <button key={s} type="button" onClick={() => handleAuditScore(m.id, s)} className={`px-4 py-1.5 rounded-lg border-2 text-[10px] font-black transition-all ${formData.auditScores?.[m.id] === s ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white border-slate-200 text-slate-400'}`}>{s.toUpperCase()}</button>
+                                                                    )) : [1, 2, 3, 4, 5].map(s => (
                                                                         <button key={s} type="button" onClick={() => handleQuizScore(m.id, s)} className={`w-8 h-8 rounded-full border-2 text-xs font-bold transition-all ${formData.quizScores?.[m.id] === s ? 'bg-cyan-500 border-cyan-500 text-white shadow-lg shadow-cyan-100' : 'bg-white border-slate-200 text-slate-400'}`}>{s}</button>
                                                                     ))}
                                                                 </div>
-                                                                <span className="text-[10px] font-bold text-slate-300">5</span>
+                                                                <input type="text" placeholder="Comment for this attribute..." className="w-full p-2 bg-slate-50 border-b text-[10px] outline-none" onChange={e => setFormData(p => ({...p, quizComments: {...(p.quizComments || {}), [m.id]: e.target.value}}))} value={formData.quizComments?.[m.id] || ''} />
                                                             </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            );
+                                                        ))}
+                                                    </div>
+                                                );
+                                            }
 
                                             if (field === 'hipLogReference' && newTaskType === 'mentor_audit') return (
                                                 <div key={field} className="pt-2">
-                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Audit Target (Randomly Selected)</label>
-                                                    <div className="flex gap-2">
-                                                        <div className="flex-1 p-3 bg-white border border-slate-200 rounded-xl text-sm font-medium">
-                                                            {formData.auditedTicket ? `Ticket: ${formData.auditedTicket}` : 'No Log Picked'}
-                                                        </div>
-                                                        <button type="button" onClick={pickRandomHIP} className="p-3 bg-blue-100 text-blue-600 rounded-xl hover:bg-blue-200"><Dice className="h-5 w-5" /></button>
-                                                    </div>
+                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Audit Target</label>
+                                                    <div className="flex gap-2"><div className="flex-1 p-3 bg-white border rounded-xl text-sm font-medium">{formData.auditedTicket || 'No Log Picked'}</div>
+                                                    <button type="button" onClick={pickRandomHIP} className="p-3 bg-blue-100 text-blue-600 rounded-xl"><Dice className="h-5 w-5" /></button></div>
                                                 </div>
                                             );
 
-                                            if (newTaskType === 'hip_request' && field === 'hipProduct') {
-                                                return (
-                                                    <div key={field}>
-                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Product</label>
-                                                        <select className="w-full p-3 bg-white border border-slate-200 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500" value={formData.hipProduct || ''} onChange={e => setFormData(prev => ({ ...prev, hipProduct: e.target.value, hipCategory: '', hipRequestType: '' }))}>
-                                                            <option value="">Select Product...</option>
-                                                            {Object.keys(HIP_HIERARCHY).map(k => <option key={k} value={k}>{k}</option>)}
-                                                        </select>
-                                                    </div>
-                                                );
-                                            }
-
-                                            if (newTaskType === 'hip_request' && field === 'hipCategory') {
-                                                const catOptions = formData.hipProduct ? Object.keys(HIP_HIERARCHY[formData.hipProduct] || {}) : [];
-                                                return (
-                                                    <div key={field}>
-                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Category</label>
-                                                        <select className="w-full p-3 bg-white border border-slate-200 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500" disabled={!formData.hipProduct} value={formData.hipCategory || ''} onChange={e => setFormData(prev => ({ ...prev, hipCategory: e.target.value, hipRequestType: '' }))}>
-                                                            <option value="">Select Category...</option>
-                                                            {catOptions.map(c => <option key={c} value={c}>{c}</option>)}
-                                                        </select>
-                                                    </div>
-                                                );
-                                            }
-
-                                            if (newTaskType === 'hip_request' && field === 'hipRequestType') {
-                                                const options = (formData.hipProduct && formData.hipCategory) ? HIP_HIERARCHY[formData.hipProduct][formData.hipCategory] : [];
-                                                return (
-                                                    <div key={field}>
-                                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Request Type</label>
-                                                        <select className="w-full p-3 bg-white border border-slate-200 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500" disabled={!formData.hipCategory} value={formData.hipRequestType || ''} onChange={e => handleInputChange(field, e.target.value)}>
-                                                            <option value="">Select Request Type...</option>
-                                                            {options.map(o => <option key={o} value={o}>{o}</option>)}
-                                                        </select>
-                                                    </div>
-                                                );
-                                            }
+                                            if (newTaskType === 'hip_request' && field === 'hipProduct') return (
+                                                <div key={field}><label className="text-[10px] font-black text-slate-400 uppercase block mb-1.5">Product</label>
+                                                <select className="w-full p-3 bg-white border border-slate-200 rounded-xl outline-none text-sm" value={formData.hipProduct || ''} onChange={e => setFormData(p => ({ ...p, hipProduct: e.target.value, hipCategory: '', hipRequestType: '' }))}>
+                                                <option value="">Select Product...</option>{Object.keys(HIP_HIERARCHY).map(k => <option key={k} value={k}>{k}</option>)}</select></div>
+                                            );
+                                            if (newTaskType === 'hip_request' && field === 'hipCategory') return (
+                                                <div key={field}><label className="text-[10px] font-black text-slate-400 uppercase block mb-1.5">Category</label>
+                                                <select className="w-full p-3 bg-white border border-slate-200 rounded-xl outline-none text-sm" disabled={!formData.hipProduct} value={formData.hipCategory || ''} onChange={e => setFormData(p => ({ ...p, hipCategory: e.target.value, hipRequestType: '' }))}>
+                                                <option value="">Select Category...</option>{formData.hipProduct && Object.keys(HIP_HIERARCHY[formData.hipProduct] || {}).map(c => <option key={c} value={c}>{c}</option>)}</select></div>
+                                            );
+                                            if (newTaskType === 'hip_request' && field === 'hipRequestType') return (
+                                                <div key={field}><label className="text-[10px] font-black text-slate-400 uppercase block mb-1.5">Request Type</label>
+                                                <select className="w-full p-3 bg-white border border-slate-200 rounded-xl outline-none text-sm" disabled={!formData.hipCategory} value={formData.hipRequestType || ''} onChange={e => handleInputChange(field, e.target.value)}>
+                                                <option value="">Select Request Type...</option>{(formData.hipProduct && formData.hipCategory) && HIP_HIERARCHY[formData.hipProduct][formData.hipCategory].map(o => <option key={o} value={o}>{o}</option>)}</select></div>
+                                            );
 
                                             const isDropdown = ['associateName', 'associateEmail', 'mentorName', 'team', 'productType', 'surpriseAndDelightType', 'resolution', 'pendingReason', 'disputeReason', 'reasonForSupport', 'requestType', 'validHip', 'validRequest', 'subscriptionStatus', 'emailSent', 'disputedProduct', 'invalidReason', 'surpriseAndDelightReason'].includes(field);
                                             
@@ -725,20 +722,13 @@
                                                             <select className="w-full p-3 bg-white border border-slate-200 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500" value={formData[field] || ''} onChange={e => handleInputChange(field, e.target.value)}>
                                                                 <option value="">Select...</option>
                                                                 {(field === 'associateName' || field === 'associateEmail') && associateList.map(a => <option key={a} value={a}>{a}</option>)}
-                                                                {field === 'mentorName' && ["Noha Radwan", "Rashad Mohamed", "Emad Mohamed"].map(a => <option key={a} value={a}>{a}</option>)}
-                                                                {field === 'resolution' && (
-                                                                    newTaskType === 'pending_subs' ? ['Activated', 'Cancelled'] :
-                                                                    newTaskType === 'disputes' ? ['Pending', 'Lost', 'Won'] :
-                                                                    ['Pending', 'Resolved']
-                                                                ).map(o => <option key={o} value={o}>{o}</option>)}
+                                                                {field === 'mentorName' && mentorList.map(a => <option key={a} value={a}>{a}</option>)}
+                                                                {field === 'resolution' && (newTaskType === 'pending_subs' ? ['Activated', 'Cancelled'] : newTaskType === 'disputes' ? ['Pending', 'Lost', 'Won'] : ['Pending', 'Resolved']).map(o => <option key={o} value={o}>{o}</option>)}
                                                                 {field !== 'resolution' && customOptions[field]?.map(o => <option key={o} value={o}>{o}</option>)}
                                                                 <option value="ADD_NEW_CUSTOM" className="text-blue-600 font-bold">+ Add New Item...</option>
                                                             </select>
                                                             {customInputTarget === field && (
-                                                                <div className="flex gap-2 animate-fade-in">
-                                                                    <input type="text" id={`custom-${field}`} placeholder={`Enter new ${field}...`} className="flex-1 p-2 text-xs border rounded-lg outline-none" />
-                                                                    <button type="button" onClick={() => handleAddCustomValue(field, document.getElementById(`custom-${field}`).value)} className="px-4 py-2 bg-blue-600 text-white text-[10px] font-bold rounded-lg uppercase">Add</button>
-                                                                </div>
+                                                                <div className="flex gap-2 animate-fade-in"><input type="text" id={`custom-${field}`} placeholder={`New ${field}...`} className="flex-1 p-2 text-xs border rounded-lg outline-none" /><button type="button" onClick={() => handleAddCustomValue(field, document.getElementById(`custom-${field}`).value)} className="px-4 py-2 bg-blue-600 text-white text-[10px] font-bold rounded-lg uppercase">Add</button></div>
                                                             )}
                                                         </div>
                                                     ) : (
@@ -748,20 +738,12 @@
                                             );
                                         })}
                                     </div>
-
                                     {!['weekly_quiz', 'hip_request', 'duplicate_iap', 'mentor_audit'].includes(newTaskType) && (
-                                        <div><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Record Status</label>
-                                            <select className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm font-bold" value={formData.status || 'Pending'} onChange={e => handleInputChange('status', e.target.value)}>
-                                                <option value="Pending">Pending</option>
-                                                <option value="Resolved">Resolved</option>
-                                                <option value="In Progress">In Progress</option>
-                                            </select>
+                                        <div><label className="text-[10px] font-black text-slate-400 uppercase block mb-1.5">Record Status</label>
+                                            <select className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm font-bold" value={formData.status || 'Pending'} onChange={e => handleInputChange('status', e.target.value)}><option value="Pending">Pending</option><option value="Resolved">Resolved</option><option value="In Progress">In Progress</option></select>
                                         </div>
                                     )}
-
-                                    <button type="submit" className="w-full py-4 bg-blue-600 text-white font-black rounded-2xl shadow-xl shadow-blue-100 hover:bg-blue-700 transition-all uppercase tracking-widest">
-                                        {editingTaskId ? 'Update Log' : 'Save Record'}
-                                    </button>
+                                    <button type="submit" className="w-full py-4 bg-blue-600 text-white font-black rounded-2xl shadow-xl hover:bg-blue-700 transition-all uppercase tracking-widest">{editingTaskId ? 'Update Log' : 'Save Record'}</button>
                                 </form>
                             </div>
                         </div>
