@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tempo MentorOps | Full System</title>
+    <title>Tempo MentorOps | Integrated System</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -122,14 +122,11 @@
         const Trash = (props) => <Icon {...props} path={<React.Fragment><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></React.Fragment>} />;
         const Download = (props) => <Icon {...props} path={<React.Fragment><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></React.Fragment>} />;
         const ClipboardList = (props) => <Icon {...props} path={<React.Fragment><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></React.Fragment>} />;
-        const Filter = (props) => <Icon {...props} path={<React.Fragment><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></React.Fragment>} />;
-        const CheckCircle2 = (props) => <Icon {...props} path={<React.Fragment><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></React.Fragment>} />;
-        const Clock = (props) => <Icon {...props} path={<React.Fragment><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></React.Fragment>} />;
         const Moon = (props) => <Icon {...props} path={<><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></>} />;
         const Sun = (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></>} />;
         const SettingsIcon = (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></>} />;
 
-        // --- Data ---
+        // --- Constants & Data ---
         const associateList = [ "Ariath Piol", "Job James", "Lina Hesham", "Mohab Magdy", "Marwa Ahmed", "Ramadan Philip", "Aida Clement", "Hassan Khallaf", "Nada Ashraf", "Ruben Joseph", "Esraa Tarek Eroq", "Ahmed Abdelghany", "Nour Ayman", "Ashraf Essam", "Hala Ayman", "Rania Mohamed", "Salma Ahmed", "Marwan Hassan", "Osama M. Adam", "Marwan Zakaria", "Shahd Emad", "Ahmed Nasser abdelhakim" ];
         const mentorList = [ "Noha Radwan", "Rashad Mohamed", "Emad Mohamed", "Mohamed Mounir" ];
         const defaultTabs = ['dashboard', 'logs', 'analytics', 'reports'];
@@ -154,7 +151,7 @@
         const categories = {
             disputes: { label: 'Disputes', icon: AlertCircle, color: 'red', fields: ['customerName', 'customerEmail', 'disputeAmount', 'disputeDate', 'disputeReason', 'disputedProduct', 'disputeLink', 'resolution'] },
             pending_subs: { label: 'Pending Subs', icon: CreditCard, color: 'blue', fields: ['customerName', 'customerEmail', 'pendingReason', 'resolution'] },
-            floorwalker: { label: 'FloorWalker', icon: Footprints, color: 'amber', fields: ['associateName', 'ticketLink', 'reasonForSupport', 'requestType', 'validRequest', 'invalidReason', 'slackLink', 'comment'] },
+            floorwalker: { label: 'FloorWalker', icon: Footprints, color: 'amber', fields: ['associateName', 'ticketLink', 'reasonForSupport', 'validRequest', 'invalidReason', 'slackLink', 'comment'] },
             hip_request: { label: 'HIP Request', icon: MessageCircle, color: 'teal', fields: ['associateName', 'ticketLink', 'slackLink', 'validHip', 'invalidReason', 'hipProduct', 'hipCategory', 'hipRequestType'] },
             weekly_quiz: { label: 'Weekly Quiz', icon: ClipboardList, color: 'cyan', fields: ['associateName', 'associateEmail', 'date', 'correctionModule'] },
             duplicate_iap: { label: 'Duplicate IAP', icon: FileText, color: 'indigo', fields: ['customerEmail', 'emailSent', 'subscriptionStatus'] },
@@ -238,7 +235,8 @@
                 disputedProduct: ["Move", "Core", "Membership", "Accessories"],
                 surpriseAndDelightReason: ["Delivery ETA", "Wrong color", "Technical issue", "SRLimited access", "Missing discount", "Compatibility", "Lack of content"],
                 surpriseAndDelightType: ["Water Bottle", "Sweat Towel", "Yoga Block", "Recovery Roller", "Gift Box", "axis-performance-hat-black", "axis-performance-hat-slate-grey", "tempo-workout-gloves", "motive-training-tee-black", "motive-training-tee-1", "Pinnacle Knit Beanie"],
-                validRequest: ["Yes", "No"], validHip: ["Yes", "No"], emailSent: ["Yes", "No"], subscriptionStatus: ["Active", "Cancelled"]
+                validRequest: ["Yes", "No"], validHip: ["Yes", "No"], emailSent: ["Yes", "No"], subscriptionStatus: ["Active", "Cancelled"],
+                hipProduct: Object.keys(HIP_HIERARCHY)
             });
 
             const [customInputTarget, setCustomInputTarget] = useState(null);
@@ -246,7 +244,7 @@
             const [generatedReport, setGeneratedReport] = useState(null);
             const [selectedReportColumns, setSelectedReportColumns] = useState(['type', 'agent', 'status', 'date']);
 
-            // --- Theme Logic ---
+            // Theme effect
             useEffect(() => {
                 if (isDarkMode) {
                     document.documentElement.classList.add('dark');
@@ -257,7 +255,7 @@
                 }
             }, [isDarkMode]);
 
-            // --- Authentication Synchronization ---
+            // Auth Implementation
             useEffect(() => {
                 supabase.auth.getSession().then(({ data: { session } }) => {
                     setSession(session);
@@ -276,14 +274,12 @@
                 const { data, error } = await supabase.from('users_registry').select('*').eq('email', email).single();
                 if (data) {
                     setUserProfile(data);
+                } else if (email === 'mohamed.abdelmagid@tempo.fit') {
+                    const initial = { email, role: 'Admin', allowed_tabs: defaultTabs.concat(['admin']) };
+                    await supabase.from('users_registry').insert([initial]);
+                    setUserProfile(initial);
                 } else {
-                    if (email === 'mohamed.abdelmagid@tempo.fit') {
-                        const initial = { email, role: 'Admin', allowed_tabs: defaultTabs.concat(['admin']) };
-                        await supabase.from('users_registry').insert([initial]);
-                        setUserProfile(initial);
-                    } else {
-                        setUserProfile({ error: true, message: "Authorized account required." });
-                    }
+                    setUserProfile({ error: true, message: "Unauthorized email registry." });
                 }
             };
 
@@ -295,8 +291,10 @@
                     setConnectionStatus('online'); 
                     discoverCustomOptions(tasksRes.data || []);
                 }
-                const regRes = await supabase.from('users_registry').select('*');
-                if (!regRes.error) setRegistry(regRes.data || []);
+                if (userProfile?.role === 'Admin') {
+                    const regRes = await supabase.from('users_registry').select('*');
+                    if (!regRes.error) setRegistry(regRes.data || []);
+                }
             };
 
             const discoverCustomOptions = (allTasks) => {
@@ -318,7 +316,7 @@
                 return () => supabase.removeChannel(channel);
             }, [userProfile]);
 
-            // --- Authentication Handlers ---
+            // Handlers
             const handleAuth = async (e) => {
                 e.preventDefault();
                 setAuthLoading(true);
@@ -363,21 +361,22 @@
 
             const handleAddUser = async () => {
                 if (!formData.newEmail || !formData.newEmail.includes('@')) return alert("Enter valid email.");
-                const initial = {
-                    email: formData.newEmail,
-                    role: formData.newRole || 'Mentor',
-                    allowed_tabs: defaultTabs
-                };
+                const initial = { email: formData.newEmail, role: formData.newRole || 'Mentor', allowed_tabs: defaultTabs };
                 const { error } = await supabase.from('users_registry').insert([initial]);
-                if (!error) {
-                    setFormData({ ...formData, newEmail: '' });
-                    fetchData();
-                } else {
-                    alert(error.message);
-                }
+                if (!error) { setFormData({ ...formData, newEmail: '' }); fetchData(); }
+                else alert(error.message);
             };
 
-            // --- Analytics lifecycle ---
+            const toggleTabForUser = async (email, tab) => {
+                const user = registry.find(u => u.email === email);
+                if (!user) return;
+                const currentTabs = user.allowed_tabs || [];
+                const newTabs = currentTabs.includes(tab) ? currentTabs.filter(t => t !== tab) : [...currentTabs, tab];
+                const { error } = await supabase.from('users_registry').update({ allowed_tabs: newTabs }).eq('email', email);
+                if (!error) fetchData();
+            };
+
+            // Analytics lifecycle
             useEffect(() => {
                 if (activeTab === 'analytics' && chartRef.current) {
                     if (chartInstance.current) chartInstance.current.destroy();
@@ -416,7 +415,7 @@
                 return () => { if (chartInstance.current) chartInstance.current.destroy(); };
             }, [activeTab, analyticsCategory, analyticsField, analyticsDateRange, tasks, isDarkMode]);
 
-            // --- Evaluation Scoring Logic ---
+            // Evaluation Handlers
             const handleAuditScore = (attrId, achieved) => {
                 const scores = { ...(formData.auditScores || {}), [attrId]: achieved };
                 let total = 0;
@@ -440,7 +439,7 @@
                     if (f === 'auditModule') { auditAttributes.forEach(a => { if (!(formData.auditScores?.[a.id])) missingFields.push(a.label); }); return; }
                     if (!['invalidReason'].includes(f) && (!formData[f] || formData[f] === '')) missingFields.push(f.replace(/([A-Z])/g, ' $1'));
                 });
-                if (missingFields.length > 0) return alert("Please fill: " + missingFields.join(', '));
+                if (missingFields.length > 0) return alert("Fill required: " + missingFields.join(', '));
                 const taskData = { 
                     type: newTaskType, title: categories[newTaskType].label + ' Log', 
                     agent: session.user.email.split('@')[0], status: formData.status || 'Pending', 
@@ -497,6 +496,10 @@
                 const a = document.createElement('a'); a.href = url; a.download = 'export.csv'; a.click();
             };
 
+            const toggleReportColumn = (col) => {
+                setSelectedReportColumns(prev => prev.includes(col) ? prev.filter(c => c !== col) : [...prev, col]);
+            };
+
             if (!session) {
                 return (
                     <div className="fixed inset-0 bg-slate-900 z-50 flex items-center justify-center p-4 text-center">
@@ -523,8 +526,8 @@
                             {authView === 'login' && (
                                 <div className="mt-4">
                                     <div className="relative py-4"><div className="absolute inset-0 flex items-center"><span className="w-full border-t dark:border-slate-800"></span></div><div className="relative flex justify-center text-xs uppercase font-bold"><span className="bg-white dark:bg-slate-900 px-2 text-slate-400">Or</span></div></div>
-                                    <button onClick={handleGoogleLogin} className="w-full flex items-center justify-center gap-3 py-3 border rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 dark:border-slate-800 transition-all font-bold dark:text-white">
-                                        <img src="https://www.google.com/favicon.ico" className="h-4 w-4" /> Google
+                                    <button onClick={handleGoogleLogin} className="w-full flex items-center justify-center gap-3 py-3 border border-slate-200 dark:border-slate-800 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-all font-bold dark:text-white">
+                                        <img src="https://www.google.com/favicon.ico" className="h-4 w-4" /> Google Account
                                     </button>
                                 </div>
                             )}
@@ -589,16 +592,14 @@
                         {activeTab === 'analytics' && (
                             <div className="space-y-6 animate-fade-in">
                                 <Card className="p-6">
-                                    <div className="flex items-center gap-3 mb-6"><BarChart3 className="h-6 w-6 text-blue-600" /><h2 className="text-xl font-bold uppercase tracking-widest dark:text-white">Visual Analytics</h2></div>
+                                    <div className="flex items-center gap-3 mb-6"><BarChart3 className="h-6 w-6 text-blue-600" /><h2 className="text-xl font-bold uppercase tracking-widest dark:text-white">Analytics</h2></div>
                                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
                                         <select className="p-2.5 bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-lg text-sm outline-none dark:text-slate-200" value={analyticsCategory} onChange={e => setAnalyticsCategory(e.target.value)}>{Object.entries(categories).map(([k, c]) => <option key={k} value={k}>{c.label}</option>)}</select>
                                         <select className="p-2.5 bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-lg text-sm outline-none dark:text-slate-200" value={analyticsField} onChange={e => setAnalyticsField(e.target.value)}><option value="status">Status</option><option value="agent">Agent</option>{categories[analyticsCategory]?.fields.filter(f => !f.includes('Module')).map(f => <option key={f} value={f}>{f.replace(/([A-Z])/g, ' $1')}</option>)}</select>
                                         <input type="date" className="p-2.5 bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-lg text-sm outline-none dark:text-slate-200" value={analyticsDateRange.start} onChange={e => setAnalyticsDateRange(p => ({...p, start: e.target.value}))} />
                                         <input type="date" className="p-2.5 bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-lg text-sm outline-none dark:text-slate-200" value={analyticsDateRange.end} onChange={e => setAnalyticsDateRange(p => ({...p, end: e.target.value}))} />
                                     </div>
-                                    <div className="h-[400px] flex items-center justify-center p-4 bg-slate-50 dark:bg-slate-800 rounded-xl relative">
-                                        <canvas ref={chartRef}></canvas>
-                                    </div>
+                                    <div className="h-[400px] flex items-center justify-center p-4 bg-slate-50 dark:bg-slate-800 rounded-xl relative"><canvas ref={chartRef}></canvas></div>
                                 </Card>
                             </div>
                         )}
@@ -612,11 +613,11 @@
                                         <input type="date" className="w-full p-2.5 border dark:border-slate-700 dark:bg-slate-800 rounded-lg text-sm outline-none dark:text-slate-200" value={reportFilters.startDate} onChange={e => setReportFilters(f => ({ ...f, startDate: e.target.value }))} />
                                         <input type="date" className="w-full p-2.5 border dark:border-slate-700 dark:bg-slate-800 rounded-lg text-sm outline-none dark:text-slate-200" value={reportFilters.endDate} onChange={e => setReportFilters(f => ({ ...f, endDate: e.target.value }))} />
                                     </div>
-                                    <div className="flex flex-wrap gap-2 pt-2 border-t dark:border-slate-800 border-slate-100">{['agent', 'status', 'date', ...(reportFilters.category !== 'all' ? categories[reportFilters.category].fields : [])].filter(col => !col.includes('Module')).map(col => (<button key={col} onClick={() => toggleReportColumn(col)} className={`px-3 py-1.5 rounded-full text-[10px] font-bold border ${selectedReportColumns.includes(col) ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500'}`}>{col.toUpperCase()}</button>))}</div>
-                                    <div className="flex justify-end pt-2"><button onClick={handleGenerateReport} className="px-6 py-2.5 bg-slate-900 dark:bg-slate-100 dark:text-slate-900 text-white font-bold rounded-lg shadow-lg uppercase text-xs">Generate Report</button></div>
+                                    <div className="flex flex-wrap gap-2 pt-2 border-t dark:border-slate-800 border-slate-100">{['agent', 'status', 'date', ...(reportFilters.category !== 'all' ? categories[reportFilters.category].fields : [])].filter(col => !col.includes('Module')).map(col => (<button key={col} onClick={() => toggleReportColumn(col)} className={`px-3 py-1.5 rounded-full text-[10px] font-bold border ${selectedReportColumns.includes(col) ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 uppercase'}`}>{col.replace(/([A-Z])/g, ' $1')}</button>))}</div>
+                                    <div className="flex justify-end pt-2"><button onClick={handleGenerateReport} className="px-6 py-2.5 bg-slate-900 dark:bg-slate-100 dark:text-slate-900 text-white font-bold rounded-lg shadow-lg uppercase text-xs">Generate CSV Export</button></div>
                                 </Card>
                                 {generatedReport && (
-                                    <div className="space-y-4 animate-fade-in"><div className="flex justify-between items-center"><h3 className="font-bold dark:text-slate-200">Results ({generatedReport.length})</h3><button onClick={downloadCSV} className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-lg text-sm font-bold dark:text-slate-200"><Download className="h-4 w-4" /> Export CSV</button></div>
+                                    <div className="space-y-4 animate-fade-in"><div className="flex justify-between items-center"><h3 className="font-bold dark:text-slate-200">Results ({generatedReport.length})</h3><button onClick={downloadCSV} className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-lg text-sm font-bold dark:text-slate-200"><Download className="h-4 w-4" /> Download CSV</button></div>
                                         <Card className="overflow-x-auto"><table className="w-full text-left text-sm"><thead className="bg-slate-50 dark:bg-slate-800 border-b dark:border-slate-700"><tr>{selectedReportColumns.map(c => <th key={c} className="px-6 py-3 uppercase text-[10px] font-black dark:text-slate-400">{c.replace(/([A-Z])/g, ' $1')}</th>)}</tr></thead>
                                             <tbody className="divide-y dark:divide-slate-800">{generatedReport.map(r => (<tr key={r.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">{selectedReportColumns.map(c => <td key={c} className="px-6 py-4 truncate max-w-xs text-xs dark:text-slate-300">{['id','type','agent','status','date'].includes(c) ? (c === 'date' ? new Date(r[c]).toLocaleDateString() : r[c]) : (r.details?.[c] || 'N/A')}</td>)}</tr>))}</tbody>
                                         </table></Card></div>
@@ -626,14 +627,14 @@
 
                         {activeTab === 'admin' && userProfile.role === 'Admin' && (
                             <div className="space-y-8 animate-fade-in">
-                                <Card className="p-8"><div className="flex items-center gap-3 mb-6"><Shield className="h-6 w-6 text-indigo-600" /><h2 className="text-xl font-black uppercase tracking-tight dark:text-white">Registry</h2></div>
+                                <Card className="p-8"><div className="flex items-center gap-3 mb-6"><Shield className="h-6 w-6 text-indigo-600" /><h2 className="text-xl font-black uppercase tracking-tight dark:text-white">Admin Control Panel</h2></div>
                                     <div className="flex gap-4 mb-10 bg-slate-50 dark:bg-slate-800/50 p-6 rounded-2xl border border-dashed dark:border-slate-700">
                                         <input type="email" placeholder="tempo.fit email" className="flex-1 p-3 border dark:border-slate-700 dark:bg-slate-900 dark:text-white rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 bg-white font-bold" onChange={e => setFormData(p => ({...p, newEmail: e.target.value}))} value={formData.newEmail || ''} />
                                         <select className="p-3 border dark:border-slate-700 dark:bg-slate-900 dark:text-white rounded-xl outline-none bg-white font-bold" onChange={e => setFormData(p => ({...p, newRole: e.target.value}))} value={formData.newRole || 'Mentor'}><option value="Mentor">Mentor</option><option value="Admin">Admin</option></select>
-                                        <button onClick={handleAddUser} className="px-8 py-3 bg-indigo-600 text-white rounded-xl font-black uppercase text-xs hover:bg-indigo-700 transition-all shadow-xl">Authorize</button>
+                                        <button onClick={handleAddUser} className="px-8 py-3 bg-indigo-600 text-white rounded-xl font-black uppercase text-xs hover:bg-indigo-700 transition-all shadow-xl">Authorize Email</button>
                                     </div>
                                     <div className="overflow-x-auto text-xs font-black uppercase"><table className="w-full text-left"><thead className="bg-slate-50 dark:bg-slate-800 border-b dark:border-slate-700 text-slate-400"><tr><th className="px-6 py-4">User</th><th className="px-6 py-4">Role</th><th className="px-6 py-4 text-center">Tabs</th><th className="px-6 py-4"></th></tr></thead>
-                                            <tbody className="divide-y dark:divide-slate-800">{registry.map(u => (<tr key={u.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                                            <tbody className="divide-y dark:divide-slate-800">{registry.map(u => (<tr key={u.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 text-center">
                                                     <td className="px-6 py-4 lowercase font-bold text-slate-600 dark:text-slate-400">{u.email}</td>
                                                     <td className="px-6 py-4"><Badge color={u.role === 'Admin' ? 'purple' : 'slate'}>{u.role}</Badge></td>
                                                     <td className="px-6 py-4 flex gap-2 justify-center">
@@ -644,18 +645,18 @@
                                                             </label>
                                                         ))}
                                                     </td>
-                                                    <td className="px-6 py-4 text-right">{u.email !== 'mohamed.abdelmagid@tempo.fit' && <button onClick={async () => { if(confirm("Revoke?")) { await supabase.from('users_registry').delete().eq('id', u.id); fetchData(); } }} className="text-rose-400 transition-colors"><Trash className="h-4 w-4" /></button>}</td>
+                                                    <td className="px-6 py-4 text-right">{u.email !== 'mohamed.abdelmagid@tempo.fit' && <button onClick={async () => { if(confirm("Revoke access?")) { await supabase.from('users_registry').delete().eq('id', u.id); fetchData(); } }} className="text-rose-400 transition-colors"><Trash className="h-4 w-4" /></button>}</td>
                                                 </tr>))}</tbody></table></div></Card>
                             </div>
                         )}
                     </main>
 
-                    {/* Form Modal Layer */}
+                    {/* Form Modal */}
                     {isFormOpen && (
                         <div className="fixed inset-0 z-50 flex justify-end">
                             <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsFormOpen(false)} />
                             <div className="relative w-full max-w-md bg-white dark:bg-slate-900 h-full shadow-2xl p-8 overflow-y-auto animate-slide-in-right">
-                                <div className="flex justify-between items-center mb-8"><h2 className="text-2xl font-black italic uppercase tracking-tighter dark:text-white">{editingTaskId ? 'EDIT' : 'NEW'} {categories[newTaskType].label}</h2><button onClick={() => setIsFormOpen(false)} className="text-slate-400 font-black uppercase text-[10px] hover:text-slate-800 dark:hover:text-white transition-colors">Close</button></div>
+                                <div className="flex justify-between items-center mb-8"><h2 className="text-2xl font-black italic uppercase tracking-tighter dark:text-white leading-tight">{editingTaskId ? 'EDIT' : 'NEW'} {categories[newTaskType].label}</h2><button onClick={() => setIsFormOpen(false)} className="text-slate-400 font-black uppercase text-[10px] hover:text-slate-800 dark:hover:text-white transition-colors">Close</button></div>
                                 <form onSubmit={handleAddTask} className="space-y-6">
                                     {!editingTaskId && <div><label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 block">Category Type</label><select className="w-full p-3 bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-xl outline-none font-bold dark:text-white" value={newTaskType} onChange={e => { setNewTaskType(e.target.value); setFormData({}); }}>{Object.entries(categories).map(([k, c]) => <option key={k} value={k}>{c.label}</option>)}</select></div>}
                                     <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border dark:border-slate-700 space-y-4">
@@ -666,14 +667,14 @@
                                                 const items = field === 'auditModule' ? auditAttributes : quizModules;
                                                 return (<div key={field} className="space-y-6 pt-2">
                                                         <div className="flex justify-between items-center mb-2">
-                                                            <h3 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">{field.replace('Module','')} Scoring Metrics</h3>
+                                                            <h3 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">{field.replace('Module','')} Evaluation</h3>
                                                             {field === 'correctionModule' && <Badge color="cyan">AVG: {formData.overallScore || '0.0'}</Badge>}
-                                                            {field === 'auditModule' && <Badge color="green">Score: {formData.overallAuditScore || '0'}%</Badge>}
+                                                            {field === 'auditModule' && <Badge color="green">Result: {formData.overallAuditScore || '0'}%</Badge>}
                                                         </div>
                                                         {items.map(m => (<div key={m.id} className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm"><p className="font-bold text-sm mb-1 dark:text-slate-200">{m.title || m.label}</p><p className="text-[10px] text-slate-400 mb-4">{m.desc}</p>
                                                                 <div className="flex justify-center gap-2 mb-4">
-                                                                    {field === 'auditModule' ? ['Yes', 'No'].map(s => (<button key={s} type="button" onClick={() => handleAuditScore(m.id, s)} className={`px-4 py-1.5 rounded-lg border-2 text-[10px] font-black transition-all ${formData.auditScores?.[m.id] === s ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white dark:bg-slate-800 dark:border-slate-700 text-slate-400'}`}>{s.toUpperCase()}</button>)) : [1, 2, 3, 4, 5].map(s => (<button key={s} type="button" onClick={() => handleQuizScore(m.id, s)} className={`w-8 h-8 rounded-full border-2 text-xs font-bold transition-all ${formData.quizScores?.[m.id] === s ? 'bg-cyan-500 border-cyan-500 text-white' : 'bg-white dark:bg-slate-800 dark:border-slate-700 text-slate-400'}`}>{s}</button>))}
-                                                                </div><input type="text" placeholder="Comment..." className="w-full p-2 bg-slate-50 dark:bg-slate-800 border-b dark:border-slate-700 text-[10px] outline-none dark:text-white" onChange={e => setFormData(p => ({...p, quizComments: {...(p.quizComments || {}), [m.id]: e.target.value}}))} value={formData.quizComments?.[m.id] || ''} /></div>))}</div>);
+                                                                    {field === 'auditModule' ? ['Yes', 'No'].map(s => (<button key={s} type="button" onClick={() => handleAuditScore(m.id, s)} className={`px-4 py-1.5 rounded-lg border-2 text-[10px] font-black transition-all ${formData.auditScores?.[m.id] === s ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white dark:bg-slate-800 dark:border-slate-700 text-slate-400'}`}>{s.toUpperCase()}</button>)) : [1, 2, 3, 4, 5].map(s => (<button key={s} type="button" onClick={() => handleQuizScore(m.id, s)} className={`w-8 h-8 rounded-full border-2 text-xs font-bold transition-all ${formData.quizScores?.[m.id] === s ? 'bg-cyan-500 border-cyan-500 text-white shadow-lg shadow-cyan-100' : 'bg-white dark:bg-slate-800 dark:border-slate-700 text-slate-400'}`}>{s}</button>))}
+                                                                </div><input type="text" placeholder="Detail feedback..." className="w-full p-2 bg-slate-50 dark:bg-slate-800 border-b dark:border-slate-700 text-[10px] outline-none dark:text-white" onChange={e => setFormData(p => ({...p, quizComments: {...(p.quizComments || {}), [m.id]: e.target.value}}))} value={formData.quizComments?.[m.id] || ''} /></div>))}</div>);
                                             }
                                             if (field === 'hipLogReference' && newTaskType === 'mentor_audit') return (<div key={field} className="pt-2"><label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase block mb-1.5">Audit Target</label><div className="flex gap-2"><div className="flex-1 p-3 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-xl text-sm font-medium dark:text-slate-300">{formData.auditedTicket || 'No Log Selected'}</div><button type="button" onClick={pickRandomHIP} className="p-3 bg-blue-100 dark:bg-blue-900/30 text-blue-600 rounded-xl hover:bg-blue-200 transition-colors"><Dice className="h-5 w-5" /></button></div></div>);
                                             
@@ -693,20 +694,15 @@
                                                     : (<input type={field.toLowerCase().includes('date') ? 'date' : 'text'} className="w-full p-3 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500 dark:text-white" value={formData[field] || ''} onChange={e => handleInputChange(field, e.target.value)} />)}</div>);
                                         })}
                                     </div>
-                                    {!['weekly_quiz', 'hip_request', 'duplicate_iap', 'mentor_audit'].includes(newTaskType) && (
-                                        <div><label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase block mb-1.5">Record Status</label>
-                                            <select className="w-full p-3 bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-xl outline-none text-sm font-bold dark:text-white" value={formData.status || 'Pending'} onChange={e => handleInputChange('status', e.target.value)}><option value="Pending">Pending</option><option value="Resolved">Resolved</option><option value="In Progress">In Progress</option></select>
-                                        </div>
-                                    )}
-                                    <button type="submit" className="w-full py-4 bg-blue-600 text-white font-black rounded-2xl shadow-xl hover:bg-blue-700 transition-all uppercase tracking-widest shadow-blue-100">Commit Record</button>
+                                    <button type="submit" className="w-full py-4 bg-blue-600 text-white font-black rounded-2xl shadow-xl hover:bg-blue-700 transition-all uppercase tracking-widest shadow-blue-100">Commit Record Entry</button>
                                 </form>
                             </div>
                         </div>
                     )}
 
-                    {/* Security Modal */}
+                    {/* Security Center Modal */}
                     {isSettingsOpen && (
-                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 text-slate-900 dark:text-white">
                             <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsSettingsOpen(false)} />
                             <Card className="relative w-full max-w-md p-8 animate-fade-in shadow-2xl">
                                 <div className="flex justify-between items-center mb-6"><h2 className="text-xl font-black uppercase tracking-tight dark:text-white">Security Center</h2><button onClick={() => setIsSettingsOpen(false)} className="text-slate-400 font-bold text-xl">&times;</button></div>
