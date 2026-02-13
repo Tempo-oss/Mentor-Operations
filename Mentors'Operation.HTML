@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tempo MentorOps | Secure Auth System</title>
+    <title>Tempo MentorOps | Full System Integration</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -61,7 +61,7 @@
         const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1pZmJwY2tzdGZ3cGhrd3Rxa3NhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5MzcyMDksImV4cCI6MjA4NjUxMzIwOX0.PDZwE9hII9kPOjrBeJAI8T28oetruK-ogFtKOICMlOQ";
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // --- Core UI Components (Defined at top level to ensure scope availability) ---
+        // --- Core UI Components ---
         function Card({ children, className = "" }) {
             return (
                 <div className={`bg-white rounded-xl border border-slate-200 shadow-sm ${className}`}>
@@ -117,7 +117,7 @@
         const CheckCircle2 = (props) => <Icon {...props} path={<React.Fragment><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></React.Fragment>} />;
         const Clock = (props) => <Icon {...props} path={<React.Fragment><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></React.Fragment>} />;
 
-        // --- Static Configuration & Data ---
+        // --- Configuration & Data ---
         const associateList = [ "Ariath Piol", "Job James", "Lina Hesham", "Mohab Magdy", "Marwa Ahmed", "Ramadan Philip", "Aida Clement", "Hassan Khallaf", "Nada Ashraf", "Ruben Joseph", "Esraa Tarek Eroq", "Ahmed Abdelghany", "Nour Ayman", "Ashraf Essam", "Hala Ayman", "Rania Mohamed", "Salma Ahmed", "Marwan Hassan", "Osama M. Adam", "Marwan Zakaria", "Shahd Emad", "Ahmed Nasser abdelhakim" ];
         const mentorList = [ "Noha Radwan", "Rashad Mohamed", "Emad Mohamed", "Mohamed Mounir" ];
         const defaultTabs = ['dashboard', 'logs', 'analytics', 'reports'];
@@ -127,16 +127,16 @@
             { id: 'professionalism', label: 'Professionalism', weight: 10, desc: 'Mentor conduct.' },
             { id: 'clarity', label: 'Clarity', weight: 20, desc: 'Assess ability to explain clearly.' },
             { id: 'workflow', label: 'Workflow', weight: 20, desc: 'Reviews correct workflow usage.' },
-            { id: 'documentation', label: 'Documentation', weight: 10, desc: 'Consistency of notes.' },
+            { id: 'documentation', label: 'Documentation', weight: 10, desc: 'consistency of notes.' },
             { id: 'resolution', label: 'Resolution', weight: 30, desc: 'Efficient issue resolution.' }
         ];
 
         const quizModules = [
-            { id: 'productExpert', title: 'Product Expert', desc: 'Is the associate able to demonstrate product expertise?' },
-            { id: 'processAwareness', title: 'Process Awareness', desc: 'Comprehending process vs adhering to procedures.' },
-            { id: 'communication', title: 'Communication', desc: 'Reflect effectiveness in communicating.' },
-            { id: 'customerConcern', title: 'Identify customer Concern', desc: 'Comprehend concerns effectively?' },
-            { id: 'fcr', title: 'FCR', desc: 'Was the associate able to anticipate all questions?' }
+            { id: 'productExpert', title: 'Product Expert', desc: 'Associate demonstration of product expertise.' },
+            { id: 'processAwareness', title: 'Process Awareness', desc: 'Comprehending process vs procedures.' },
+            { id: 'communication', title: 'Communication', desc: 'Effectiveness in customer interaction.' },
+            { id: 'customerConcern', title: 'Identify customer Concern', desc: 'Comprehending concern effectively.' },
+            { id: 'fcr', title: 'FCR', desc: 'Ability to anticipate questions.' }
         ];
 
         const HIP_HIERARCHY = {
@@ -166,9 +166,6 @@
                 "Delivery": ["Core Standalone Delay", "Plates Delivery Delay", "Barbell Delivery Delay", "Apparel Missing Item"],
                 "Quality & Damage": ["Collar Damage", "Quick Lock Damage", "Competition Plates Damage", "Barbell Damage", "Workout Mat Damage"],
                 "Setup & Specs": ["Kettlebell Setup", "Folding Rack Setup", "Folding Rack Lock Issue", "Collar Specs", "HRM Replacement", "HRM Charger Replacement"]
-            },
-            "Membership": {
-                "Account Management": ["Cancel (Immediate/Scheduled/Request/Prevented)", "Reactivate", "Pause Injury", "Refund (Inquiry/Applied)", "Billing Update", "Charges Dispute", "Contact Info Update", "Access Setup", "Change Ownership", "Add/Remove Family", "Password Reset", "Referral Inquiry", "Single Login"]
             }
         };
 
@@ -183,7 +180,7 @@
             mentor_audit: { label: 'Mentor Audit', icon: UserCheck, color: 'emerald', fields: ['mentorName', 'hipLogReference', 'auditModule'] },
         };
 
-        // --- Main App Implementation ---
+        // --- App Implementation ---
         function MentorOpsCenter() {
             const [userProfile, setUserProfile] = useState(null);
             const [session, setSession] = useState(null);
@@ -232,7 +229,7 @@
             const chartRef = useRef(null);
             const chartInstance = useRef(null);
 
-            // --- Authentication Synchronization ---
+            // --- Authentication Implementation ---
             useEffect(() => {
                 supabase.auth.getSession().then(({ data: { session } }) => {
                     setSession(session);
@@ -241,10 +238,7 @@
 
                 const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
                     setSession(session);
-                    // Detect if we just returned from a password reset email
-                    if (event === 'PASSWORD_RECOVERY') {
-                        setAuthView('reset');
-                    }
+                    if (event === 'PASSWORD_RECOVERY') setAuthView('reset');
                     if (session) fetchUserProfile(session.user.email);
                     else setUserProfile(null);
                 });
@@ -262,7 +256,7 @@
                         await supabase.from('users_registry').insert([initial]);
                         setUserProfile(initial);
                     } else {
-                        setUserProfile({ error: true, message: "Your email is not authorized in the registry. Please contact mohamed.abdelmagid@tempo.fit." });
+                        setUserProfile({ error: true, message: "Registry Error: This email is not authorized in the registry. Please contact mohamed.abdelmagid@tempo.fit." });
                     }
                 }
             };
@@ -301,13 +295,13 @@
                 return () => supabase.removeChannel(channel);
             }, [userProfile]);
 
-            // --- Authentication Handlers ---
+            // --- Handlers ---
             const handleAuth = async (e) => {
                 e.preventDefault();
                 setAuthLoading(true);
                 let error = null;
 
-                // Site URL redirection handling
+                // Important: window.location.origin + window.location.pathname captures the full GitHub Pages URL
                 const redirectTo = window.location.origin + window.location.pathname;
 
                 if (authView === 'login') {
@@ -320,28 +314,18 @@
                         options: { emailRedirectTo: redirectTo }
                     });
                     error = res.error;
-                    if (!error) alert("Account created! Check your email to confirm verification before logging in.");
+                    if (!error) alert("Account created! Check your email for confirmation before logging in.");
                 } else if (authView === 'forgot') {
                     const res = await supabase.auth.resetPasswordForEmail(authEmail, { redirectTo: redirectTo });
                     error = res.error;
-                    if (!error) alert("Password reset link sent to your email!");
+                    if (!error) alert("Reset link sent! If the link in your email gives a 404, please ensure the Site URL in Supabase dashboard matches this page.");
                 } else if (authView === 'reset') {
                     const res = await supabase.auth.updateUser({ password: authPassword });
                     error = res.error;
-                    if (!error) { 
-                        alert("Password updated successfully! Switching to login..."); 
-                        setAuthView('login'); 
-                        setAuthPassword('');
-                    }
+                    if (!error) { alert("Password updated successfully!"); setAuthView('login'); }
                 }
 
-                if (error) {
-                    if (error.message.includes("Invalid login credentials")) {
-                        alert("Invalid credentials. If this is your first time, please click 'Create Account' first.");
-                    } else {
-                        alert(error.message);
-                    }
-                }
+                if (error) alert(error.message);
                 setAuthLoading(false);
             };
 
@@ -357,31 +341,22 @@
                 if (error) alert(error.message);
             };
 
-            // --- Business Logic Functions ---
-            useEffect(() => {
-                if (activeTab === 'analytics' && chartRef.current) {
-                    if (chartInstance.current) chartInstance.current.destroy();
-                    let filteredData = tasks.filter(t => t.type === analyticsCategory);
-                    if (analyticsDateRange.start) filteredData = filteredData.filter(t => new Date(t.date) >= new Date(analyticsDateRange.start));
-                    if (analyticsDateRange.end) {
-                        const end = new Date(analyticsDateRange.end); end.setHours(23,59,59);
-                        filteredData = filteredData.filter(t => new Date(t.date) <= end);
-                    }
+            // --- Evaluation Logic ---
+            const handleAuditScore = (attrId, achieved) => {
+                const scores = { ...(formData.auditScores || {}), [attrId]: achieved };
+                let total = 0;
+                auditAttributes.forEach(attr => { if (scores[attr.id] === 'Yes') total += attr.weight; });
+                setFormData(prev => ({ ...prev, auditScores: scores, overallAuditScore: total }));
+            };
 
-                    const counts = {};
-                    filteredData.forEach(t => {
-                        let value = ['status', 'agent'].includes(analyticsField) ? t[analyticsField] : t.details?.[analyticsField] || 'N/A';
-                        counts[value] = (counts[value] || 0) + 1;
-                    });
-                    const ctx = chartRef.current.getContext('2d');
-                    chartInstance.current = new Chart(ctx, {
-                        type: 'bar',
-                        data: { labels: Object.keys(counts), datasets: [{ data: Object.values(counts), backgroundColor: '#2563EB', borderRadius: 6 }] },
-                        options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
-                    });
-                }
-            }, [activeTab, analyticsCategory, analyticsField, analyticsDateRange, tasks]);
+            const handleQuizScore = (mId, s) => {
+                const scores = { ...(formData.quizScores || {}), [mId]: parseInt(s) };
+                const values = Object.values(scores);
+                const avg = values.length ? (values.reduce((a, b) => a + b, 0) / values.length).toFixed(1) : '0.0';
+                setFormData(prev => ({ ...prev, quizScores: scores, overallScore: avg }));
+            };
 
+            // --- Other Handlers ---
             const handleAddTask = async (e) => {
                 e.preventDefault();
                 const requiredFields = categories[newTaskType].fields;
@@ -400,7 +375,7 @@
                     }
                 });
 
-                if (missingFields.length > 0) { alert("Missing entries: " + missingFields.join(', ')); return; }
+                if (missingFields.length > 0) { alert("Please complete: " + missingFields.join(', ')); return; }
 
                 const taskData = { 
                     type: newTaskType, title: categories[newTaskType].label + ' Log', 
@@ -409,35 +384,6 @@
                 };
                 const { error } = editingTaskId ? await supabase.from('tasks').update(taskData).eq('id', editingTaskId) : await supabase.from('tasks').insert([taskData]);
                 if (!error) { setIsFormOpen(false); setFormData({}); setEditingTaskId(null); }
-            };
-
-            const handleAddUser = async () => {
-                if (!formData.newEmail?.endsWith('@tempo.fit')) return alert("Only @tempo.fit emails.");
-                const initial = { email: formData.newEmail, role: formData.newRole || 'Mentor', allowed_tabs: defaultTabs };
-                const { error } = await supabase.from('users_registry').insert([initial]);
-                if (!error) fetchData();
-            };
-
-            const toggleTabForUser = async (email, tab) => {
-                const user = registry.find(u => u.email === email);
-                if (!user) return;
-                const currentTabs = user.allowed_tabs || [];
-                const newTabs = currentTabs.includes(tab) ? currentTabs.filter(t => t !== tab) : [...currentTabs, tab];
-                await supabase.from('users_registry').update({ allowed_tabs: newTabs }).eq('email', email);
-                fetchData();
-            };
-
-            const handleAuditScore = (attrId, achieved) => {
-                const scores = { ...(formData.auditScores || {}), [attrId]: achieved };
-                let total = 0;
-                auditAttributes.forEach(attr => { if (scores[attr.id] === 'Yes') total += attr.weight; });
-                setFormData(prev => ({ ...prev, auditScores: scores, overallAuditScore: total }));
-            };
-
-            const handleQuizScore = (mId, s) => {
-                const scores = { ...(formData.quizScores || {}), [mId]: parseInt(s) };
-                const avg = (Object.values(scores).reduce((a, b) => a + b, 0) / Object.values(scores).length).toFixed(1);
-                setFormData(prev => ({ ...prev, quizScores: scores, overallScore: avg }));
             };
 
             const pickRandomHIP = () => {
@@ -456,6 +402,17 @@
                 if (!newValue.trim()) return;
                 setCustomOptions(prev => ({ ...prev, [field]: [...(prev[field] || []), newValue] }));
                 handleInputChange(field, newValue);
+            };
+
+            const toggleReportColumn = (col) => {
+                setSelectedReportColumns(prev => prev.includes(col) ? prev.filter(c => c !== col) : [...prev, col]);
+            };
+
+            const handleEditTask = (task) => {
+                setNewTaskType(task.type);
+                setFormData({ ...(task.details || {}), status: task.status });
+                setEditingTaskId(task.id);
+                setIsFormOpen(true);
             };
 
             const handleGenerateReport = () => {
@@ -477,34 +434,21 @@
                 })].join('\n');
                 const blob = new Blob([csv], { type: 'text/csv' });
                 const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a'); a.href = url; a.download = 'export.csv'; a.click();
+                const a = document.createElement('a'); a.href = url; a.download = 'mentor_ops_export.csv'; a.click();
             };
 
-            const toggleReportColumn = (col) => {
-                setSelectedReportColumns(prev => prev.includes(col) ? prev.filter(c => c !== col) : [...prev, col]);
-            };
-
-            const handleEditTask = (task) => {
-                setNewTaskType(task.type);
-                setFormData({ ...(task.details || {}), status: task.status });
-                setEditingTaskId(task.id);
-                setIsFormOpen(true);
-            };
-
-            // --- Authentication Form Logic ---
+            // --- Authentication Views ---
             if (!session) {
                 return (
-                    <div className="fixed inset-0 bg-slate-900 z-50 flex items-center justify-center p-4">
-                        <Card className="p-8 max-w-md w-full animate-fade-in shadow-2xl">
-                            <div className="text-center mb-8">
-                                <h1 className="text-4xl font-black italic tracking-tighter mb-2 uppercase">TEMPO</h1>
-                                <p className="text-slate-400 uppercase text-[10px] font-black tracking-widest">Mentor Operations Center</p>
-                            </div>
-
+                    <div className="fixed inset-0 bg-slate-900 z-50 flex items-center justify-center p-4 text-center">
+                        <Card className="p-10 max-w-md w-full shadow-2xl">
+                            <h1 className="text-4xl font-black italic tracking-tighter mb-2">TEMPO</h1>
+                            <p className="text-slate-500 mb-8 font-medium uppercase text-[10px] tracking-widest">Mentor Operations Center</p>
+                            
                             <form onSubmit={handleAuth} className="space-y-4 text-left">
                                 {authView !== 'reset' && (
                                     <div>
-                                        <label className="text-[10px] font-black text-slate-400 uppercase mb-1 block">Email Address</label>
+                                        <label className="text-[10px] font-black text-slate-400 uppercase mb-1 block">Email</label>
                                         <input type="email" required className="w-full p-3 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50" placeholder="user@tempo.fit" value={authEmail} onChange={e => setAuthEmail(e.target.value)} />
                                     </div>
                                 )}
@@ -515,7 +459,7 @@
                                     </div>
                                 )}
                                 <button type="submit" disabled={authLoading} className="w-full py-4 bg-blue-600 text-white font-black rounded-xl uppercase tracking-widest hover:bg-blue-700 transition-all shadow-xl">
-                                    {authLoading ? '...' : (authView === 'login' ? 'Sign In' : authView === 'signup' ? 'Create Account' : authView === 'forgot' ? 'Send Reset Link' : 'Update Password')}
+                                    {authLoading ? '...' : (authView === 'login' ? 'Sign In' : authView === 'signup' ? 'Create Account' : authView === 'forgot' ? 'Send Link' : 'Update')}
                                 </button>
                             </form>
 
@@ -523,7 +467,7 @@
                                 <div className="mt-4">
                                     <div className="relative py-4">
                                         <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-slate-200"></span></div>
-                                        <div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-slate-400">Or continue with</span></div>
+                                        <div className="relative flex justify-center text-xs uppercase font-bold"><span className="bg-white px-2 text-slate-400">Or continue with</span></div>
                                     </div>
                                     <button onClick={handleGoogleLogin} className="w-full flex items-center justify-center gap-3 py-3 border border-slate-200 rounded-xl hover:bg-slate-50 transition-all font-bold">
                                         <img src="https://www.google.com/favicon.ico" className="h-4 w-4" />
@@ -535,17 +479,16 @@
                             <div className="mt-6 pt-6 border-t flex flex-col gap-3">
                                 {authView === 'login' ? (
                                     <React.Fragment>
-                                        <button onClick={() => setAuthView('signup')} className="text-xs font-bold text-slate-400 hover:text-blue-600 uppercase transition-colors">First Time? Create Account</button>
-                                        <button onClick={() => setAuthView('forgot')} className="text-xs font-bold text-slate-400 hover:text-blue-600 uppercase tracking-tighter transition-colors">Forgot Password?</button>
+                                        <button onClick={() => setAuthView('signup')} className="text-xs font-bold text-slate-400 hover:text-blue-600 uppercase">New User? Register</button>
+                                        <button onClick={() => setAuthView('forgot')} className="text-xs font-bold text-slate-400 hover:text-blue-600 uppercase tracking-tighter">Forgot Password?</button>
                                     </React.Fragment>
                                 ) : (
-                                    <button onClick={() => setAuthView('login')} className="text-xs font-bold text-slate-400 hover:text-blue-600 uppercase transition-colors">Back to Login</button>
+                                    <button onClick={() => setAuthView('login')} className="text-xs font-bold text-slate-400 hover:text-blue-600 uppercase">Back to Login</button>
                                 )}
                             </div>
                             
-                            <div className="mt-10 p-4 bg-amber-50 border border-amber-100 rounded-xl text-[10px] font-bold text-amber-700 uppercase tracking-tighter flex items-center gap-2">
-                                <AlertCircle className="h-4 w-4" />
-                                <span>Note: Temporary setup password: tempo2026</span>
+                            <div className="mt-10 p-4 bg-amber-50 border border-amber-100 rounded-xl text-[10px] font-bold text-amber-700 uppercase tracking-tighter">
+                                Note: tempo2026 is the temporary setup password
                             </div>
                         </Card>
                     </div>
@@ -588,7 +531,7 @@
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                     <Card className="p-6 bg-slate-900 text-white shadow-xl"><p className="text-slate-400 text-[10px] font-black uppercase mb-1">Total Logs</p><h3 className="text-4xl font-bold">{tasks.length}</h3></Card>
                                     <Card className="p-6 border-l-4 border-l-rose-500"><p className="text-slate-400 text-[10px] font-black uppercase mb-1">Pending Follow-ups</p><h3 className="text-4xl font-bold text-rose-600">{tasks.filter(t => t.status === 'Pending').length}</h3></Card>
-                                    <Card className="p-6 border-l-4 border-l-emerald-500"><p className="text-slate-400 text-[10px] font-black uppercase mb-1">Today's Closure Rate</p><h3 className="text-4xl font-bold text-emerald-600">{tasks.filter(t => t.status !== 'Pending' && new Date(t.date).toDateString() === new Date().toDateString()).length}</h3></Card>
+                                    <Card className="p-6 border-l-4 border-l-emerald-500"><p className="text-slate-400 text-[10px] font-black uppercase mb-1">Resolved Today</p><h3 className="text-4xl font-bold text-emerald-600">{tasks.filter(t => t.status !== 'Pending' && new Date(t.date).toDateString() === new Date().toDateString()).length}</h3></Card>
                                 </div>
                                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
                                     {Object.entries(categories).map(([key, cfg]) => (
@@ -613,13 +556,6 @@
                                         <thead className="bg-slate-50 border-b"><tr><th className="px-6 py-4">Category</th><th className="px-6 py-4">Agent</th><th className="px-6 py-4">Status</th><th className="px-6 py-4 text-right">Actions</th></tr></thead>
                                         <tbody className="divide-y">{filteredLogs.slice((currentPage-1)*itemsPerPage, currentPage*itemsPerPage).map(t => (<tr key={t.id} className="hover:bg-slate-50"><td className="px-6 py-4 font-bold">{categories[t.type]?.label}</td><td className="px-6 py-4">{t.agent}</td><td className="px-6 py-4"><Badge color={t.status === 'Pending' ? 'amber' : (['Resolved', 'Won', 'Activated'].includes(t.status) ? 'green' : 'slate')}>{t.status}</Badge></td><td className="px-6 py-4 text-right"><button onClick={() => handleEditTask(t)} className="p-2 text-slate-400 hover:text-blue-600 transition-colors"><Edit className="h-4 w-4" /></button></td></tr>))}</tbody>
                                     </table>
-                                    <div className="p-4 bg-slate-50 flex justify-between items-center text-xs font-black text-slate-500 uppercase">
-                                        <span>Showing {(currentPage-1)*itemsPerPage+1} to {Math.min(currentPage*itemsPerPage, filteredLogs.length)} of {filteredLogs.length}</span>
-                                        <div className="flex gap-2">
-                                            <button disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)} className="px-3 py-1 bg-white border rounded">Prev</button>
-                                            <button disabled={currentPage * itemsPerPage >= filteredLogs.length} onClick={() => setCurrentPage(p => p + 1)} className="px-3 py-1 bg-white border rounded">Next</button>
-                                        </div>
-                                    </div>
                                 </Card>
                             </div>
                         )}
@@ -627,7 +563,7 @@
                         {activeTab === 'analytics' && (
                             <div className="space-y-6 animate-fade-in">
                                 <Card className="p-6">
-                                    <div className="flex items-center gap-3 mb-6"><BarChart3 className="h-6 w-6 text-blue-600" /><h2 className="text-xl font-bold uppercase tracking-widest">Visual Analytics Dashboard</h2></div>
+                                    <div className="flex items-center gap-3 mb-6"><BarChart3 className="h-6 w-6 text-blue-600" /><h2 className="text-xl font-bold uppercase tracking-widest">Analytics Dashboard</h2></div>
                                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
                                         <select className="p-2.5 bg-slate-50 border rounded-lg text-sm outline-none" value={analyticsCategory} onChange={e => setAnalyticsCategory(e.target.value)}>{Object.entries(categories).map(([k, c]) => <option key={k} value={k}>{c.label}</option>)}</select>
                                         <select className="p-2.5 bg-slate-50 border rounded-lg text-sm outline-none" value={analyticsField} onChange={e => setAnalyticsField(e.target.value)}><option value="status">Status</option><option value="agent">Agent</option>{categories[analyticsCategory]?.fields.filter(f => !f.includes('Module')).map(f => <option key={f} value={f}>{f.replace(/([A-Z])/g, ' $1')}</option>)}</select>
@@ -676,8 +612,8 @@
                                 <Card className="p-8">
                                     <div className="flex items-center gap-3 mb-6"><Shield className="h-6 w-6 text-indigo-600" /><h2 className="text-xl font-black uppercase tracking-tight">Admin Control Panel</h2></div>
                                     <div className="flex gap-4 mb-10 bg-slate-50 p-6 rounded-2xl border border-dashed">
-                                        <input type="email" placeholder="tempo.fit email" className="flex-1 p-3 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 bg-white" onChange={e => setFormData(p => ({...p, newEmail: e.target.value}))} value={formData.newEmail || ''} />
-                                        <select className="p-3 border rounded-xl outline-none bg-white" onChange={e => setFormData(p => ({...p, newRole: e.target.value}))} value={formData.newRole || 'Mentor'}><option value="Mentor">Mentor</option><option value="Admin">Admin</option></select>
+                                        <input type="email" placeholder="tempo.fit email" className="flex-1 p-3 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 bg-white font-bold" onChange={e => setFormData(p => ({...p, newEmail: e.target.value}))} value={formData.newEmail || ''} />
+                                        <select className="p-3 border rounded-xl outline-none bg-white font-bold" onChange={e => setFormData(p => ({...p, newRole: e.target.value}))} value={formData.newRole || 'Mentor'}><option value="Mentor">Mentor</option><option value="Admin">Admin</option></select>
                                         <button onClick={handleAddUser} className="px-8 py-3 bg-indigo-600 text-white rounded-xl font-black uppercase text-xs hover:bg-indigo-700 transition-all shadow-xl">Authorize Email</button>
                                     </div>
                                     <div className="overflow-x-auto text-xs font-black uppercase">
@@ -685,7 +621,7 @@
                                             <thead className="bg-slate-50 border-b text-slate-400"><tr><th className="px-6 py-4">Authorized User</th><th className="px-6 py-4">System Role</th><th className="px-6 py-4 text-center">Permitted Tabs</th><th className="px-6 py-4"></th></tr></thead>
                                             <tbody className="divide-y">{registry.map(u => (
                                                 <tr key={u.id} className="hover:bg-slate-50">
-                                                    <td className="px-6 py-4 lowercase font-bold">{u.email}</td>
+                                                    <td className="px-6 py-4 lowercase font-bold text-slate-600">{u.email}</td>
                                                     <td className="px-6 py-4"><Badge color={u.role === 'Admin' ? 'purple' : 'slate'}>{u.role}</Badge></td>
                                                     <td className="px-6 py-4 flex gap-2 justify-center">
                                                         {['dashboard', 'logs', 'analytics', 'reports'].map(t => (
@@ -744,7 +680,7 @@
                                                 <div key={field} className="pt-2">
                                                     <label className="text-[10px] font-black text-slate-400 uppercase block mb-1.5">Audit Target</label>
                                                     <div className="flex gap-2"><div className="flex-1 p-3 bg-white border rounded-xl text-sm font-medium">{formData.auditedTicket || 'No Log Selected'}</div>
-                                                    <button type="button" onClick={pickRandomHIP} className="p-3 bg-blue-100 text-blue-600 rounded-xl hover:bg-blue-200 transition-all"><Dice className="h-5 w-5" /></button></div>
+                                                    <button type="button" onClick={pickRandomHIP} className="p-3 bg-blue-100 text-blue-600 rounded-xl"><Dice className="h-5 w-5" /></button></div>
                                                 </div>
                                             );
 
