@@ -184,7 +184,6 @@
                 ]
             });
 
-            // Input field visibility for custom entry
             const [customInputTarget, setCustomInputTarget] = useState(null);
 
             const fetchTasks = async () => {
@@ -202,6 +201,61 @@
 
             const handleAddTask = async (e) => {
                 e.preventDefault();
+
+                // --- GLOBAL MANDATORY FIELD VALIDATION ---
+                const requiredFields = categories[newTaskType].fields;
+                const missingFields = [];
+
+                requiredFields.forEach(field => {
+                    // Logic for modules and special cases
+                    if (field === 'correctionModule') {
+                        const scores = formData.quizScores || {};
+                        quizModules.forEach(m => {
+                            if (!scores[m.id]) missingFields.push(`Quiz Rating: ${m.title}`);
+                        });
+                        return;
+                    }
+
+                    if (field === 'auditModule') {
+                        const scores = formData.auditScores || {};
+                        auditAttributes.forEach(a => {
+                            if (!scores[a.id]) missingFields.push(`Audit Attribute: ${a.label}`);
+                        });
+                        return;
+                    }
+                    
+                    // Logic for conditional invalidReason
+                    if (field === 'invalidReason') {
+                        const isFwInvalid = newTaskType === 'floorwalker' && formData.validRequest === 'No';
+                        const isHipInvalid = newTaskType === 'hip_request' && formData.validHip === 'No';
+                        if ((isFwInvalid || isHipInvalid) && !formData[field]) {
+                            missingFields.push("Reason for Invalid Request");
+                        }
+                        return;
+                    }
+
+                    // Logic for HIPAA hierarchy validation
+                    if (newTaskType === 'hip_request') {
+                        if (['hipProduct', 'hipCategory', 'hipRequestType'].includes(field) && !formData[field]) {
+                            missingFields.push(field.replace('hip', 'HIP ').replace(/([A-Z])/g, ' $1'));
+                        }
+                        // Continue normal validation for common fields like ticketLink
+                    }
+
+                    // Default validation for basic inputs and dropdowns
+                    if (['hipProduct', 'hipCategory', 'hipRequestType', 'correctionModule', 'auditModule', 'invalidReason'].includes(field)) return;
+
+                    if (!formData[field] || formData[field].toString().trim() === '') {
+                        missingFields.push(field.replace(/([A-Z])/g, ' $1').trim());
+                    }
+                });
+
+                if (missingFields.length > 0) {
+                    alert(`To save record, all entries must be filled:\n\n- ${missingFields.join('\n- ')}`);
+                    return;
+                }
+
+                // --- SAVE LOGIC ---
                 let status = formData.status || 'Pending';
                 
                 if (!editingTaskId) {
