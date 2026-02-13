@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tempo MentorOps</title>
+    <title>Tempo MentorOps | Supabase</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -15,29 +15,8 @@
     <!-- Babel for JSX -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
-    <!-- Firebase SDKs -->
-    <script type="module">
-        import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, updateDoc, setDoc, onSnapshot, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        window.Firebase = {
-            initializeApp,
-            getApps,
-            getApp,
-            getAuth,
-            signInAnonymously,
-            signInWithCustomToken,
-            onAuthStateChanged,
-            getFirestore,
-            collection,
-            addDoc,
-            updateDoc,
-            setDoc,
-            onSnapshot,
-            doc
-        };
-    </script>
+    <!-- Supabase JS Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
@@ -47,56 +26,32 @@
             background-color: #F9FAFB;
         }
 
-        /* Tempo Brand Colors */
         :root {
-            --tempo-blue: #2563EB; /* Approximate from screenshot */
+            --tempo-blue: #2563EB;
             --tempo-dark: #111827;
         }
 
-        .text-tempo-dark { color: var(--tempo-dark); }
-        .bg-tempo-blue { background-color: var(--tempo-blue); }
-        .hover-bg-tempo-blue:hover { background-color: #1d4ed8; }
-
-        /* Animations */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+        .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-slide-in-right { animation: slideInRight 0.3s ease-out forwards; }
+        @keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
         
-        @keyframes slideInRight {
-            from { transform: translateX(100%); }
-            to { transform: translateX(0); }
-        }
-
-        .animate-fade-in {
-            animation: fadeIn 0.4s ease-out forwards;
-        }
-
-        .animate-slide-in-right {
-            animation: slideInRight 0.3s ease-out forwards;
-        }
-        
-        /* Custom scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #f1f5f9; 
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #cbd5e1; 
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8; 
-        }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 </head>
 <body class="text-slate-900">
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useMemo, useRef } = React;
+        const { useState, useEffect, useMemo } = React;
+
+        // --- Supabase Config ---
+        const SUPABASE_URL = "https://mifbpckstfwphkwtqksa.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1pZmJwY2tzdGZ3cGhrd3Rxa3NhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5MzcyMDksImV4cCI6MjA4NjUxMzIwOX0.PDZwE9hII9kPOjrBeJAI8T28oetruK-ogFtKOICMlOQ";
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // --- Icons ---
         const Icon = ({ path, className = "" }) => (
@@ -108,57 +63,23 @@
         const CreditCard = (props) => <Icon {...props} path={<><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></>} />;
         const Footprints = (props) => <Icon {...props} path={<><path d="M4 16v-2.38C4 11.5 2.97 10.5 3 8c.03-2.72 1.49-6 4.5-6C9.37 2 11 3.8 11 8c0 2.25-.79 4.33-2 6"/><path d="M20 20v-2.38c0-2.12 1.03-3.12 1-5.62-.03-2.72-1.49-6-4.5-6C14.63 6 13 7.8 13 12c0 2.25.79 4.33 2 6"/><path d="M16 17h4"/><path d="M4 13h4"/></>} />;
         const Gift = (props) => <Icon {...props} path={<><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5"/></>} />;
-        const Bot = (props) => <Icon {...props} path={<><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></>} />;
         const Megaphone = (props) => <Icon {...props} path={<><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></>} />;
         const Plus = (props) => <Icon {...props} path={<><path d="M5 12h14"/><path d="M12 5v14"/></>} />;
         const Search = (props) => <Icon {...props} path={<><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></>} />;
         const CheckCircle2 = (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></>} />;
         const Clock = (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></>} />;
         const Filter = (props) => <Icon {...props} path={<><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></>} />;
-        const MoreHorizontal = (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></>} />;
         const FileText = (props) => <Icon {...props} path={<><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></>} />;
-        const ChevronRight = (props) => <Icon {...props} path={<path d="m9 18 6-6-6-6"/>} />;
         const User = (props) => <Icon {...props} path={<><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></>} />;
-        const Hash = (props) => <Icon {...props} path={<><line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/></>} />;
-        const Calendar = (props) => <Icon {...props} path={<><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></>} />;
         const LogOut = (props) => <Icon {...props} path={<><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></>} />;
         const ClipboardList = (props) => <Icon {...props} path={<><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></>} />;
         const MessageCircle = (props) => <Icon {...props} path={<><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></>} />;
         const Download = (props) => <Icon {...props} path={<><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></>} />;
         const Edit = (props) => <Icon {...props} path={<><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></>} />;
-        const CloudOff = (props) => <Icon {...props} path={<><path d="M22.61 16.95A5 5 0 0 0 18 10h-1.26a8 8 0 0 0-7.05-6M5 5a8 8 0 0 0 4 7h1.8a5 5 0 0 0 1.8 9h2.4"/><line x1="2" x2="22" y1="2" y2="22"/></>} />;
 
-        // --- Components ---
-
-        const Card = ({ children, className = "" }) => (
-            <div className={`bg-white rounded-xl border border-slate-200 shadow-sm ${className}`}>
-                {children}
-            </div>
-        );
-
-        const Badge = ({ children, color = "slate" }) => {
-            const colors = {
-                slate: "bg-slate-100 text-slate-700",
-                red: "bg-rose-100 text-rose-700",
-                blue: "bg-blue-100 text-blue-700",
-                green: "bg-emerald-100 text-emerald-700",
-                purple: "bg-purple-100 text-purple-700",
-                amber: "bg-amber-100 text-amber-700",
-                indigo: "bg-indigo-100 text-indigo-700",
-                cyan: "bg-cyan-100 text-cyan-700",
-                teal: "bg-teal-100 text-teal-700"
-            };
-            return (
-                <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${colors[color] || colors.slate}`}>
-                    {children}
-                </span>
-            );
-        };
-
+        // --- Static Data ---
         const mentorList = [ "Noha Radwan", "Rashad Mohamed", "Emad Mohamed", "Mohamed Mounir" ];
         const associateList = [ "Ariath Piol", "Job James", "Lina Hesham", "Mohab Magdy", "Marwa Ahmed", "Ramadan Philip", "Aida Clement", "Hassan Khallaf", "Nada Ashraf", "Ruben Joseph", "Esraa Tarek Eroq", "Ahmed Abdelghany", "Nour Ayman", "Ashraf Essam", "Hala Ayman", "Rania Mohamed", "Salma Ahmed", "Marwan Hassan", "Osama M. Adam", "Marwan Zakaria", "Shahd Emad", "Ahmed Nasser abdelhakim" ];
-        const floorWalkerReasons = [ "SOP Guidance", "Process education", "System Navigation" ];
-        const floorWalkerRequestTypes = [ "Membership", "Billing", "Account Access", "Account Setup", "Order Support", "Technical Support", "Prospective", "Bundle Membership", "Order Receipt", "Order Confirmation", "Product Support", "Shipping and Delivery", "Program / Classes", "Payment Dispute", "Tempo 12M Installement", "Promotions" ];
         const quizModules = [
             { id: 'productExpert', title: 'Product Expert', desc: 'Is the associate able to demonstrate product expertise when queried by the customer?' },
             { id: 'processAwareness', title: 'Process Awareness', desc: 'Comprehending the process, rather than just adhering to its procedures.' },
@@ -167,1715 +88,416 @@
             { id: 'fcr', title: 'FCR', desc: 'Was the associate able to anticipate all the customer questions?' }
         ];
 
-        // --- PREFILLED DATA ---
-        // This data will be used if the DB is empty or as a fallback
-        const generateMockData = () => {
-             return [
-                { id: 1770000000001, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-01-01T00:00:00', details: { associateName: 'Marwan Zakaria', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Order Support', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
-                { id: 1770000000002, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-01-01T00:00:00', details: { associateName: 'Marwan Zakaria', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Prospective', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
-                { id: 1770000000003, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-02T00:00:00', details: { associateName: 'Marwan Hassan', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Order Support', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
-                { id: 1770000000004, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-02T00:00:00', details: { associateName: 'Nour Ayman', ticketLink: 'Link', reasonForSupport: 'SOP Guidance', requestType: 'Membership', validRequest: 'No', slackLink: 'Link', comment: 'Nour should\'ve followed the membership cancelation SOP' } },
-                { id: 1770000000005, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-01-05T00:00:00', details: { associateName: 'Ahmed Nasser abdelhakim', ticketLink: 'Link', reasonForSupport: 'System Navigation', requestType: 'Membership', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
-                { id: 1770000000006, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-01-05T00:00:00', details: { associateName: 'Ruben Joseph', ticketLink: 'Link', reasonForSupport: 'System Navigation', requestType: 'Membership', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
-                { id: 1770000000007, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-01-05T00:00:00', details: { associateName: 'Ramadan Philip', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Order Support', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
-                { id: 1770000000008, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-01-05T00:00:00', details: { associateName: 'Ramadan Philip', ticketLink: 'Link', reasonForSupport: 'SOP Guidance', requestType: 'Order Support', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
-                { id: 1770000000009, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-01-05T00:00:00', details: { associateName: 'Ahmed Nasser abdelhakim', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Order Support', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
-                { id: 1770000000010, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-01-05T00:00:00', details: { associateName: 'Ahmed Nasser abdelhakim', ticketLink: 'Link', reasonForSupport: 'SOP Guidance', requestType: 'Prospective', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
-                { id: 1770000000011, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-05T00:00:00', details: { associateName: 'Osama M. Adam', ticketLink: 'Link', reasonForSupport: 'System Navigation', requestType: 'Membership', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
-                { id: 1770000000012, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-06T00:00:00', details: { associateName: 'Shahd Emad', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Technical Support', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
-                { id: 1770000000013, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-01-06T00:00:00', details: { associateName: 'Mohab Magdy', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Order Support', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
-                { id: 1770000000014, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-06T00:00:00', details: { associateName: 'Osama M. Adam', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Order Support', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
-                { id: 1770000000015, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-06T00:00:00', details: { associateName: 'Hala Ayman', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Membership', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
-                { id: 1770000000016, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-07T00:00:00', details: { associateName: 'Salma Ahmed', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Membership', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
-                { id: 1770000000017, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-07T00:00:00', details: { associateName: 'Ahmed Abdelghany', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Program / Classes', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
-                { id: 1770000000018, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-08T00:00:00', details: { associateName: 'Rania Mohamed', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Membership', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
-                { id: 1770000000019, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-08T00:00:00', details: { associateName: 'Aida Clement', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Order Support', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
-                { id: 1770000000020, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-09T00:00:00', details: { associateName: 'Hala Ayman', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Program / Classes', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
-                { id: 1770000000021, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-09T00:00:00', details: { associateName: 'Shahd Emad', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Order Support', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
-                { id: 1770000000022, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Noha Radwan', status: 'Resolved', date: '2026-01-09T00:00:00', details: { associateName: 'Aida Clement', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Order Support', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
-                { id: 1770000000023, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Noha Radwan', status: 'Resolved', date: '2026-01-09T00:00:00', details: { associateName: 'Aida Clement', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Membership', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
-                { id: 1770000000024, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Noha Radwan', status: 'Resolved', date: '2026-01-10T00:00:00', details: { associateName: 'Aida Clement', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Order Confirmation', validRequest: 'No', slackLink: 'Link', comment: 'No need for the SBS, as Aida should\'ve let the customer know that they did order the Core, whcih comes without a Cabinet' } },
-                { id: 1770000000025, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Noha Radwan', status: 'Resolved', date: '2026-01-10T00:00:00', details: { associateName: 'Shahd Emad', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Account Access', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
-                { id: 1770000000026, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-12T00:00:00', details: { associateName: 'Ashraf Essam', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Order Support', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
-                { id: 1770000000027, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-13T00:00:00', details: { associateName: 'Hala Ayman', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Billing', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
-                { id: 1770000000028, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-13T00:00:00', details: { associateName: 'Hala Ayman', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Program / Classes', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
-                { id: 1770000000029, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-14T00:00:00', details: { associateName: 'Rania Mohamed', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Membership', validRequest: 'No', slackLink: 'Link', comment: 'Everything was explained in the HIP already' } },
-                { id: 1770000000030, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-14T00:00:00', details: { associateName: 'Rania Mohamed', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Account Setup', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
-                { id: 1770000000031, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-14T00:00:00', details: { associateName: 'Rania Mohamed', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Order Support', validRequest: 'No', slackLink: 'Link', comment: 'Rania followed the wrong process' } },
-                { id: 1770000000032, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-15T00:00:00', details: { associateName: 'Ahmed Abdelghany', ticketLink: 'Link', reasonForSupport: 'System Navigation', requestType: 'Program / Classes', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
-                { id: 1770000000033, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-15T00:00:00', details: { associateName: 'Rania Mohamed', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Membership', validRequest: 'No', slackLink: 'Link', comment: 'Rania knows how to check the Referral code already' } },
-                { id: 1770000000034, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-16T00:00:00', details: { associateName: 'Marwan Hassan', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Order Support', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
-                { id: 1770000000035, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-16T00:00:00', details: { associateName: 'Nour Ayman', ticketLink: 'Link', reasonForSupport: 'System Navigation', requestType: 'Billing', validRequest: 'No', slackLink: 'Link', comment: 'Nour could\'ve checked the charge on Retool' } },
-                { id: 1770000000036, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-17T00:00:00', details: { associateName: 'Marwan Zakaria', ticketLink: 'Link', reasonForSupport: 'System Navigation', requestType: 'Order Support', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
-                { id: 1770000000037, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-19T00:00:00', details: { associateName: 'Hassan Khallaf', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Membership', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
-                { id: 1770000000038, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-01-19T00:00:00', details: { associateName: 'Shahd Emad', ticketLink: 'Link', reasonForSupport: 'System Navigation', requestType: 'Account Access', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
-                { id: 1770000000039, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-01-20T00:00:00', details: { associateName: 'Marwan Hassan', ticketLink: 'Link', reasonForSupport: 'System Navigation', requestType: 'Membership', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
-                { id: 1770000000040, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-01-21T00:00:00', details: { associateName: 'Marwan Hassan', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Membership', validRequest: 'No', slackLink: 'Link', comment: 'The CX was a family member under a canceled account and was having issue log in, Marwan found that the primary owner has another account and should\'ve explained to the customer without raising' } },
-                { id: 1770000000041, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-21T00:00:00', details: { associateName: 'Marwan Hassan', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Order Support', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
-                { id: 1770000000042, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-01-21T00:00:00', details: { associateName: 'Hala Ayman', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Membership', validRequest: 'No', slackLink: 'Link', comment: 'The CX got charged after the pause and asked for a refund after 15 days, Hala should\'ve explained our policy without raising the case' } },
-                { id: 1770000000043, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-21T00:00:00', details: { associateName: 'Ashraf Essam', ticketLink: 'Link', reasonForSupport: 'System Navigation', requestType: 'Account Access', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
-                { id: 1770000000044, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-22T00:00:00', details: { associateName: 'Ahmed Nasser abdelhakim', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Order Support', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
-                { id: 1770000000045, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-23T00:00:00', details: { associateName: 'Esraa Tarek Eroq', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Bundle Membership', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
-                { id: 1770000000046, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-23T00:00:00', details: { associateName: 'Mohab Magdy', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Billing', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
-                { id: 1770000000047, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-01-23T00:00:00', details: { associateName: 'Nour Ayman', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Membership', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
-                { id: 1770000000048, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Noha Radwan', status: 'Resolved', date: '2026-01-25T00:00:00', details: { associateName: 'Rania Mohamed', ticketLink: 'Link', reasonForSupport: 'SOP Guidance', requestType: 'Product Support', validRequest: 'No', slackLink: 'Link', comment: 'The customer has a no audio issue, and she didn;t know which SOP to follow. No searching skills were utilized.' } },
-                { id: 1770000000049, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Noha Radwan', status: 'Resolved', date: '2026-01-25T00:00:00', details: { associateName: 'Rania Mohamed', ticketLink: 'Link', reasonForSupport: 'System Navigation', requestType: 'Account Setup', validRequest: 'No', slackLink: 'Link', comment: 'No certain reason why the SBS was required' } },
-                { id: 1770000000050, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-27T00:00:00', details: { associateName: 'Ashraf Essam', ticketLink: 'Link', reasonForSupport: 'System Navigation', requestType: 'Membership', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
-                { id: 1770000000051, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-01-27T00:00:00', details: { associateName: 'Rania Mohamed', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Bundle Membership', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
-                { id: 1770000000052, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-28T00:00:00', details: { associateName: 'Ashraf Essam', ticketLink: 'Link', reasonForSupport: 'System Navigation', requestType: 'Membership', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
-                { id: 1770000000053, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-01-29T00:00:00', details: { associateName: 'Mohab Magdy', ticketLink: 'Link', reasonForSupport: 'System Navigation', requestType: 'Membership', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
-                { id: 1770000000054, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-01-29T00:00:00', details: { associateName: 'Marwan Zakaria', ticketLink: 'Link', reasonForSupport: 'System Navigation', requestType: 'Order Support', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
-                { id: 1770000000055, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-01-29T00:00:00', details: { associateName: 'Shahd Emad', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Bundle Membership', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
-                { id: 1770000000056, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-01-30T00:00:00', details: { associateName: 'Nour Ayman', ticketLink: 'Link', reasonForSupport: 'System Navigation', requestType: 'Order Support', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
-                { id: 1770000000057, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-01-30T00:00:00', details: { associateName: 'Nour Ayman', ticketLink: 'Link', reasonForSupport: 'System Navigation', requestType: 'Account Access', validRequest: 'No', slackLink: 'Link', comment: 'The CX couldn\'t log in to her profile, Nour should\'ve reset the password, no need for SBS' } },
-                { id: 1770000000058, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-01-30T00:00:00', details: { associateName: 'Shahd Emad', ticketLink: 'Link', reasonForSupport: 'SOP Guidance', requestType: 'Product Support', validRequest: 'No', slackLink: 'Link', comment: 'The CX was worried about not getting updates for his Studio sonce we removed it from our website' } },
-                { id: 1770000000059, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Noha Radwan', status: 'Resolved', date: '2026-01-31T00:00:00', details: { associateName: 'Hala Ayman', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Billing', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
-                { id: 1770000000060, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Noha Radwan', status: 'Resolved', date: '2026-01-31T00:00:00', details: { associateName: 'Hala Ayman', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Membership', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
-                { id: 1770000000061, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Noha Radwan', status: 'Resolved', date: '2026-02-01T00:00:00', details: { associateName: 'Hala Ayman', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Prospective', validRequest: 'No', slackLink: 'Link', comment: 'No need for a SBS for info we already know' } },
-                { id: 1770000000062, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Noha Radwan', status: 'Resolved', date: '2026-02-01T00:00:00', details: { associateName: 'Rania Mohamed', ticketLink: 'Link', reasonForSupport: 'System Navigation', requestType: 'Account Setup', validRequest: 'No', slackLink: 'Link', comment: 'Customer wanted a referral code!' } },
-                { id: 1770000000063, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Noha Radwan', status: 'Resolved', date: '2026-02-02T00:00:00', details: { associateName: 'Rania Mohamed', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Account Access', validRequest: 'No', slackLink: 'Link', comment: 'The customer needs to log out and back in with the same membership email, basic ts steps.' } },
-                { id: 1770000000064, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-02-02T00:00:00', details: { associateName: 'Osama M. Adam', ticketLink: 'Link', reasonForSupport: 'SOP Guidance', requestType: 'Order Support', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
-                { id: 1770000000065, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Noha Radwan', status: 'Resolved', date: '2026-02-03T00:00:00', details: { associateName: 'Nour Ayman', ticketLink: 'Link', reasonForSupport: 'System Navigation', requestType: 'Order Support', validRequest: 'No', slackLink: 'Link', comment: 'Nour didn\'t check the tracking number prior to the SBS to see that the order wasn\'t shipped.' } },
-                { id: 1770000000066, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-02-03T00:00:00', details: { associateName: 'Ramadan Philip', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Order Support', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
-                { id: 1770000000067, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-02-03T00:00:00', details: { associateName: 'Ashraf Essam', ticketLink: 'Link', reasonForSupport: 'System Navigation', requestType: 'Account Access', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
-                { id: 1770000000068, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-02-03T00:00:00', details: { associateName: 'Rania Mohamed', ticketLink: 'Link', reasonForSupport: 'System Navigation', requestType: 'Prospective', validRequest: 'No', slackLink: 'Link', comment: 'Customer asked if coach Mel is a real person or AI.' } },
-                { id: 1770000000069, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-02-03T00:00:00', details: { associateName: 'Shahd Emad', ticketLink: 'Link', reasonForSupport: 'System Navigation', requestType: 'Product Support', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
-                { id: 1770000000070, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-02-03T00:00:00', details: { associateName: 'Rania Mohamed', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Account Setup', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
-                { id: 1770000000071, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Noha Radwan', status: 'Resolved', date: '2026-02-04T00:00:00', details: { associateName: 'Salma Ahmed', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Account Access', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
-                { id: 1770000000072, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-02-04T00:00:00', details: { associateName: 'Rania Mohamed', ticketLink: 'Link', reasonForSupport: 'System Navigation', requestType: 'Program / Classes', validRequest: 'No', slackLink: 'Link', comment: 'The customer was asking if the quiz on the website would provide her with a custom plan, Rania should\'ve provided the customer with recommendations and explained how to start' } },
-                { id: 1770000000073, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-02-05T00:00:00', details: { associateName: 'Rania Mohamed', ticketLink: 'Link', reasonForSupport: 'SOP Guidance', requestType: 'Membership', validRequest: 'No', slackLink: 'Link', comment: 'The next charge is secheduled for today, Rania should\'ve added the discount per the SOP' } },
-                { id: 1770000000074, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-02-06T00:00:00', details: { associateName: 'Marwan Zakaria', ticketLink: 'Link', reasonForSupport: 'SOP Guidance', requestType: 'Account Setup', validRequest: 'No', slackLink: 'Link', comment: 'The steps were in the SOP' } },
-                { id: 1770000000075, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-02-09T00:00:00', details: { associateName: 'Nour Ayman', ticketLink: 'Link', reasonForSupport: 'SOP Guidance', requestType: 'Order Support', validRequest: 'No', slackLink: 'Link', comment: 'The steps were in the SOP' } },
-                { id: 1770000000076, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-02-10T00:00:00', details: { associateName: 'Rania Mohamed', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Membership', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
-                { id: 1770000000077, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Rashad Mohamed', status: 'Resolved', date: '2026-02-10T00:00:00', details: { associateName: 'Marwan Hassan', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Order Support', validRequest: 'Yes', slackLink: 'Link', comment: '' } },
-                { id: 1770000000078, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-02-11T00:00:00', details: { associateName: 'Nour Ayman', ticketLink: 'Link', reasonForSupport: 'SOP Guidance', requestType: 'Technical Support', validRequest: 'No', slackLink: 'Link', comment: 'The steps were in the SOP' } },
-                { id: 1770000000079, type: 'floorwalker', title: 'FloorWalker Log', agent: 'Emad Mohamed', status: 'Resolved', date: '2026-02-12T00:00:00', details: { associateName: 'Mohab Magdy', ticketLink: 'Link', reasonForSupport: 'Process education', requestType: 'Bundle Membership', validRequest: 'Yes', slackLink: 'Link', comment: '' } }
-            ]; 
+        const categories = {
+            disputes: { label: 'Disputes', icon: AlertCircle, color: 'red', fields: ['customerName', 'customerEmail', 'disputeAmount', 'disputeDate', 'disputeReason', 'disputedProduct', 'disputeLink', 'resolution'] },
+            pending_subs: { label: 'Pending Subs', icon: CreditCard, color: 'blue', fields: ['customerName', 'customerEmail', 'pendingReason', 'resolution'] },
+            floorwalker: { label: 'FloorWalker', icon: Footprints, color: 'amber', fields: ['associateName', 'ticketLink', 'reasonForSupport', 'requestType', 'validRequest', 'slackLink', 'comment'] },
+            hip_request: { label: 'HIP Request', icon: MessageCircle, color: 'teal', fields: ['associateName', 'ticketLink', 'slackLink', 'validHip', 'invalidReason', 'hipRequestType'] },
+            weekly_quiz: { label: 'Weekly Quiz', icon: ClipboardList, color: 'cyan', fields: ['associateName', 'associateEmail', 'date', 'correctionModule'] },
+            duplicate_iap: { label: 'Duplicate IAP', icon: FileText, color: 'indigo', fields: ['customerEmail', 'emailSent', 'subscriptionStatus'] },
+            surprise_delight: { label: 'Surprise & Delight', icon: Gift, color: 'purple', fields: ['agent', 'team', 'customerName', 'customerEmail', 'productType', 'ticketUrl', 'surpriseAndDelightReason', 'surpriseAndDelightType', 'amount', 'date', 'notes'] },
+            mx_announcement: { label: 'MX Announcement', icon: Megaphone, color: 'emerald', fields: ['title', 'channel', 'readReceipts'] },
+        };
+
+        // --- Components ---
+        const Card = ({ children, className = "" }) => <div className={`bg-white rounded-xl border border-slate-200 shadow-sm ${className}`}>{children}</div>;
+        const Badge = ({ children, color = "slate" }) => {
+            const colors = { slate: "bg-slate-100 text-slate-700", red: "bg-rose-100 text-rose-700", blue: "bg-blue-100 text-blue-700", green: "bg-emerald-100 text-emerald-700", amber: "bg-amber-100 text-amber-700", teal: "bg-teal-100 text-teal-700", cyan: "bg-cyan-100 text-cyan-700" };
+            return <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${colors[color] || colors.slate}`}>{children}</span>;
         };
 
         function MentorOpsCenter() {
-            // App State
             const [currentUser, setCurrentUser] = useState(null);
-            const [authUser, setAuthUser] = useState(null);
-            const [authReady, setAuthReady] = useState(false);
-            const [connectionStatus, setConnectionStatus] = useState('offline'); // 'connecting', 'online', 'offline'
-            const [dbInstance, setDbInstance] = useState(null);
-
-            // View State
             const [activeTab, setActiveTab] = useState('dashboard');
-            const [tasks, setTasks] = useState(generateMockData()); // Initialize with mock data
+            const [tasks, setTasks] = useState([]);
+            const [connectionStatus, setConnectionStatus] = useState('connecting');
+            
+            // UI State
             const [isFormOpen, setIsFormOpen] = useState(false);
             const [searchTerm, setSearchTerm] = useState('');
             const [editingTaskId, setEditingTaskId] = useState(null);
-            
-            // Pagination State
-            const [currentPage, setCurrentPage] = useState(1);
-            const itemsPerPage = 10;
-            
-            // Reports & Logs Filters State
-            const [reportFilters, setReportFilters] = useState({
-                category: 'all',
-                agent: 'all',
-                startDate: '',
-                endDate: ''
-            });
-            const [generatedReport, setGeneratedReport] = useState(null);
-            
-            // Logs View Specific Filter State
-            const [showLogFilters, setShowLogFilters] = useState(false);
-            const [logFilters, setLogFilters] = useState({
-                category: 'all',
-                agent: 'all',
-                startDate: '',
-                endDate: ''
-            });
-            
-            // New Task State
             const [newTaskType, setNewTaskType] = useState('disputes');
             const [formData, setFormData] = useState({});
             
-            // Flexible Inputs State
-            const [customReason, setCustomReason] = useState(''); // Pending Subs
-            const [customDisputeReason, setCustomDisputeReason] = useState(''); // Dispute Reason
-            const [customFWReason, setCustomFWReason] = useState(''); // FloorWalker Reason
-            const [customFWRequestType, setCustomFWRequestType] = useState(''); // FloorWalker Request Type
-            const [customHipInvalidReason, setCustomHipInvalidReason] = useState(''); // HIP Invalid Reason
-            const [customHipRequestType, setCustomHipRequestType] = useState(''); // HIP Request Type
-            
+            // Reports & Pagination
+            const [currentPage, setCurrentPage] = useState(1);
+            const itemsPerPage = 10;
+            const [reportFilters, setReportFilters] = useState({ category: 'all', agent: 'all', startDate: '', endDate: '' });
+            const [generatedReport, setGeneratedReport] = useState(null);
+
             // Dynamic Lists
-            const [pendingReasonsList, setPendingReasonsList] = useState([
-                "Not delivered",
-                "Delivered but not updated.",
-                "Returned or canceled order, but the membership was left pending"
-            ]);
-            const [disputeReasonsList, setDisputeReasonsList] = useState([
-                "The cardholder claims you continued to charge them after they canceled their subscription.",
-                "The cardholder claims they did not authorize the purchase.",
-                "The cardholder claims the product or service was defective, damaged, or not as described.",
-                "Payment disputed because credit not processed"
-            ]);
-            const [fwReasonsList, setFwReasonsList] = useState(floorWalkerReasons);
-            const [fwRequestTypesList, setFwRequestTypesList] = useState(floorWalkerRequestTypes);
-            const [hipInvalidReasons, setHipInvalidReasons] = useState([]);
-            const [hipRequestTypes, setHipRequestTypes] = useState([]);
+            const [pendingReasonsList, setPendingReasonsList] = useState(["Not delivered", "Delivered but not updated.", "Returned or canceled order"]);
+            const [disputeReasonsList, setDisputeReasonsList] = useState(["Subscription claim", "Unauthorized purchase", "Defective product", "Credit not processed"]);
+            const [fwReasonsList, setFwReasonsList] = useState(["SOP Guidance", "Process education", "System Navigation"]);
+            const [fwRequestTypesList, setFwRequestTypesList] = useState(["Membership", "Billing", "Account Access", "Technical Support", "Order Support"]);
+            const [customInputs, setCustomInputs] = useState({ pending: '', dispute: '', fwReason: '', fwType: '' });
 
-            // 1. Single Robust Firebase Init
+            // Fetch & Sync
+            const fetchTasks = async () => {
+                setConnectionStatus('connecting');
+                const { data, error } = await supabase.from('tasks').select('*').order('date', { ascending: false });
+                if (!error) { setTasks(data || []); setConnectionStatus('online'); }
+                else { setConnectionStatus('offline'); }
+            };
+
             useEffect(() => {
-                const initFirebase = async () => {
-                    if (!window.Firebase) {
-                        setTimeout(initFirebase, 200); // Retry until loaded
-                        return;
-                    }
-
-                    try {
-                        setConnectionStatus('connecting');
-                        
-                        const { initializeApp, getApps, getApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, getFirestore } = window.Firebase;
-                        
-                        // Safety check for config
-                        if (typeof __firebase_config === 'undefined' || !__firebase_config) {
-                             console.warn("No Firebase config found. Running in Local Mode.");
-                             setAuthReady(true); 
-                             setConnectionStatus('offline');
-                             return;
-                        }
-
-                        const firebaseConfig = JSON.parse(__firebase_config);
-                        
-                        let app;
-                        if (getApps().length === 0) {
-                            app = initializeApp(firebaseConfig);
-                        } else {
-                            app = getApp();
-                        }
-                        
-                        const auth = getAuth(app);
-                        const db = getFirestore(app);
-                        setDbInstance(db); // Save DB instance for reuse
-
-                        // Auth Listener
-                        onAuthStateChanged(auth, (user) => {
-                            if (user) {
-                                setAuthUser(user);
-                                setAuthReady(true);
-                                setConnectionStatus('online');
-                            } else {
-                                setAuthUser(null);
-                                setAuthReady(false);
-                                setConnectionStatus('connecting');
-                                // Attempt sign-in if lost
-                                doSignIn(auth);
-                            }
-                        });
-
-                        // Initial Sign-in
-                        if (!auth.currentUser) {
-                            await doSignIn(auth);
-                        }
-
-                    } catch (e) {
-                        console.error("Firebase init error:", e);
-                        setConnectionStatus('offline');
-                        // Fallback to allow app use even if DB fails
-                        setAuthReady(true); 
-                    }
-                };
-
-                const doSignIn = async (auth) => {
-                    const { signInAnonymously, signInWithCustomToken } = window.Firebase;
-                     try {
-                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                            await signInWithCustomToken(auth, __initial_auth_token);
-                        } else {
-                            await signInAnonymously(auth);
-                        }
-                    } catch(e) {
-                        console.error("Auth failed:", e);
-                    }
-                }
-
-                initFirebase();
+                fetchTasks();
+                const channel = supabase.channel('tasks-channel').on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, fetchTasks).subscribe();
+                return () => supabase.removeChannel(channel);
             }, []);
 
-            // 2. Data Sync Listener
-            useEffect(() => {
-                // Only sync if we have a user and a DB connection
-                if (!authUser || !dbInstance || !window.Firebase || typeof __app_id === 'undefined') return;
+            // Handlers
+            const handleAddTask = async (e) => {
+                e.preventDefault();
+                let status = formData.status || 'Pending';
                 
-                const { collection, onSnapshot } = window.Firebase;
-                const appId = typeof __app_id !== 'undefined' ? __app_id : 'mentor-ops-center';
-                
-                const q = collection(dbInstance, 'artifacts', appId, 'public', 'data', 'tasks');
-                
-                const unsubscribe = onSnapshot(q, (snapshot) => {
-                    const loadedTasks = snapshot.docs.map(doc => ({
-                        id: doc.id, // Firestore string ID
-                        ...doc.data()
-                    }));
-                    
-                    // MERGE STRATEGY: 
-                    // 1. Start with hardcoded "Real Data"
-                    // 2. Overwrite/Append with Cloud Data
-                    const localData = generateMockData();
-                    const mergedMap = new Map();
-
-                    // Load local first
-                    localData.forEach(t => mergedMap.set(String(t.id), t));
-
-                    // Load cloud second (updates win)
-                    loadedTasks.forEach(t => mergedMap.set(String(t.id), t));
-
-                    const finalTasks = Array.from(mergedMap.values());
-                    
-                    // Sort descending by date
-                    finalTasks.sort((a, b) => new Date(b.date) - new Date(a.date));
-                    
-                    setTasks(finalTasks);
-                }, (error) => {
-                    console.error("Error fetching tasks:", error);
-                    setConnectionStatus('offline');
-                });
-
-                return () => unsubscribe();
-            }, [authUser, dbInstance]);
-
-            // Categories Configuration
-            const categories = {
-                disputes: { 
-                    label: 'Disputes', 
-                    icon: AlertCircle, 
-                    color: 'red', 
-                    fields: [
-                        'customerName', 
-                        'customerEmail', 
-                        'disputeAmount', 
-                        'disputeDate', 
-                        'disputeReason', 
-                        'disputedProduct', 
-                        'disputeLink', 
-                        'resolution'
-                    ] 
-                },
-                pending_subs: { 
-                    label: 'Pending Subs', 
-                    icon: CreditCard, 
-                    color: 'blue', 
-                    fields: [
-                        'customerName', 
-                        'customerEmail',
-                        'pendingReason', 
-                        'resolution'
-                    ] 
-                },
-                floorwalker: { 
-                    label: 'FloorWalker', 
-                    icon: Footprints, 
-                    color: 'amber', 
-                    fields: [
-                        'date',
-                        // 'mentorName', // Removed - Auto Captured
-                        'associateName',
-                        'ticketLink',
-                        'reasonForSupport',
-                        'requestType',
-                        'validRequest',
-                        'slackLink',
-                        'comment'
-                    ] 
-                },
-                hip_request: {
-                    label: 'HIP Request',
-                    icon: MessageCircle,
-                    color: 'teal',
-                    fields: [
-                        'associateName',
-                        'ticketLink',
-                        'slackLink',
-                        'validHip',
-                        'invalidReason', // Conditional
-                        'hipRequestType'
-                    ]
-                },
-                weekly_quiz: {
-                    label: 'Weekly Quiz',
-                    icon: ClipboardList,
-                    color: 'cyan',
-                    fields: [
-                        'associateName',
-                        'associateEmail',
-                        'date',
-                        'correctionModule' // Special field type
-                    ]
-                },
-                duplicate_iap: {
-                    label: 'Duplicate IAP',
-                    icon: FileText,
-                    color: 'indigo',
-                    fields: [
-                        'customerEmail',
-                        'emailSent',
-                        'subscriptionStatus'
-                    ]
-                },
-                surprise_delight: { 
-                    label: 'Surprise & Delight', 
-                    icon: Gift, 
-                    color: 'purple', 
-                    fields: [
-                        'agent', 
-                        'team',
-                        'customerName',
-                        'customerEmail',
-                        'productType',
-                        'ticketUrl',
-                        'surpriseAndDelightReason',
-                        'surpriseAndDelightType',
-                        'amount',
-                        'date',
-                        'notes'
-                    ] 
-                },
-                mx_announcement: { label: 'MX Announcement', icon: Megaphone, color: 'emerald', fields: ['title', 'channel', 'readReceipts'] },
-            };
-
-            // --- Statistics ---
-            const stats = {
-                total: tasks.length,
-                pending: tasks.filter(t => t.status === 'Pending').length,
-                resolved: tasks.filter(t => t.status === 'Resolved' || t.status === 'Activated' || t.status === 'Cancelled' || t.status === 'Won' || t.status === 'Lost').length,
-                byType: Object.keys(categories).reduce((acc, key) => {
-                    acc[key] = tasks.filter(t => t.type === key).length;
-                    return acc;
-                }, {})
-            };
-
-            // --- Handlers for Dynamic Lists ---
-
-            const handleAddReason = () => {
-                if (customReason && !pendingReasonsList.includes(customReason)) {
-                    setPendingReasonsList([...pendingReasonsList, customReason]);
-                    handleInputChange('pendingReason', customReason);
-                    setCustomReason('');
+                // Smart Resolution Mapping
+                if (!editingTaskId) {
+                    if (newTaskType === 'disputes' && (formData.resolution === 'Won' || formData.resolution === 'Lost')) status = 'Resolved';
+                    else if (newTaskType === 'pending_subs' && (formData.resolution === 'Activated' || formData.resolution === 'Cancelled')) status = 'Resolved';
+                    else if (['weekly_quiz', 'hip_request', 'duplicate_iap'].includes(newTaskType)) status = 'Resolved';
                 }
-            };
 
-            const handleAddDisputeReason = () => {
-                if (customDisputeReason && !disputeReasonsList.includes(customDisputeReason)) {
-                    setDisputeReasonsList([...disputeReasonsList, customDisputeReason]);
-                    handleInputChange('disputeReason', customDisputeReason);
-                    setCustomDisputeReason('');
+                const details = { ...formData };
+                if (!editingTaskId) {
+                    if (newTaskType === 'surprise_delight') details.submitterName = currentUser;
+                    if (newTaskType === 'floorwalker') details.mentorName = currentUser;
                 }
-            };
 
-            const handleAddFWReason = () => {
-                if (customFWReason && !fwReasonsList.includes(customFWReason)) {
-                    setFwReasonsList([...fwReasonsList, customFWReason]);
-                    handleInputChange('reasonForSupport', customFWReason);
-                    setCustomFWReason('');
-                }
-            };
+                const taskData = {
+                    type: newTaskType,
+                    title: `${categories[newTaskType].label} Log`,
+                    agent: currentUser,
+                    status,
+                    priority: 'Medium',
+                    date: editingTaskId ? undefined : new Date().toISOString(),
+                    details
+                };
 
-            const handleAddFWRequestType = () => {
-                if (customFWRequestType && !fwRequestTypesList.includes(customFWRequestType)) {
-                    setFwRequestTypesList([...fwRequestTypesList, customFWRequestType]);
-                    handleInputChange('requestType', customFWRequestType);
-                    setCustomFWRequestType('');
-                }
-            };
+                const { error } = editingTaskId 
+                    ? await supabase.from('tasks').update(taskData).eq('id', editingTaskId)
+                    : await supabase.from('tasks').insert([taskData]);
 
-            const handleAddHipInvalidReason = () => {
-                if (customHipInvalidReason && !hipInvalidReasons.includes(customHipInvalidReason)) {
-                    setHipInvalidReasons([...hipInvalidReasons, customHipInvalidReason]);
-                    handleInputChange('invalidReason', customHipInvalidReason);
-                    setCustomHipInvalidReason('');
-                }
-            };
-
-            const handleAddHipRequestType = () => {
-                if (customHipRequestType && !hipRequestTypes.includes(customHipRequestType)) {
-                    setHipRequestTypes([...hipRequestTypes, customHipRequestType]);
-                    handleInputChange('hipRequestType', customHipRequestType);
-                    setCustomHipRequestType('');
-                }
-            };
-
-            const handleQuizScoreChange = (moduleId, score) => {
-                const currentScores = formData.quizScores || {};
-                const newScores = { ...currentScores, [moduleId]: parseInt(score) };
-                handleInputChange('quizScores', newScores);
-                
-                // Calculate average automatically
-                const values = Object.values(newScores);
-                if (values.length > 0) {
-                    const avg = values.reduce((a, b) => a + b, 0) / values.length;
-                    handleInputChange('overallScore', avg.toFixed(1));
-                }
-            };
-
-            const handleQuizCommentChange = (moduleId, comment) => {
-                const currentComments = formData.quizComments || {};
-                handleInputChange('quizComments', { ...currentComments, [moduleId]: comment });
+                if (error) alert("Error: " + error.message);
+                else { setIsFormOpen(false); setFormData({}); setEditingTaskId(null); }
             };
 
             const handleEditTask = (task) => {
                 setNewTaskType(task.type);
-                // Populate formData with details + top-level props to ensure form pre-fills correctly
-                setFormData({ 
-                    ...task.details, 
-                    title: task.title, 
-                    // Ensure special status is captured
-                    status: task.status
-                });
+                setFormData(task.details || {});
                 setEditingTaskId(task.id);
                 setIsFormOpen(true);
             };
 
-            const handleAddTask = async (e) => {
-                e.preventDefault();
-                
-                // Robust check: If no auth, warn but allow local save for UI feedback if needed (or block)
-                if (connectionStatus === 'connecting') {
-                    alert("Still connecting to database... please wait 2 seconds.");
-                    return;
-                }
+            const handleInputChange = (field, value) => setFormData(prev => ({ ...prev, [field]: value }));
 
-                let computedStatus = formData.status || 'Pending';
-                
-                // Smart status logic
-                if (!editingTaskId) {
-                    if (newTaskType === 'disputes') {
-                        if (formData.resolution === 'Won' || formData.resolution === 'Lost') computedStatus = 'Resolved';
-                    } else if (newTaskType === 'pending_subs') {
-                        if (formData.resolution === 'Activated' || formData.resolution === 'Cancelled') computedStatus = 'Resolved';
-                    } else if (newTaskType === 'weekly_quiz') {
-                        computedStatus = 'Resolved'; 
-                    } else if (newTaskType === 'hip_request') {
-                        computedStatus = 'Resolved'; 
-                    } else if (newTaskType === 'duplicate_iap') {
-                        computedStatus = 'Resolved'; 
-                    } else {
-                        if (formData.resolution === 'Resolved') computedStatus = 'Resolved';
-                    }
-                }
-
-                // Prepare details with auto-captured fields
-                const finalDetails = { ...formData };
-                
-                // Auto-capture fields ONLY for new tasks
-                if (!editingTaskId) {
-                    if (newTaskType === 'surprise_delight') {
-                        finalDetails.submitterName = currentUser;
-                    }
-                    if (newTaskType === 'floorwalker') {
-                        finalDetails.mentorName = currentUser;
-                    }
-                }
-
-                const appId = typeof __app_id !== 'undefined' ? __app_id : 'mentor-ops-center';
-
-                const taskData = {
-                    type: newTaskType,
-                    title: `${categories[newTaskType].label} Log`, // Default Title
-                    agent: currentUser, 
-                    status: computedStatus,
-                    priority: 'Medium',
-                    date: new Date().toISOString(),
-                    details: finalDetails
-                };
-
-                // Use the Persistent DB Instance
-                if (dbInstance) {
-                    const { collection, addDoc, doc, setDoc } = window.Firebase;
-                    try {
-                        if (editingTaskId) {
-                            // 3. Handle Edit (Upsert)
-                            // Note: String(editingTaskId) ensures we can overwrite the "prefilled" IDs in the cloud
-                            const taskRef = doc(dbInstance, 'artifacts', appId, 'public', 'data', 'tasks', String(editingTaskId));
-                            await setDoc(taskRef, taskData, { merge: true });
-                        } else {
-                            // 4. Handle Create
-                            const collRef = collection(dbInstance, 'artifacts', appId, 'public', 'data', 'tasks');
-                            await addDoc(collRef, taskData);
-                        }
-                        
-                        setIsFormOpen(false);
-                        setFormData({});
-                        setEditingTaskId(null);
-                    } catch (error) {
-                        console.error("Error saving task:", error);
-                        alert("Database write failed. Check console.");
-                    }
-                } else {
-                    alert("Database not initialized. Cannot save.");
-                }
-            };
-            
-            // ... rest of the component
-            
-            const handleInputChange = (field, value) => {
-                setFormData(prev => ({ ...prev, [field]: value }));
+            const handleQuizScore = (moduleId, score) => {
+                const scores = { ...(formData.quizScores || {}), [moduleId]: parseInt(score) };
+                const values = Object.values(scores);
+                const avg = values.length ? (values.reduce((a, b) => a + b, 0) / values.length).toFixed(1) : '0.0';
+                setFormData(prev => ({ ...prev, quizScores: scores, overallScore: avg }));
             };
 
-            // Filter logic
-            const filteredTasks = tasks.filter(task => {
-                // Search Term Filter
-                const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                      task.agent.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                      categories[task.type].label.toLowerCase().includes(searchTerm.toLowerCase());
-                
-                // Logs View Specific Filters
-                const matchesCategory = logFilters.category === 'all' || task.type === logFilters.category;
-                const matchesAgent = logFilters.agent === 'all' || task.agent === logFilters.agent;
-                
-                let matchesDate = true;
-                if (logFilters.startDate) matchesDate = matchesDate && new Date(task.date) >= new Date(logFilters.startDate);
-                if (logFilters.endDate) {
-                     const end = new Date(logFilters.endDate);
-                     end.setHours(23, 59, 59, 999);
-                     matchesDate = matchesDate && new Date(task.date) <= end;
-                }
-
-                return matchesSearch && matchesCategory && matchesAgent && matchesDate;
-            });
-
-            // Pagination Logic
-            const indexOfLastItem = currentPage * itemsPerPage;
-            const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-            const currentItems = filteredTasks.slice(indexOfFirstItem, indexOfLastItem);
-            const totalPages = Math.ceil(filteredTasks.length / itemsPerPage);
-
-            // --- Report Logic ---
             const handleGenerateReport = () => {
                 let filtered = tasks;
-
-                // Filter by Category
-                if (reportFilters.category !== 'all') {
-                    filtered = filtered.filter(t => t.type === reportFilters.category);
-                }
-
-                // Filter by Agent (Owner)
-                if (reportFilters.agent !== 'all') {
-                    filtered = filtered.filter(t => t.agent === reportFilters.agent);
-                }
-
-                // Filter by Date Range
-                if (reportFilters.startDate) {
-                    filtered = filtered.filter(t => new Date(t.date) >= new Date(reportFilters.startDate));
-                }
+                if (reportFilters.category !== 'all') filtered = filtered.filter(t => t.type === reportFilters.category);
+                if (reportFilters.agent !== 'all') filtered = filtered.filter(t => t.agent === reportFilters.agent);
+                if (reportFilters.startDate) filtered = filtered.filter(t => new Date(t.date) >= new Date(reportFilters.startDate));
                 if (reportFilters.endDate) {
-                    // Add 1 day to include the end date fully
-                    const end = new Date(reportFilters.endDate);
-                    end.setHours(23, 59, 59, 999);
+                    const end = new Date(reportFilters.endDate); end.setHours(23,59,59);
                     filtered = filtered.filter(t => new Date(t.date) <= end);
                 }
-
                 setGeneratedReport(filtered);
             };
 
             const downloadCSV = () => {
-                if (!generatedReport || generatedReport.length === 0) return;
-
-                // Basic headers
-                let headers = ['ID', 'Type', 'Title', 'Agent/Owner', 'Status', 'Date', 'Details'];
-                
-                const csvContent = [
-                    headers.join(','),
-                    ...generatedReport.map(task => {
-                        const detailsStr = JSON.stringify(task.details).replace(/,/g, ';').replace(/"/g, '""'); 
-                        
-                        return [
-                            task.id,
-                            categories[task.type]?.label || task.type,
-                            `"${task.title.replace(/"/g, '""')}"`,
-                            task.agent,
-                            task.status,
-                            new Date(task.date).toLocaleDateString(),
-                            `"${detailsStr}"`
-                        ].join(',');
-                    })
-                ].join('\n');
-
-                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.setAttribute('download', `mentor_ops_report_${new Date().toISOString().split('T')[0]}.csv`);
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
+                if (!generatedReport) return;
+                const headers = ['ID', 'Type', 'Owner', 'Status', 'Date', 'Details'];
+                const csv = [headers.join(','), ...generatedReport.map(t => [t.id, t.type, t.agent, t.status, new Date(t.date).toLocaleDateString(), JSON.stringify(t.details).replace(/,/g, ';')].join(','))].join('\n');
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a'); a.href = url; a.download = 'mentor_ops_report.csv'; a.click();
             };
 
-            // --- Views ---
+            const stats = useMemo(() => ({
+                total: tasks.length,
+                pending: tasks.filter(t => t.status === 'Pending').length,
+                resolved: tasks.filter(t => ['Resolved', 'Activated', 'Won'].includes(t.status)).length,
+                byType: Object.keys(categories).reduce((acc, key) => { acc[key] = tasks.filter(t => t.type === key).length; return acc; }, {})
+            }), [tasks]);
 
-            const renderLogin = () => (
-                <div className="fixed inset-0 bg-slate-900 z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center">
-                        <div className="h-16 w-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                            <User className="h-8 w-8" />
-                        </div>
-                        <h2 className="text-2xl font-bold text-slate-900 mb-2">Welcome Back</h2>
-                        <p className="text-slate-500 mb-8">Please select your identity to access the MentorOps Center.</p>
-                        
-                        <div className="text-left space-y-2 mb-6">
-                            <label className="text-sm font-medium text-slate-700">Select User</label>
-                            <select 
-                                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-                                onChange={(e) => setCurrentUser(e.target.value)}
-                                defaultValue=""
-                            >
-                                <option value="" disabled>Choose your name...</option>
-                                {mentorList.map(name => (
-                                    <option key={name} value={name}>{name}</option>
-                                ))}
-                            </select>
-                        </div>
-                    </div>
-                </div>
+            const filteredLogs = tasks.filter(t => 
+                (categories[t.type]?.label || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+                (t.agent || '').toLowerCase().includes(searchTerm.toLowerCase())
             );
+            const paginatedLogs = filteredLogs.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
             if (!currentUser) {
-                return renderLogin();
+                return (
+                    <div className="fixed inset-0 bg-slate-900 z-50 flex items-center justify-center p-4">
+                        <Card className="p-8 max-w-md w-full text-center">
+                            <div className="h-16 w-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <User className="h-8 w-8" />
+                            </div>
+                            <h2 className="text-2xl font-bold mb-2">MentorOps Center</h2>
+                            <p className="text-slate-500 mb-8">Select your identity to continue</p>
+                            <select className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" onChange={(e) => setCurrentUser(e.target.value)} defaultValue="">
+                                <option value="" disabled>Select Mentor...</option>
+                                {mentorList.map(name => <option key={name} value={name}>{name}</option>)}
+                            </select>
+                        </Card>
+                    </div>
+                );
             }
 
-            const renderDashboard = () => (
-                <div className="space-y-6 animate-fade-in">
-                    {/* Top Stats Row */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <Card className="p-6 flex items-center justify-between bg-gradient-to-br from-slate-800 to-slate-900 text-white border-none">
-                            <div>
-                                <p className="text-slate-400 text-sm font-medium">Total Entries</p>
-                                <h3 className="text-3xl font-bold mt-1">{stats.total}</h3>
-                            </div>
-                            <div className="h-12 w-12 bg-white/10 rounded-full flex items-center justify-center">
-                                <LayoutDashboard className="h-6 w-6 text-white" />
-                            </div>
-                        </Card>
-                        
-                        <Card className="p-6 flex items-center justify-between">
-                            <div>
-                                <p className="text-slate-500 text-sm font-medium">Pending Follow-ups</p>
-                                <h3 className="text-3xl font-bold mt-1 text-rose-600">{stats.pending}</h3>
-                            </div>
-                            <div className="h-12 w-12 bg-rose-50 rounded-full flex items-center justify-center">
-                                <Clock className="h-6 w-6 text-rose-600" />
-                            </div>
-                        </Card>
-
-                        <Card className="p-6 flex items-center justify-between">
-                            <div>
-                                <p className="text-slate-500 text-sm font-medium">Resolved Today</p>
-                                <h3 className="text-3xl font-bold mt-1 text-emerald-600">{stats.resolved}</h3>
-                            </div>
-                            <div className="h-12 w-12 bg-emerald-50 rounded-full flex items-center justify-center">
-                                <CheckCircle2 className="h-6 w-6 text-emerald-600" />
-                            </div>
-                        </Card>
-                    </div>
-
-                    {/* Category Breakdown */}
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                        {Object.entries(categories).map(([key, config]) => {
-                            const IconComp = config.icon;
-                            return (
-                                <button 
-                                    key={key}
-                                    onClick={() => {
-                                        setNewTaskType(key);
-                                        setEditingTaskId(null);
-                                        setIsFormOpen(true);
-                                    }}
-                                    className="p-4 bg-white border border-slate-200 rounded-xl hover:shadow-md transition-all text-left group"
-                                >
-                                    <div className={`h-10 w-10 rounded-lg flex items-center justify-center mb-3 bg-${config.color}-100`}>
-                                        <IconComp className={`h-5 w-5 text-${config.color}-600`} />
-                                    </div>
-                                    <p className="text-sm font-medium text-slate-600 group-hover:text-slate-900">{config.label}</p>
-                                    <div className="flex items-center justify-between mt-1">
-                                        <span className="text-2xl font-bold text-slate-800">{stats.byType[key]}</span>
-                                        <Plus className="h-4 w-4 text-slate-400 group-hover:text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                    </div>
-                                </button>
-                            );
-                        })}
-                    </div>
-
-                    {/* Recent Activity List */}
-                    <Card className="overflow-hidden">
-                        <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-                            <h3 className="font-semibold text-slate-800">Recent Follow-ups Needed</h3>
-                            <button onClick={() => setActiveTab('logs')} className="text-sm text-blue-600 hover:text-blue-700 font-medium">View All</button>
-                        </div>
-                        <div className="divide-y divide-slate-100">
-                            {tasks.filter(t => t.status === 'Pending').slice(0, 5).map(task => {
-                                const CatIcon = categories[task.type].icon;
-                                return (
-                                    <div key={task.id} className="p-4 flex items-center gap-4 hover:bg-slate-50 transition-colors">
-                                        <div className={`h-10 w-10 rounded-full flex-shrink-0 flex items-center justify-center bg-${categories[task.type].color}-100`}>
-                                            <CatIcon className={`h-5 w-5 text-${categories[task.type].color}-600`} />
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-medium text-slate-900 truncate">{task.title}</p>
-                                            <p className="text-xs text-slate-500 flex items-center mt-0.5">
-                                                <User className="h-3 w-3 mr-1" /> {task.agent} • {new Date(task.date).toLocaleDateString()}
-                                            </p>
-                                        </div>
-                                        <Badge color="red">Action Req</Badge>
-                                        <button 
-                                            onClick={() => handleEditTask(task)} 
-                                            className="p-1 hover:bg-slate-200 rounded-full text-slate-400 hover:text-blue-600"
-                                            title="Edit Task"
-                                        >
-                                            <Edit className="h-4 w-4" />
-                                        </button>
-                                    </div>
-                                );
-                            })}
-                            {tasks.filter(t => t.status === 'Pending').length === 0 && (
-                                <div className="p-8 text-center text-slate-500">
-                                    <CheckCircle2 className="h-12 w-12 mx-auto mb-2 text-emerald-200" />
-                                    <p>All caught up! No pending tasks.</p>
-                                </div>
-                            )}
-                        </div>
-                    </Card>
-                </div>
-            );
-
-            const renderLogs = () => (
-                <div className="space-y-4 animate-fade-in">
-                    <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                        <div className="relative w-full md:w-96">
-                            <div className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400">
-                                <Search className="h-4 w-4" />
-                            </div>
-                            <input 
-                                type="text" 
-                                placeholder="Search by title, agent, or type..." 
-                                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
-                        </div>
-                        <div className="flex gap-2">
-                            <button 
-                                onClick={() => setShowLogFilters(!showLogFilters)}
-                                className={`flex items-center gap-2 px-3 py-2 border rounded-lg text-sm font-medium transition-colors ${showLogFilters ? 'bg-slate-100 border-blue-200 text-blue-700' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'}`}
-                            >
-                                <Filter className="h-4 w-4" /> Filter
-                            </button>
-                            <button 
-                                onClick={() => {
-                                    setEditingTaskId(null);
-                                    setIsFormOpen(true);
-                                }}
-                                className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 shadow-sm shadow-blue-200"
-                            >
-                                <Plus className="h-4 w-4" /> New Entry
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Logs Filters Panel (Conditionally Rendered) */}
-                    {showLogFilters && (
-                        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm grid grid-cols-1 md:grid-cols-4 gap-4 animate-fade-in">
-                            <div>
-                                <label className="block text-xs font-medium text-slate-500 mb-1">Type</label>
-                                <select 
-                                    className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none"
-                                    value={logFilters.category}
-                                    onChange={(e) => setLogFilters(prev => ({...prev, category: e.target.value}))}
-                                >
-                                    <option value="all">All</option>
-                                    {Object.entries(categories).map(([key, config]) => (
-                                        <option key={key} value={key}>{config.label}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-xs font-medium text-slate-500 mb-1">Owner</label>
-                                <select 
-                                    className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none"
-                                    value={logFilters.agent}
-                                    onChange={(e) => setLogFilters(prev => ({...prev, agent: e.target.value}))}
-                                >
-                                    <option value="all">All</option>
-                                    {mentorList.map(m => (
-                                        <option key={m} value={m}>{m}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-xs font-medium text-slate-500 mb-1">Start Date</label>
-                                <input 
-                                    type="date" 
-                                    className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none"
-                                    value={logFilters.startDate}
-                                    onChange={(e) => setLogFilters(prev => ({...prev, startDate: e.target.value}))}
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-medium text-slate-500 mb-1">End Date</label>
-                                <input 
-                                    type="date" 
-                                    className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none"
-                                    value={logFilters.endDate}
-                                    onChange={(e) => setLogFilters(prev => ({...prev, endDate: e.target.value}))}
-                                />
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden overflow-x-auto">
-                        <table className="w-full text-left text-sm">
-                            <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
-                                <tr>
-                                    <th className="px-6 py-3 whitespace-nowrap">Category</th>
-                                    <th className="px-6 py-3">Details</th>
-                                    <th className="px-6 py-3 whitespace-nowrap">Agent/Owner</th>
-                                    <th className="px-6 py-3 whitespace-nowrap">Status</th>
-                                    <th className="px-6 py-3 whitespace-nowrap">Date</th>
-                                    <th className="px-6 py-3 text-right">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                                {currentItems.map((task) => {
-                                    const CatIcon = categories[task.type].icon;
-                                    return (
-                                        <tr key={task.id} className="hover:bg-slate-50 transition-colors group">
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="flex items-center gap-3">
-                                                    <div className={`h-8 w-8 rounded-lg flex items-center justify-center bg-${categories[task.type].color}-100`}>
-                                                        <CatIcon className={`h-4 w-4 text-${categories[task.type].color}-600`} />
-                                                    </div>
-                                                    <span className="font-medium text-slate-700">{categories[task.type].label}</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <p className="font-medium text-slate-900">{task.title}</p>
-                                                <p className="text-slate-500 text-xs truncate max-w-[200px]">
-                                                    {Object.values(task.details).filter(v => typeof v === 'string' || typeof v === 'number').join(' • ')}
-                                                </p>
-                                            </td>
-                                            <td className="px-6 py-4 text-slate-600 whitespace-nowrap">{task.agent}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium border ${
-                                                    task.status === 'Resolved' || task.status === 'Won' || task.status === 'Activated' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                                                    task.status === 'Lost' || task.status === 'Cancelled' ? 'bg-rose-50 text-rose-700 border-rose-200' :
-                                                    'bg-amber-50 text-amber-700 border-amber-200'
-                                                }`}>
-                                                    {task.status}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-slate-500 whitespace-nowrap">{new Date(task.date).toLocaleDateString()}</td>
-                                            <td className="px-6 py-4 text-right">
-                                                <button 
-                                                    onClick={() => handleEditTask(task)} 
-                                                    className="text-slate-400 hover:text-blue-600 transition-colors p-1"
-                                                    title="Edit Entry"
-                                                >
-                                                    <Edit className="h-5 w-5" />
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                        {filteredTasks.length === 0 && (
-                            <div className="p-12 text-center text-slate-400">
-                                <Search className="h-12 w-12 mx-auto mb-3 opacity-20" />
-                                <p>No records found matching your search.</p>
-                            </div>
-                        )}
-                        
-                        {/* Pagination Controls */}
-                        {filteredTasks.length > 0 && (
-                            <div className="flex items-center justify-between px-6 py-4 bg-slate-50 border-t border-slate-200">
-                                <span className="text-xs text-slate-500">
-                                    Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, filteredTasks.length)} of {filteredTasks.length} entries
-                                </span>
-                                <div className="flex gap-2">
-                                    <button 
-                                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                                        disabled={currentPage === 1}
-                                        className="px-3 py-1 text-xs font-medium border border-slate-200 rounded-md bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                    >
-                                        Previous
-                                    </button>
-                                    <button 
-                                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                                        disabled={currentPage === totalPages}
-                                        className="px-3 py-1 text-xs font-medium border border-slate-200 rounded-md bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                    >
-                                        Next
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            );
-
-            const renderReports = () => (
-                <div className="space-y-6 animate-fade-in">
-                    {/* Filters Card */}
-                    <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="h-8 w-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                                <Filter className="h-5 w-5 text-blue-600" />
-                            </div>
-                            <h2 className="text-lg font-bold text-slate-900">Report Generator</h2>
-                        </div>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Task Type</label>
-                                <select 
-                                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                                    value={reportFilters.category}
-                                    onChange={(e) => setReportFilters(prev => ({...prev, category: e.target.value}))}
-                                >
-                                    <option value="all">All Types</option>
-                                    {Object.entries(categories).map(([key, config]) => (
-                                        <option key={key} value={key}>{config.label}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Owner (Mentor)</label>
-                                <select 
-                                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                                    value={reportFilters.agent}
-                                    onChange={(e) => setReportFilters(prev => ({...prev, agent: e.target.value}))}
-                                >
-                                    <option value="all">All Mentors</option>
-                                    {mentorList.map(m => (
-                                        <option key={m} value={m}>{m}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Start Date</label>
-                                <input 
-                                    type="date" 
-                                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                                    value={reportFilters.startDate}
-                                    onChange={(e) => setReportFilters(prev => ({...prev, startDate: e.target.value}))}
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">End Date</label>
-                                <input 
-                                    type="date" 
-                                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                                    value={reportFilters.endDate}
-                                    onChange={(e) => setReportFilters(prev => ({...prev, endDate: e.target.value}))}
-                                />
-                            </div>
-                        </div>
-
-                        <div className="flex justify-end pt-2">
-                            <button 
-                                onClick={handleGenerateReport}
-                                className="px-6 py-2.5 bg-slate-900 text-white font-medium rounded-lg hover:bg-slate-800 transition-colors shadow-sm"
-                            >
-                                Generate Report
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Report Results */}
-                    {generatedReport && (
-                        <div className="space-y-4 animate-fade-in">
-                            <div className="flex justify-between items-end">
-                                <div>
-                                    <h3 className="text-xl font-bold text-slate-900">Report Preview</h3>
-                                    <p className="text-sm text-slate-500">
-                                        Found {generatedReport.length} records matching your criteria.
-                                    </p>
-                                </div>
-                                <button 
-                                    onClick={downloadCSV}
-                                    className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 font-medium rounded-lg hover:bg-slate-50 transition-colors"
-                                >
-                                    <Download className="h-4 w-4" /> Download CSV
-                                </button>
-                            </div>
-
-                            <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden overflow-x-auto">
-                                <table className="w-full text-left text-sm">
-                                    <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
-                                        <tr>
-                                            <th className="px-6 py-3">Type</th>
-                                            <th className="px-6 py-3">Title</th>
-                                            <th className="px-6 py-3">Owner</th>
-                                            <th className="px-6 py-3">Date</th>
-                                            <th className="px-6 py-3 text-right">Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-slate-100">
-                                        {generatedReport.map(task => (
-                                            <tr key={task.id} className="hover:bg-slate-50">
-                                                <td className="px-6 py-4">{categories[task.type]?.label}</td>
-                                                <td className="px-6 py-4 font-medium text-slate-900">{task.title}</td>
-                                                <td className="px-6 py-4 text-slate-600">{task.agent}</td>
-                                                <td className="px-6 py-4 text-slate-500">{new Date(task.date).toLocaleDateString()}</td>
-                                                <td className="px-6 py-4 text-right">
-                                                    <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium border ${
-                                                        task.status === 'Resolved' || task.status === 'Won' || task.status === 'Activated' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                                                        'bg-slate-50 text-slate-700 border-slate-200'
-                                                    }`}>
-                                                        {task.status}
-                                                    </span>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                        {generatedReport.length === 0 && (
-                                            <tr>
-                                                <td colSpan="5" className="px-6 py-12 text-center text-slate-400">
-                                                    No records found for the selected filters.
-                                                </td>
-                                            </tr>
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            );
-
             return (
-                <div className="min-h-screen bg-slate-50 font-sans text-slate-900 pb-20">
-                    {/* Header */}
+                <div className="min-h-screen bg-slate-50 pb-20">
                     <header className="bg-white border-b border-slate-200 sticky top-0 z-20">
-                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                            <div className="flex justify-between items-center h-16">
-                                <div className="flex items-center gap-3">
-                                    <h1 className="text-2xl font-bold tracking-[0.2em] text-slate-900">
-                                        TEMPO
-                                    </h1>
-                                    <span className="h-6 w-px bg-slate-300 mx-1"></span>
-                                    <span className="text-sm font-medium text-slate-500 uppercase tracking-wider">
-                                        Mentor Ops
-                                    </span>
-                                </div>
-                                
-                                <nav className="hidden md:flex space-x-1">
-                                    {['dashboard', 'logs', 'reports'].map((tab) => (
-                                        <button
-                                            key={tab}
-                                            onClick={() => setActiveTab(tab)}
-                                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                                                activeTab === tab 
-                                                    ? 'bg-slate-100 text-slate-900' 
-                                                    : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
-                                            }`}
-                                        >
-                                            {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                                        </button>
-                                    ))}
-                                </nav>
-
-                                <div className="flex items-center gap-3">
-                                    <div className="flex items-center gap-2 px-3 py-1 bg-slate-50 rounded-full border border-slate-200">
-                                        <div className={`h-2 w-2 rounded-full ${connectionStatus === 'online' ? 'bg-emerald-500' : 'bg-rose-500 animate-pulse'}`}></div>
-                                        <span className="text-xs font-medium text-slate-600">{connectionStatus === 'online' ? 'Online' : 'Connecting...'}</span>
-                                    </div>
-                                    <div className="text-right hidden md:block">
-                                        <p className="text-xs font-medium text-slate-500">Logged in as</p>
-                                        <p className="text-sm font-bold text-slate-900 leading-none">{currentUser}</p>
-                                    </div>
-                                    <div className="h-8 w-8 rounded-full bg-blue-100 text-blue-600 overflow-hidden border border-blue-200 flex items-center justify-center font-bold text-xs">
-                                         {currentUser.split(' ').map(n => n[0]).join('')}
-                                    </div>
-                                    <button 
-                                        onClick={() => setCurrentUser(null)}
-                                        className="ml-2 p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-full transition-colors"
-                                        title="Logout"
-                                    >
-                                        <LogOut className="h-4 w-4" />
+                        <div className="max-w-7xl mx-auto px-6 flex justify-between items-center h-16">
+                            <div className="flex items-center gap-3">
+                                <h1 className="text-xl font-bold tracking-[0.2em] text-slate-900">TEMPO</h1>
+                                <span className="h-6 w-px bg-slate-200" />
+                                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Mentor Ops</span>
+                            </div>
+                            <nav className="flex gap-1">
+                                {['dashboard', 'logs', 'reports'].map(tab => (
+                                    <button key={tab} onClick={() => setActiveTab(tab)} className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${activeTab === tab ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:bg-slate-50'}`}>
+                                        {tab.toUpperCase()}
                                     </button>
+                                ))}
+                            </nav>
+                            <div className="flex items-center gap-4">
+                                <div className={`h-2 w-2 rounded-full ${connectionStatus === 'online' ? 'bg-emerald-500' : 'bg-rose-500 animate-pulse'}`} />
+                                <div className="text-right hidden md:block">
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase">Logged In</p>
+                                    <p className="text-sm font-bold leading-none">{currentUser}</p>
                                 </div>
+                                <button onClick={() => setCurrentUser(null)} className="p-2 text-slate-400 hover:text-rose-500"><LogOut className="h-4 w-4" /></button>
                             </div>
                         </div>
                     </header>
 
-                    {/* Main Content */}
-                    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                        {activeTab === 'dashboard' && renderDashboard()}
-                        {activeTab === 'logs' && renderLogs()}
-                        {activeTab === 'reports' && renderReports()}
+                    <main className="max-w-7xl mx-auto px-6 py-8">
+                        {activeTab === 'dashboard' && (
+                            <div className="space-y-8 animate-fade-in">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    <Card className="p-6 bg-slate-900 text-white border-none shadow-xl">
+                                        <p className="text-slate-400 text-xs font-bold uppercase mb-1">Total Records</p>
+                                        <h3 className="text-4xl font-bold">{stats.total}</h3>
+                                    </Card>
+                                    <Card className="p-6 border-l-4 border-l-rose-500">
+                                        <p className="text-slate-400 text-xs font-bold uppercase mb-1">Follow-ups Req.</p>
+                                        <h3 className="text-4xl font-bold text-rose-600">{stats.pending}</h3>
+                                    </Card>
+                                    <Card className="p-6 border-l-4 border-l-emerald-500">
+                                        <p className="text-slate-400 text-xs font-bold uppercase mb-1">Resolved</p>
+                                        <h3 className="text-4xl font-bold text-emerald-600">{stats.resolved}</h3>
+                                    </Card>
+                                </div>
+                                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+                                    {Object.entries(categories).map(([key, cfg]) => (
+                                        <button key={key} onClick={() => { setNewTaskType(key); setEditingTaskId(null); setFormData({}); setIsFormOpen(true); }} className="p-4 bg-white border border-slate-200 rounded-xl text-center hover:shadow-md transition-all group">
+                                            <div className={`h-10 w-10 mx-auto rounded-lg flex items-center justify-center mb-2 bg-${cfg.color}-100`}>
+                                                {React.createElement(cfg.icon, { className: `h-5 w-5 text-${cfg.color}-600` })}
+                                            </div>
+                                            <p className="text-[10px] font-bold text-slate-500 uppercase">{cfg.label}</p>
+                                            <p className="text-xl font-bold">{stats.byType[key]}</p>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'logs' && (
+                            <div className="space-y-4 animate-fade-in">
+                                <div className="flex flex-col md:flex-row gap-4 justify-between bg-white p-4 rounded-xl border border-slate-200">
+                                    <div className="relative flex-1 max-w-md">
+                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                        <input type="text" placeholder="Search logs..." className="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                                    </div>
+                                    <button onClick={() => { setEditingTaskId(null); setFormData({}); setIsFormOpen(true); }} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold shadow-lg shadow-blue-100 hover:bg-blue-700">
+                                        <Plus className="h-4 w-4" /> New Entry
+                                    </button>
+                                </div>
+                                <Card className="overflow-hidden">
+                                    <table className="w-full text-left text-sm">
+                                        <thead className="bg-slate-50 border-b border-slate-200">
+                                            <tr>
+                                                <th className="px-6 py-4">Category</th>
+                                                <th className="px-6 py-4">Agent</th>
+                                                <th className="px-6 py-4">Status</th>
+                                                <th className="px-6 py-4">Date</th>
+                                                <th className="px-6 py-4 text-right">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100">
+                                            {paginatedLogs.map(task => (
+                                                <tr key={task.id} className="hover:bg-slate-50 transition-colors">
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className={`h-8 w-8 rounded-lg flex items-center justify-center bg-${categories[task.type]?.color}-100`}>
+                                                                {React.createElement(categories[task.type]?.icon || AlertCircle, { className: `h-4 w-4 text-${categories[task.type]?.color}-600` })}
+                                                            </div>
+                                                            <span className="font-medium text-slate-700">{categories[task.type]?.label}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-slate-600">{task.agent}</td>
+                                                    <td className="px-6 py-4">
+                                                        <Badge color={task.status === 'Pending' ? 'amber' : (['Resolved', 'Won', 'Activated'].includes(task.status) ? 'green' : 'slate')}>
+                                                            {task.status}
+                                                        </Badge>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-slate-400">{new Date(task.date).toLocaleDateString()}</td>
+                                                    <td className="px-6 py-4 text-right">
+                                                        <button onClick={() => handleEditTask(task)} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"><Edit className="h-4 w-4" /></button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                    <div className="p-4 bg-slate-50 flex justify-between items-center text-xs font-bold text-slate-500">
+                                        <span>Showing {(currentPage-1)*itemsPerPage+1} to {Math.min(currentPage*itemsPerPage, filteredLogs.length)} of {filteredLogs.length}</span>
+                                        <div className="flex gap-2">
+                                            <button disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)} className="px-3 py-1 bg-white border rounded hover:bg-slate-100 disabled:opacity-50">Prev</button>
+                                            <button disabled={currentPage * itemsPerPage >= filteredLogs.length} onClick={() => setCurrentPage(p => p + 1)} className="px-3 py-1 bg-white border rounded hover:bg-slate-100 disabled:opacity-50">Next</button>
+                                        </div>
+                                    </div>
+                                </Card>
+                            </div>
+                        )}
+
+                        {activeTab === 'reports' && (
+                            <div className="space-y-6 animate-fade-in">
+                                <Card className="p-6 space-y-4">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <div className="h-8 w-8 bg-blue-100 rounded-lg flex items-center justify-center"><Filter className="h-5 w-5 text-blue-600" /></div>
+                                        <h2 className="text-lg font-bold">Report Generator</h2>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                        <div><label className="text-[10px] font-bold text-slate-400 uppercase">Category</label>
+                                            <select className="w-full p-2.5 bg-slate-50 border rounded-lg text-sm outline-none" value={reportFilters.category} onChange={e => setReportFilters(f => ({ ...f, category: e.target.value }))}>
+                                                <option value="all">All Types</option>
+                                                {Object.entries(categories).map(([k, c]) => <option key={k} value={k}>{c.label}</option>)}
+                                            </select>
+                                        </div>
+                                        <div><label className="text-[10px] font-bold text-slate-400 uppercase">Mentor</label>
+                                            <select className="w-full p-2.5 bg-slate-50 border rounded-lg text-sm outline-none" value={reportFilters.agent} onChange={e => setReportFilters(f => ({ ...f, agent: e.target.value }))}>
+                                                <option value="all">All Mentors</option>
+                                                {mentorList.map(m => <option key={m} value={m}>{m}</option>)}
+                                            </select>
+                                        </div>
+                                        <div><label className="text-[10px] font-bold text-slate-400 uppercase">Start Date</label>
+                                            <input type="date" className="w-full p-2.5 bg-slate-50 border rounded-lg text-sm outline-none" value={reportFilters.startDate} onChange={e => setReportFilters(f => ({ ...f, startDate: e.target.value }))} />
+                                        </div>
+                                        <div><label className="text-[10px] font-bold text-slate-400 uppercase">End Date</label>
+                                            <input type="date" className="w-full p-2.5 bg-slate-50 border rounded-lg text-sm outline-none" value={reportFilters.endDate} onChange={e => setReportFilters(f => ({ ...f, endDate: e.target.value }))} />
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-end pt-2">
+                                        <button onClick={handleGenerateReport} className="px-6 py-2.5 bg-slate-900 text-white font-bold rounded-lg hover:bg-slate-800 shadow-lg">GENERATE REPORT</button>
+                                    </div>
+                                </Card>
+                                {generatedReport && (
+                                    <div className="space-y-4 animate-fade-in">
+                                        <div className="flex justify-between items-center">
+                                            <h3 className="font-bold text-lg">Results ({generatedReport.length})</h3>
+                                            <button onClick={downloadCSV} className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 font-bold rounded-lg text-sm hover:bg-slate-50">
+                                                <Download className="h-4 w-4" /> Export CSV
+                                            </button>
+                                        </div>
+                                        <Card className="overflow-x-auto"><table className="w-full text-left text-sm"><thead className="bg-slate-50 border-b"><tr><th className="px-6 py-3">Type</th><th className="px-6 py-3">Agent</th><th className="px-6 py-3">Date</th><th className="px-6 py-3 text-right">Status</th></tr></thead><tbody className="divide-y">{generatedReport.map(r => (<tr key={r.id} className="hover:bg-slate-50"><td className="px-6 py-4 font-medium">{categories[r.type]?.label}</td><td className="px-6 py-4">{r.agent}</td><td className="px-6 py-4 text-slate-400">{new Date(r.date).toLocaleDateString()}</td><td className="px-6 py-4 text-right"><Badge color={r.status === 'Pending' ? 'amber' : 'green'}>{r.status}</Badge></td></tr>))}</tbody></table></Card>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </main>
 
-                    {/* Slide-over Form Modal */}
                     {isFormOpen && (
                         <div className="fixed inset-0 z-50 flex justify-end">
-                            <div className="absolute inset-0 bg-slate-900/20 backdrop-blur-sm transition-opacity" onClick={() => setIsFormOpen(false)} />
-                            <div className="relative w-full max-w-md bg-white h-full shadow-2xl p-6 overflow-y-auto animate-slide-in-right">
-                                <div className="flex items-center justify-between mb-6">
+                            <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsFormOpen(false)} />
+                            <div className="relative w-full max-w-md bg-white h-full shadow-2xl p-8 overflow-y-auto animate-slide-in-right">
+                                <div className="flex justify-between items-center mb-8">
                                     <div className="flex items-center gap-3">
                                         <div className={`p-2 rounded-lg bg-${categories[newTaskType].color}-100`}>
                                             {React.createElement(categories[newTaskType].icon, { className: `h-6 w-6 text-${categories[newTaskType].color}-600` })}
                                         </div>
-                                        <h2 className="text-xl font-bold text-slate-800">
-                                            {editingTaskId ? 'Edit' : 'Log'} {categories[newTaskType].label}
-                                        </h2>
+                                        <h2 className="text-2xl font-black italic">{editingTaskId ? 'EDIT' : 'NEW'} {categories[newTaskType].label.toUpperCase()}</h2>
                                     </div>
-                                    <button onClick={() => setIsFormOpen(false)} className="text-slate-400 hover:text-slate-600">Close</button>
+                                    <button onClick={() => setIsFormOpen(false)} className="text-slate-400 hover:text-slate-600 uppercase text-[10px] font-black">Close</button>
                                 </div>
+                                <form onSubmit={handleAddTask} className="space-y-6">
+                                    {!editingTaskId && (
+                                        <div><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Change Category</label>
+                                            <select className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm font-bold" value={newTaskType} onChange={e => setNewTaskType(e.target.value)}>
+                                                {Object.entries(categories).map(([k, c]) => <option key={k} value={k}>{c.label}</option>)}
+                                            </select>
+                                        </div>
+                                    )}
 
-                                <form onSubmit={handleAddTask} className="space-y-4">
-                                    {/* Type Selector within Form - Disabled in Edit Mode */}
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">Task Category</label>
-                                        <select 
-                                            value={newTaskType} 
-                                            onChange={(e) => setNewTaskType(e.target.value)}
-                                            className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-slate-100 disabled:text-slate-500"
-                                            disabled={!!editingTaskId}
-                                        >
-                                            {Object.entries(categories).map(([key, config]) => (
-                                                <option key={key} value={key}>{config.label}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-
-                                    {/* Common Fields */}
-                                    {/* Removed Title/Summary as requested */}
-
-                                    {/* Dynamic Fields based on Category */}
-                                    <div className="p-4 bg-slate-50 rounded-lg border border-slate-100 space-y-4">
-                                        {newTaskType === 'weekly_quiz' && (
-                                            <div className="flex justify-between items-center mb-2">
-                                                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Correction Module</h3>
-                                                <div className="bg-cyan-100 text-cyan-700 px-3 py-1 rounded-full text-sm font-bold">
-                                                    Overall: {formData.overallScore || '0.0'}
-                                                </div>
-                                            </div>
-                                        )}
-                                        {newTaskType !== 'weekly_quiz' && (
-                                            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Specific Details</h3>
-                                        )}
-                                        
+                                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-4">
                                         {categories[newTaskType].fields.map(field => {
-                                            // Handle Correction Module (Weekly Quiz)
-                                            if (field === 'correctionModule') {
-                                                return (
-                                                    <div key={field} className="space-y-6">
-                                                        {quizModules.map(module => (
-                                                            <div key={module.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                                                                <h4 className="font-semibold text-slate-800 text-sm mb-1">{module.title}</h4>
-                                                                <p className="text-xs text-slate-500 mb-3">{module.desc}</p>
-                                                                
-                                                                <div className="flex items-center justify-between mb-3 bg-slate-50 p-2 rounded-lg">
-                                                                    <span className="text-xs font-bold text-slate-400">Poor</span>
-                                                                    <div className="flex gap-4">
-                                                                        {[1, 2, 3, 4, 5].map(score => (
-                                                                            <label key={score} className="flex flex-col items-center cursor-pointer group">
-                                                                                <input 
-                                                                                    type="radio" 
-                                                                                    name={`score_${module.id}`} 
-                                                                                    value={score}
-                                                                                    className="peer sr-only"
-                                                                                    onChange={(e) => handleQuizScoreChange(module.id, e.target.value)}
-                                                                                    checked={parseInt(formData.quizScores?.[module.id]) === score}
-                                                                                />
-                                                                                <div className="w-8 h-8 rounded-full bg-white border-2 border-slate-300 peer-checked:border-cyan-500 peer-checked:bg-cyan-500 peer-checked:text-white flex items-center justify-center text-xs font-bold transition-all group-hover:border-cyan-300 text-slate-500">
-                                                                                    {score}
-                                                                                </div>
-                                                                            </label>
-                                                                        ))}
-                                                                    </div>
-                                                                    <span className="text-xs font-bold text-slate-400">Excellent</span>
+                                            if (field === 'correctionModule') return (
+                                                <div key={field} className="space-y-6 pt-2">
+                                                    <div className="flex justify-between items-center"><h3 className="text-[10px] font-black text-slate-400 uppercase">Correction Module</h3><Badge color="cyan">AVG: {formData.overallScore || '0.0'}</Badge></div>
+                                                    {quizModules.map(m => (
+                                                        <div key={m.id} className="bg-white p-4 rounded-xl border border-slate-200">
+                                                            <p className="font-bold text-sm mb-1">{m.title}</p>
+                                                            <p className="text-[10px] text-slate-400 mb-4">{m.desc}</p>
+                                                            <div className="flex justify-between items-center mb-4">
+                                                                <span className="text-[10px] font-bold text-slate-300">1</span>
+                                                                <div className="flex gap-2">
+                                                                    {[1, 2, 3, 4, 5].map(s => (
+                                                                        <button key={s} type="button" onClick={() => handleQuizScore(m.id, s)} className={`w-8 h-8 rounded-full border-2 text-xs font-bold transition-all ${formData.quizScores?.[m.id] === s ? 'bg-cyan-500 border-cyan-500 text-white shadow-lg shadow-cyan-100' : 'bg-white border-slate-200 text-slate-400'}`}>{s}</button>
+                                                                    ))}
                                                                 </div>
-                                                                
-                                                                <input 
-                                                                    type="text" 
-                                                                    placeholder="Add a comment..." 
-                                                                    className="w-full p-2 bg-slate-50 border-b border-slate-200 text-sm focus:outline-none focus:border-cyan-500 transition-colors"
-                                                                    onChange={(e) => handleQuizCommentChange(module.id, e.target.value)}
-                                                                    value={formData.quizComments?.[module.id] || ''}
-                                                                />
+                                                                <span className="text-[10px] font-bold text-slate-300">5</span>
                                                             </div>
-                                                        ))}
-                                                    </div>
-                                                );
-                                            }
-
-                                            // Handle Associate Name dropdowns (use associateList)
-                                            if (['associateName', 'agent'].includes(field)) {
-                                                return (
-                                                    <div key={field}>
-                                                        <label className="block text-sm font-medium text-slate-700 mb-1 capitalize">
-                                                            {field === 'agent' ? 'Associate Name' : field.replace(/([A-Z])/g, ' $1').trim()}
-                                                        </label>
-                                                        <select 
-                                                            className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                                                            onChange={(e) => handleInputChange(field, e.target.value)}
-                                                            value={formData[field] || ''}
-                                                        >
-                                                            <option value="" disabled>Select Associate...</option>
-                                                            {associateList.map(name => (
-                                                                <option key={name} value={name}>{name}</option>
-                                                            ))}
-                                                        </select>
-                                                    </div>
-                                                );
-                                            }
-
-                                            // Handle Dispute Reason - Dynamic Dropdown
-                                            if (field === 'disputeReason') {
-                                                return (
-                                                    <div key={field}>
-                                                        <label className="block text-sm font-medium text-slate-700 mb-1">Dispute Reason</label>
-                                                        <select 
-                                                            className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none mb-2"
-                                                            onChange={(e) => handleInputChange(field, e.target.value)}
-                                                            value={formData[field] || ''}
-                                                        >
-                                                            <option value="" disabled>Select Reason...</option>
-                                                            {disputeReasonsList.map(r => (
-                                                                <option key={r} value={r}>{r}</option>
-                                                            ))}
-                                                        </select>
-                                                        
-                                                        <div className="flex gap-2 items-center">
-                                                            <input 
-                                                                type="text" 
-                                                                placeholder="Or add new reason..." 
-                                                                className="flex-1 p-2 bg-white border border-slate-200 rounded-lg text-xs"
-                                                                value={customDisputeReason}
-                                                                onChange={(e) => setCustomDisputeReason(e.target.value)}
-                                                            />
-                                                            <button 
-                                                                type="button" 
-                                                                onClick={handleAddDisputeReason}
-                                                                className="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-xs font-bold"
-                                                            >
-                                                                Add
-                                                            </button>
                                                         </div>
-                                                    </div>
-                                                );
-                                            }
+                                                    ))}
+                                                </div>
+                                            );
 
-                                            // Handle Floor Walker - Reason For Support - Dynamic
-                                            if (field === 'reasonForSupport') {
-                                                return (
-                                                    <div key={field}>
-                                                        <label className="block text-sm font-medium text-slate-700 mb-1 capitalize">
-                                                            {field.replace(/([A-Z])/g, ' $1').trim()}
-                                                        </label>
-                                                        <select 
-                                                            className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none mb-2"
-                                                            onChange={(e) => handleInputChange(field, e.target.value)}
-                                                            value={formData[field] || ''}
-                                                        >
-                                                            <option value="" disabled>Select Reason...</option>
-                                                            {fwReasonsList.map(option => (
-                                                                <option key={option} value={option}>{option}</option>
-                                                            ))}
-                                                        </select>
-                                                        
-                                                        <div className="flex gap-2 items-center">
-                                                            <input 
-                                                                type="text" 
-                                                                placeholder="Add new reason..." 
-                                                                className="flex-1 p-2 bg-white border border-slate-200 rounded-lg text-xs"
-                                                                value={customFWReason}
-                                                                onChange={(e) => setCustomFWReason(e.target.value)}
-                                                            />
-                                                            <button 
-                                                                type="button" 
-                                                                onClick={handleAddFWReason}
-                                                                className="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-xs font-bold"
-                                                            >
-                                                                Add
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                );
-                                            }
-
-                                            // Handle Floor Walker - Request Type - Dynamic
-                                            if (field === 'requestType') {
-                                                return (
-                                                    <div key={field}>
-                                                        <label className="block text-sm font-medium text-slate-700 mb-1 capitalize">
-                                                            {field.replace(/([A-Z])/g, ' $1').trim()}
-                                                        </label>
-                                                        <select 
-                                                            className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none mb-2"
-                                                            onChange={(e) => handleInputChange(field, e.target.value)}
-                                                            value={formData[field] || ''}
-                                                        >
-                                                            <option value="" disabled>Select Request Type...</option>
-                                                            {fwRequestTypesList.map(option => (
-                                                                <option key={option} value={option}>{option}</option>
-                                                            ))}
-                                                        </select>
-                                                        
-                                                        <div className="flex gap-2 items-center">
-                                                            <input 
-                                                                type="text" 
-                                                                placeholder="Add new type..." 
-                                                                className="flex-1 p-2 bg-white border border-slate-200 rounded-lg text-xs"
-                                                                value={customFWRequestType}
-                                                                onChange={(e) => setCustomFWRequestType(e.target.value)}
-                                                            />
-                                                            <button 
-                                                                type="button" 
-                                                                onClick={handleAddFWRequestType}
-                                                                className="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-xs font-bold"
-                                                            >
-                                                                Add
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                );
-                                            }
-
-                                            // Handle HIP Request - Valid HIP Logic
-                                            if (field === 'validHip') {
-                                                return (
-                                                    <div key={field}>
-                                                        <label className="block text-sm font-medium text-slate-700 mb-1">Valid HIP?</label>
-                                                        <select 
-                                                            className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                                                            onChange={(e) => handleInputChange(field, e.target.value)}
-                                                            value={formData[field] || ''}
-                                                        >
-                                                            <option value="" disabled>Select...</option>
-                                                            <option value="Yes">Yes</option>
-                                                            <option value="No">No</option>
-                                                        </select>
-                                                    </div>
-                                                );
-                                            }
-
-                                            // Handle HIP Request - Invalid Reason Logic (Conditional + Dynamic)
-                                            if (field === 'invalidReason') {
-                                                if (formData.validHip !== 'No') return null; // Only show if Valid HIP is No
-                                                return (
-                                                    <div key={field} className="animate-fade-in">
-                                                        <label className="block text-sm font-medium text-rose-700 mb-1">Reason for Invalid</label>
-                                                        <select 
-                                                            className="w-full p-2.5 bg-rose-50 border border-rose-200 rounded-lg text-sm focus:ring-2 focus:ring-rose-500 outline-none mb-2"
-                                                            onChange={(e) => handleInputChange(field, e.target.value)}
-                                                            value={formData[field] || ''}
-                                                        >
-                                                            <option value="" disabled>Select Reason...</option>
-                                                            {hipInvalidReasons.map(r => (
-                                                                <option key={r} value={r}>{r}</option>
-                                                            ))}
-                                                        </select>
-                                                        
-                                                        <div className="flex gap-2 items-center">
-                                                            <input 
-                                                                type="text" 
-                                                                placeholder="Add invalid reason..." 
-                                                                className="flex-1 p-2 bg-white border border-slate-200 rounded-lg text-xs"
-                                                                value={customHipInvalidReason}
-                                                                onChange={(e) => setCustomHipInvalidReason(e.target.value)}
-                                                            />
-                                                            <button 
-                                                                type="button" 
-                                                                onClick={handleAddHipInvalidReason}
-                                                                className="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-xs font-bold"
-                                                            >
-                                                                Add
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                );
-                                            }
-
-                                            // Handle HIP Request - Request Type (Dynamic)
-                                            if (field === 'hipRequestType') {
-                                                return (
-                                                    <div key={field}>
-                                                        <label className="block text-sm font-medium text-slate-700 mb-1">HIP Request Type</label>
-                                                        <select 
-                                                            className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none mb-2"
-                                                            onChange={(e) => handleInputChange(field, e.target.value)}
-                                                            value={formData[field] || ''}
-                                                        >
-                                                            <option value="" disabled>Select Type...</option>
-                                                            {hipRequestTypes.map(t => (
-                                                                <option key={t} value={t}>{t}</option>
-                                                            ))}
-                                                        </select>
-                                                        
-                                                        <div className="flex gap-2 items-center">
-                                                            <input 
-                                                                type="text" 
-                                                                placeholder="Add type..." 
-                                                                className="flex-1 p-2 bg-white border border-slate-200 rounded-lg text-xs"
-                                                                value={customHipRequestType}
-                                                                onChange={(e) => setCustomHipRequestType(e.target.value)}
-                                                            />
-                                                            <button 
-                                                                type="button" 
-                                                                onClick={handleAddHipRequestType}
-                                                                className="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-xs font-bold"
-                                                            >
-                                                                Add
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                );
-                                            }
-
-                                            // Handle Duplicate IAP - Email Sent
-                                            if (field === 'emailSent') {
-                                                return (
-                                                    <div key={field}>
-                                                        <label className="block text-sm font-medium text-slate-700 mb-1">Email Sent?</label>
-                                                        <select 
-                                                            className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                                                            onChange={(e) => handleInputChange(field, e.target.value)}
-                                                            value={formData[field] || ''}
-                                                        >
-                                                            <option value="" disabled>Select...</option>
-                                                            <option value="Yes">Yes</option>
-                                                            <option value="No">No</option>
-                                                        </select>
-                                                    </div>
-                                                );
-                                            }
-
-                                            // Handle Duplicate IAP - Subscription Status
-                                            if (field === 'subscriptionStatus') {
-                                                return (
-                                                    <div key={field}>
-                                                        <label className="block text-sm font-medium text-slate-700 mb-1">Subscription Status</label>
-                                                        <select 
-                                                            className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                                                            onChange={(e) => handleInputChange(field, e.target.value)}
-                                                            value={formData[field] || ''}
-                                                        >
-                                                            <option value="" disabled>Select Status...</option>
-                                                            <option value="Active">Active</option>
-                                                            <option value="Cancelled">Cancelled</option>
-                                                        </select>
-                                                    </div>
-                                                );
-                                            }
-
-                                            // Handle specific "Surprise & Delight Type" dropdown
-                                            if (field === 'surpriseAndDelightType') {
-                                                return (
-                                                    <div key={field}>
-                                                        <label className="block text-sm font-medium text-slate-700 mb-1">Surprise & Delight Type</label>
-                                                        <select 
-                                                            className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                                                            onChange={(e) => handleInputChange(field, e.target.value)}
-                                                            value={formData[field] || ''}
-                                                        >
-                                                            <option value="" disabled>Select Item...</option>
-                                                            <option value="Water Bottle">Water Bottle</option>
-                                                            <option value="Tempo Sweat Towel">Tempo Sweat Towel</option>
-                                                            <option value="Yoga Block">Yoga Block</option>
-                                                            <option value="Yoga Strap">Yoga Strap</option>
-                                                            <option value="Recovery Roller">Recovery Roller</option>
-                                                            <option value="Gift Box">Gift Box</option>
-                                                            <option value="axis-performance-hat-black">axis-performance-hat-black</option>
-                                                            <option value="axis-performance-hat-slate-grey">axis-performance-hat-slate-grey</option>
-                                                            <option value="tempo-workout-gloves">tempo-workout-gloves</option>
-                                                            <option value="motive-training-tee-black">motive-training-tee-black</option>
-                                                            <option value="motive-training-tee-1">motive-training-tee-1</option>
-                                                            <option value="Pinnacle Knit Beanie">Pinnacle Knit Beanie</option>
-                                                        </select>
-                                                    </div>
-                                                );
-                                            }
-
-                                            // Handle specific "Product Type" dropdown
-                                            if (field === 'productType') {
-                                                return (
-                                                    <div key={field}>
-                                                        <label className="block text-sm font-medium text-slate-700 mb-1">Product Type</label>
-                                                        <select 
-                                                            className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                                                            onChange={(e) => handleInputChange(field, e.target.value)}
-                                                            value={formData[field] || ''}
-                                                        >
-                                                            <option value="" disabled>Select Product...</option>
-                                                            <option value="Accessories">Accessories</option>
-                                                            <option value="Membership">Membership</option>
-                                                            <option value="Tempo Move">Tempo Move</option>
-                                                            <option value="Tempo Core">Tempo Core</option>
-                                                            <option value="Tempo Studio">Tempo Studio</option>
-                                                        </select>
-                                                    </div>
-                                                );
-                                            }
-
-                                            // Handle specific "Team" dropdown
-                                            if (field === 'team') {
-                                                return (
-                                                    <div key={field}>
-                                                        <label className="block text-sm font-medium text-slate-700 mb-1">Team</label>
-                                                        <select 
-                                                            className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                                                            onChange={(e) => handleInputChange(field, e.target.value)}
-                                                            value={formData[field] || ''}
-                                                        >
-                                                            <option value="" disabled>Select Team...</option>
-                                                            <option value="Mentor">Mentor</option>
-                                                            <option value="Social media">Social media</option>
-                                                            <option value="T1">T1</option>
-                                                            <option value="Order Support">Order Support</option>
-                                                            <option value="Product Support">Product Support</option>
-                                                        </select>
-                                                    </div>
-                                                );
-                                            }
-
-                                            if (field === 'resolution') {
-                                                // Specific Resolution Logic per Type
-                                                if (newTaskType === 'disputes') {
-                                                    return (
-                                                        <div key={field}>
-                                                            <label className="block text-sm font-medium text-slate-700 mb-1">Resolution</label>
-                                                            <select 
-                                                                className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                                                                onChange={(e) => handleInputChange(field, e.target.value)}
-                                                                value={formData[field] || 'Pending'}
-                                                            >
-                                                                <option value="Pending">Pending</option>
-                                                                <option value="Won">Won</option>
-                                                                <option value="Lost">Lost</option>
-                                                            </select>
-                                                        </div>
-                                                    );
-                                                }
-                                                if (newTaskType === 'pending_subs') {
-                                                     return (
-                                                        <div key={field}>
-                                                            <label className="block text-sm font-medium text-slate-700 mb-1">Resolution</label>
-                                                            <select 
-                                                                className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                                                                onChange={(e) => handleInputChange(field, e.target.value)}
-                                                                value={formData[field] || 'Pending'}
-                                                            >
-                                                                <option value="Pending">Pending</option>
-                                                                <option value="Activated">Activated</option>
-                                                                <option value="Cancelled">Cancelled</option>
-                                                            </select>
-                                                        </div>
-                                                    );
-                                                }
-                                            }
-
-                                            // Pending Reason - Dynamic Add Logic
-                                            if (field === 'pendingReason' && newTaskType === 'pending_subs') {
-                                                return (
-                                                    <div key={field}>
-                                                        <label className="block text-sm font-medium text-slate-700 mb-1">Reason Pending</label>
-                                                        <select 
-                                                            className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none mb-2"
-                                                            onChange={(e) => handleInputChange(field, e.target.value)}
-                                                            value={formData[field] || ''}
-                                                        >
-                                                            <option value="" disabled>Select a reason...</option>
-                                                            {pendingReasonsList.map(r => (
-                                                                <option key={r} value={r}>{r}</option>
-                                                            ))}
-                                                        </select>
-                                                        
-                                                        <div className="flex gap-2 items-center">
-                                                            <input 
-                                                                type="text" 
-                                                                placeholder="Or add new reason..." 
-                                                                className="flex-1 p-2 bg-white border border-slate-200 rounded-lg text-xs"
-                                                                value={customReason}
-                                                                onChange={(e) => setCustomReason(e.target.value)}
-                                                            />
-                                                            <button 
-                                                                type="button" 
-                                                                onClick={handleAddReason}
-                                                                className="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-xs font-bold"
-                                                            >
-                                                                Add
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                );
-                                            }
-
-                                            if (field.toLowerCase().includes('date') || field === 'utteranceAt') {
-                                                return (
-                                                    <div key={field}>
-                                                        <label className="block text-sm font-medium text-slate-700 mb-1 capitalize">
-                                                            {field === 'utteranceAt' ? 'Utterance Time' : field.replace(/([A-Z])/g, ' $1').trim()}
-                                                        </label>
-                                                        <input 
-                                                            type={field === 'utteranceAt' ? 'datetime-local' : 'date'}
-                                                            className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                                                            onChange={(e) => handleInputChange(field, e.target.value)}
-                                                            value={formData[field] || ''}
-                                                        />
-                                                    </div>
-                                                );
-                                            }
+                                            const isDropdown = ['associateName', 'agent', 'team', 'productType', 'surpriseAndDelightType', 'resolution', 'pendingReason', 'disputeReason', 'reasonForSupport', 'requestType', 'validHip', 'validRequest', 'subscriptionStatus', 'emailSent'].includes(field);
+                                            
                                             return (
                                                 <div key={field}>
-                                                    <label className="block text-sm font-medium text-slate-700 mb-1 capitalize">
-                                                        {field.replace(/([A-Z])/g, ' $1').trim()}
-                                                    </label>
-                                                    <input 
-                                                        type="text" 
-                                                        className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                                                        onChange={(e) => handleInputChange(field, e.target.value)}
-                                                        value={formData[field] || ''}
-                                                    />
+                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">{field.replace(/([A-Z])/g, ' $1')}</label>
+                                                    {isDropdown ? (
+                                                        <select className="w-full p-3 bg-white border border-slate-200 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500" value={formData[field] || ''} onChange={e => handleInputChange(field, e.target.value)}>
+                                                            <option value="">Select...</option>
+                                                            {field === 'associateName' && associateList.map(a => <option key={a} value={a}>{a}</option>)}
+                                                            {field === 'team' && ['Mentor', 'Social Media', 'T1', 'Order Support', 'Product Support'].map(t => <option key={t} value={t}>{t}</option>)}
+                                                            {field === 'productType' && ['Accessories', 'Membership', 'Tempo Move', 'Tempo Core', 'Tempo Studio'].map(p => <option key={p} value={p}>{p}</option>)}
+                                                            {field === 'pendingReason' && pendingReasonsList.map(r => <option key={r} value={r}>{r}</option>)}
+                                                            {field === 'disputeReason' && disputeReasonsList.map(r => <option key={r} value={r}>{r}</option>)}
+                                                            {field === 'reasonForSupport' && fwReasonsList.map(r => <option key={r} value={r}>{r}</option>)}
+                                                            {field === 'requestType' && fwRequestTypesList.map(r => <option key={r} value={r}>{r}</option>)}
+                                                            {field === 'resolution' && (newTaskType === 'disputes' ? ['Pending', 'Won', 'Lost'] : (newTaskType === 'pending_subs' ? ['Pending', 'Activated', 'Cancelled'] : ['Pending', 'Resolved'])).map(r => <option key={r} value={r}>{r}</option>)}
+                                                            {['validHip', 'validRequest', 'emailSent'].includes(field) && ['Yes', 'No'].map(v => <option key={v} value={v}>{v}</option>)}
+                                                            {field === 'subscriptionStatus' && ['Active', 'Cancelled'].map(v => <option key={v} value={v}>{v}</option>)}
+                                                        </select>
+                                                    ) : (
+                                                        <input type={field.toLowerCase().includes('date') ? 'date' : 'text'} className="w-full p-3 bg-white border border-slate-200 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500" value={formData[field] || ''} onChange={e => handleInputChange(field, e.target.value)} />
+                                                    )}
                                                 </div>
                                             );
                                         })}
                                     </div>
 
-                                    {/* Global Status (Hidden for Quizzes & HIP Requests as they are auto-resolved) */}
-                                    {newTaskType !== 'weekly_quiz' && newTaskType !== 'hip_request' && newTaskType !== 'disputes' && newTaskType !== 'pending_subs' && newTaskType !== 'duplicate_iap' && (
-                                        <div>
-                                            <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
-                                            <select 
-                                                className="w-full p-2.5 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                                                onChange={(e) => handleInputChange('status', e.target.value)}
-                                                value={formData.status || 'Pending'}
-                                            >
+                                    {/* Global Status (only for certain types) */}
+                                    {!['weekly_quiz', 'hip_request', 'duplicate_iap'].includes(newTaskType) && (
+                                        <div><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Record Status</label>
+                                            <select className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm font-bold" value={formData.status || 'Pending'} onChange={e => handleInputChange('status', e.target.value)}>
                                                 <option value="Pending">Pending</option>
-                                                <option value="In Progress">In Progress</option>
                                                 <option value="Resolved">Resolved</option>
+                                                <option value="In Progress">In Progress</option>
                                             </select>
                                         </div>
                                     )}
 
-                                    <div className="pt-4 flex gap-3">
-                                        <button 
-                                            type="button" 
-                                            onClick={() => {
-                                                setIsFormOpen(false);
-                                                setEditingTaskId(null);
-                                                setFormData({});
-                                            }}
-                                            className="flex-1 py-2.5 border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50"
-                                        >
-                                            Cancel
-                                        </button>
-                                        <button 
-                                            type="submit" 
-                                            disabled={!authReady || connectionStatus === 'connecting'}
-                                            className={`flex-1 py-2.5 text-white rounded-lg text-sm font-medium shadow-md shadow-blue-200 flex items-center justify-center gap-2 ${
-                                                authReady && connectionStatus !== 'connecting' 
-                                                ? 'bg-blue-600 hover:bg-blue-700' 
-                                                : 'bg-slate-400 cursor-not-allowed'
-                                            }`}
-                                        >
-                                            {connectionStatus === 'connecting' ? 'Connecting...' : (editingTaskId ? 'Update Entry' : 'Save Record')}
-                                        </button>
-                                    </div>
+                                    <button type="submit" className="w-full py-4 bg-blue-600 text-white font-black rounded-2xl shadow-xl shadow-blue-100 hover:bg-blue-700 transition-all uppercase tracking-widest">
+                                        {editingTaskId ? 'Update Log' : 'Save Record'}
+                                    </button>
                                 </form>
                             </div>
                         </div>
