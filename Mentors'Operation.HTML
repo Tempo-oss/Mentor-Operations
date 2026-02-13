@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tempo MentorOps | Full System Integration</title>
+    <title>Tempo MentorOps | Secure Email Auth</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -18,36 +18,21 @@
     <!-- Supabase JS Library -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-    <!-- Chart.js for Data Visualization -->
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-        
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #F9FAFB;
-        }
-
-        :root {
-            --tempo-blue: #2563EB;
-            --tempo-dark: #111827;
-        }
-
+        body { font-family: 'Inter', sans-serif; background-color: #F9FAFB; }
+        :root { --tempo-blue: #2563EB; --tempo-dark: #111827; }
         .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-slide-in-right { animation: slideInRight 0.3s ease-out forwards; }
         @keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
-        
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #f1f5f9; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-
-        canvas {
-            max-width: 100% !important;
-            height: auto !important;
-        }
+        canvas { max-width: 100% !important; height: auto !important; }
     </style>
 </head>
 <body class="text-slate-900">
@@ -61,34 +46,18 @@
         const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1pZmJwY2tzdGZ3cGhrd3Rxa3NhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5MzcyMDksImV4cCI6MjA4NjUxMzIwOX0.PDZwE9hII9kPOjrBeJAI8T28oetruK-ogFtKOICMlOQ";
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // --- Core UI Components (Defined at top level to avoid ReferenceErrors) ---
+        // --- Layout Components (Properly Defined for Scope) ---
         function Card({ children, className = "" }) {
-            return (
-                <div className={`bg-white rounded-xl border border-slate-200 shadow-sm ${className}`}>
-                    {children}
-                </div>
-            );
+            return <div className={`bg-white rounded-xl border border-slate-200 shadow-sm ${className}`}>{children}</div>;
         }
 
         function Badge({ children, color = "slate" }) {
             const colors = { 
-                slate: "bg-slate-100 text-slate-700", 
-                red: "bg-rose-100 text-rose-700", 
-                blue: "bg-blue-100 text-blue-700", 
-                green: "bg-emerald-100 text-emerald-700", 
-                amber: "bg-amber-100 text-amber-700", 
-                teal: "bg-teal-100 text-teal-700", 
-                cyan: "bg-cyan-100 text-cyan-700", 
-                purple: "bg-purple-100 text-purple-700", 
-                emerald: "bg-emerald-100 text-emerald-700",
-                indigo: "bg-indigo-100 text-indigo-700"
+                slate: "bg-slate-100 text-slate-700", red: "bg-rose-100 text-rose-700", blue: "bg-blue-100 text-blue-700", green: "bg-emerald-100 text-emerald-700", 
+                amber: "bg-amber-100 text-amber-700", teal: "bg-teal-100 text-teal-700", cyan: "bg-cyan-100 text-cyan-700", purple: "bg-purple-100 text-purple-700", 
+                emerald: "bg-emerald-100 text-emerald-700", indigo: "bg-indigo-100 text-indigo-700"
             };
-            const selectedColor = colors[color] || colors.slate;
-            return (
-                <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${selectedColor}`}>
-                    {children}
-                </span>
-            );
+            return <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${colors[color] || colors.slate}`}>{children}</span>;
         }
 
         // --- Icon Components ---
@@ -114,29 +83,27 @@
         const Download = (props) => <Icon {...props} path={<React.Fragment><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></React.Fragment>} />;
         const ClipboardList = (props) => <Icon {...props} path={<React.Fragment><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></React.Fragment>} />;
         const Filter = (props) => <Icon {...props} path={<React.Fragment><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></React.Fragment>} />;
-        const CheckCircle2 = (props) => <Icon {...props} path={<React.Fragment><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></React.Fragment>} />;
-        const Clock = (props) => <Icon {...props} path={<React.Fragment><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></React.Fragment>} />;
 
-        // --- Static Configuration & Data ---
+        // --- Data ---
         const associateList = [ "Ariath Piol", "Job James", "Lina Hesham", "Mohab Magdy", "Marwa Ahmed", "Ramadan Philip", "Aida Clement", "Hassan Khallaf", "Nada Ashraf", "Ruben Joseph", "Esraa Tarek Eroq", "Ahmed Abdelghany", "Nour Ayman", "Ashraf Essam", "Hala Ayman", "Rania Mohamed", "Salma Ahmed", "Marwan Hassan", "Osama M. Adam", "Marwan Zakaria", "Shahd Emad", "Ahmed Nasser abdelhakim" ];
         const mentorList = [ "Noha Radwan", "Rashad Mohamed", "Emad Mohamed", "Mohamed Mounir" ];
         const defaultTabs = ['dashboard', 'logs', 'analytics', 'reports'];
         
         const auditAttributes = [
             { id: 'responsiveness', label: 'Responsiveness', weight: 10, desc: 'Mentor responsiveness.' },
-            { id: 'professionalism', label: 'Professionalism', weight: 10, desc: 'Mentor conduct.' },
-            { id: 'clarity', label: 'Clarity', weight: 20, desc: 'Assess concept explanation.' },
-            { id: 'workflow', label: 'Workflow', weight: 20, desc: 'Correct workflow usage.' },
-            { id: 'documentation', label: 'Documentation', weight: 10, desc: 'consistency of notes.' },
-            { id: 'resolution', label: 'Resolution', weight: 30, desc: 'Efficient issue resolution.' }
+            { id: 'professionalism', label: 'Professionalism', weight: 10, desc: 'Professional conduct.' },
+            { id: 'clarity', label: 'Clarity', weight: 20, desc: 'Assess ability to explain clearly.' },
+            { id: 'workflow', label: 'Workflow', weight: 20, desc: 'Follows correct workflow.' },
+            { id: 'documentation', label: 'Documentation', weight: 10, desc: 'Consistency of notes.' },
+            { id: 'resolution', label: 'Resolution', weight: 30, desc: 'Efficiency in closure.' }
         ];
 
         const quizModules = [
             { id: 'productExpert', title: 'Product Expert', desc: 'demonstrate product expertise.' },
             { id: 'processAwareness', title: 'Process Awareness', desc: 'Comprehending process vs procedures.' },
-            { id: 'communication', title: 'Communication', desc: 'Reflect effectiveness in communication.' },
+            { id: 'communication', title: 'Communication', desc: 'Reflect effectiveness in communicating.' },
             { id: 'customerConcern', title: 'Identify customer Concern', desc: 'Comprehend concerns effectively.' },
-            { id: 'fcr', title: 'FCR', desc: 'Anticipate all questions.' }
+            { id: 'fcr', title: 'FCR', desc: 'Was the associate able to anticipate all questions?' }
         ];
 
         const HIP_HIERARCHY = {
@@ -199,6 +166,12 @@
             const [currentPage, setCurrentPage] = useState(1);
             const itemsPerPage = 10;
             
+            // Auth State
+            const [authView, setAuthView] = useState('login'); // login, signup, forgot, reset
+            const [authLoading, setAuthLoading] = useState(false);
+            const [authEmail, setAuthEmail] = useState('');
+            const [authPassword, setAuthPassword] = useState('');
+
             const [customOptions, setCustomOptions] = useState({
                 pendingReason: ["Not delivered", "Delivered but not updated.", "Returned or canceled order"],
                 disputeReason: ["Subscription claim", "Unauthorized purchase", "Defective product", "Credit not processed", "Fraud", "Subscription Cancelled", "Product Unacceptable"],
@@ -226,15 +199,16 @@
             const chartRef = useRef(null);
             const chartInstance = useRef(null);
 
-            // --- Authentication & Registry Implementation ---
+            // Authentication implementation
             useEffect(() => {
                 supabase.auth.getSession().then(({ data: { session } }) => {
                     setSession(session);
                     if (session) fetchUserProfile(session.user.email);
                 });
 
-                const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+                const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
                     setSession(session);
+                    if (event === 'PASSWORD_RECOVERY') setAuthView('reset');
                     if (session) fetchUserProfile(session.user.email);
                     else setUserProfile(null);
                 });
@@ -252,8 +226,7 @@
                         await supabase.from('users_registry').insert([initial]);
                         setUserProfile(initial);
                     } else {
-                        setUserProfile({ error: true, message: "Email not enabled in project registry." });
-                        supabase.auth.signOut();
+                        setUserProfile({ error: true, message: "Your email is not authorized. Please contact the Admin." });
                     }
                 }
             };
@@ -279,9 +252,7 @@
                     allTasks.forEach(t => {
                         Object.keys(newDiscovery).forEach(key => {
                             const val = t.details?.[key];
-                            if (val && !newDiscovery[key].includes(val)) {
-                                newDiscovery[key].push(val);
-                            }
+                            if (val && !newDiscovery[key].includes(val)) newDiscovery[key].push(val);
                         });
                     });
                     return newDiscovery;
@@ -294,7 +265,34 @@
                 return () => supabase.removeChannel(channel);
             }, [userProfile]);
 
-            // --- Functional Handlers ---
+            // Handlers
+            const handleAuth = async (e) => {
+                e.preventDefault();
+                setAuthLoading(true);
+                let error = null;
+
+                if (authView === 'login') {
+                    const res = await supabase.auth.signInWithPassword({ email: authEmail, password: authPassword });
+                    error = res.error;
+                } else if (authView === 'signup') {
+                    const res = await supabase.auth.signUp({ email: authEmail, password: authPassword });
+                    error = res.error;
+                    if (!error) alert("Account created! Please verify your email before logging in.");
+                } else if (authView === 'forgot') {
+                    const res = await supabase.auth.resetPasswordForEmail(authEmail, { redirectTo: window.location.origin });
+                    error = res.error;
+                    if (!error) alert("Reset link sent!");
+                } else if (authView === 'reset') {
+                    const res = await supabase.auth.updateUser({ password: authPassword });
+                    error = res.error;
+                    if (!error) { alert("Updated!"); setAuthView('login'); }
+                }
+
+                if (error) alert(error.message);
+                setAuthLoading(false);
+            };
+
+            // Analytics logic
             useEffect(() => {
                 if (activeTab === 'analytics' && chartRef.current) {
                     if (chartInstance.current) chartInstance.current.destroy();
@@ -332,38 +330,25 @@
                         auditAttributes.forEach(a => { if (!(formData.auditScores?.[a.id])) missingFields.push(a.label); });
                         return;
                     }
-                    if (!['invalidReason'].includes(f) && (!formData[f] || formData[f] === '')) {
-                        missingFields.push(f.replace(/([A-Z])/g, ' $1'));
-                    }
+                    if (!['invalidReason'].includes(f) && (!formData[f] || formData[f] === '')) missingFields.push(f.replace(/([A-Z])/g, ' $1'));
                 });
 
                 if (missingFields.length > 0) { alert("Missing entries: " + missingFields.join(', ')); return; }
 
                 const taskData = { 
-                    type: newTaskType, 
-                    title: categories[newTaskType].label + ' Log', 
-                    agent: session.user.email.split('@')[0], 
-                    status: formData.status || 'Pending', 
-                    details: formData, 
-                    date: new Date().toISOString() 
+                    type: newTaskType, title: categories[newTaskType].label + ' Log', 
+                    agent: session.user.email.split('@')[0], status: formData.status || 'Pending', 
+                    details: formData, date: new Date().toISOString() 
                 };
                 const { error } = editingTaskId ? await supabase.from('tasks').update(taskData).eq('id', editingTaskId) : await supabase.from('tasks').insert([taskData]);
                 if (!error) { setIsFormOpen(false); setFormData({}); setEditingTaskId(null); }
-            };
-
-            const handleLogin = async () => {
-                const { error } = await supabase.auth.signInWithOAuth({ 
-                    provider: 'google', 
-                    options: { queryParams: { prompt: 'select_account' } } 
-                });
-                if (error) alert(error.message);
             };
 
             const handleAddUser = async () => {
                 if (!formData.newEmail?.endsWith('@tempo.fit')) return alert("Only @tempo.fit emails.");
                 const initial = { email: formData.newEmail, role: formData.newRole || 'Mentor', allowed_tabs: defaultTabs };
                 const { error } = await supabase.from('users_registry').insert([initial]);
-                if (!error) { fetchData(); setFormData({...formData, newEmail: ''}); }
+                if (!error) fetchData();
             };
 
             const toggleTabForUser = async (email, tab) => {
@@ -417,10 +402,9 @@
 
             const downloadCSV = () => {
                 if (!generatedReport) return;
-                const headers = selectedReportColumns;
-                const csv = [headers.map(h => h.toUpperCase()).join(','), ...generatedReport.map(t => {
-                    return headers.map(h => {
-                        const val = ['id','type','agent','status','date'].includes(h) ? (h === 'date' ? new Date(t[h]).toLocaleDateString() : t[h]) : (t.details?.[h] || 'N/A');
+                const csv = [selectedReportColumns.map(c => c.toUpperCase()).join(','), ...generatedReport.map(t => {
+                    return selectedReportColumns.map(c => {
+                        const val = ['id','type','agent','status','date'].includes(c) ? (c === 'date' ? new Date(t[c]).toLocaleDateString() : t[c]) : (t.details?.[c] || 'N/A');
                         return `"${val.toString().replace(/"/g, '""')}"`;
                     }).join(',');
                 })].join('\n');
@@ -429,44 +413,54 @@
                 const a = document.createElement('a'); a.href = url; a.download = 'export.csv'; a.click();
             };
 
-            const toggleReportColumn = (col) => {
-                setSelectedReportColumns(prev => prev.includes(col) ? prev.filter(c => c !== col) : [...prev, col]);
-            };
-
-            // --- View Logic ---
             if (!session) {
                 return (
-                    <div className="fixed inset-0 bg-slate-900 z-50 flex items-center justify-center p-4 text-center">
-                        <Card className="p-10 max-w-md w-full">
-                            <h1 className="text-4xl font-black tracking-tighter mb-2 italic">TEMPO</h1>
+                    <div className="fixed inset-0 bg-slate-900 z-50 flex items-center justify-center p-4">
+                        <Card className="p-10 max-w-md w-full text-center">
+                            <h1 className="text-4xl font-black italic tracking-tighter mb-2">TEMPO</h1>
                             <p className="text-slate-500 mb-8 font-medium uppercase text-[10px] tracking-widest">Mentor Operations Center</p>
-                            <button onClick={handleLogin} className="w-full flex items-center justify-center gap-3 py-4 bg-white border border-slate-200 rounded-2xl shadow-xl hover:bg-slate-50 transition-all font-bold">
-                                <img src="https://www.google.com/favicon.ico" className="h-5 w-5" />
-                                Sign in with Google
-                            </button>
-                            <p className="mt-4 text-[10px] text-slate-400 tracking-wider">RESTRICTED TO @TEMPO.FIT GMAIL ACCOUNTS</p>
+                            
+                            <form onSubmit={handleAuth} className="space-y-4 text-left">
+                                {authView !== 'reset' && (
+                                    <div>
+                                        <label className="text-[10px] font-black text-slate-400 uppercase mb-1 block">Email Address</label>
+                                        <input type="email" required className="w-full p-3 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50" placeholder="user@tempo.fit" value={authEmail} onChange={e => setAuthEmail(e.target.value)} />
+                                    </div>
+                                )}
+                                {authView !== 'forgot' && (
+                                    <div>
+                                        <label className="text-[10px] font-black text-slate-400 uppercase mb-1 block">{authView === 'reset' ? 'New Password' : 'Password'}</label>
+                                        <input type="password" required minLength="6" className="w-full p-3 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50" placeholder="••••••••" value={authPassword} onChange={e => setAuthPassword(e.target.value)} />
+                                    </div>
+                                )}
+                                <button type="submit" disabled={authLoading} className="w-full py-4 bg-blue-600 text-white font-black rounded-xl uppercase tracking-widest hover:bg-blue-700 transition-all shadow-xl">
+                                    {authLoading ? '...' : (authView === 'login' ? 'Login' : authView === 'signup' ? 'Signup' : authView === 'forgot' ? 'Send Reset Link' : 'Update')}
+                                </button>
+                            </form>
+
+                            <div className="mt-6 pt-6 border-t flex flex-col gap-3">
+                                {authView === 'login' ? (
+                                    <>
+                                        <button onClick={() => setAuthView('signup')} className="text-xs font-bold text-slate-400 hover:text-blue-600 uppercase">First Time? Create Account</button>
+                                        <button onClick={() => setAuthView('forgot')} className="text-xs font-bold text-slate-400 hover:text-blue-600 uppercase tracking-tighter">Forgot Password?</button>
+                                    </>
+                                ) : (
+                                    <button onClick={() => setAuthView('login')} className="text-xs font-bold text-slate-400 hover:text-blue-600 uppercase">Back to Login</button>
+                                )}
+                            </div>
+                            
+                            <div className="mt-10 p-4 bg-amber-50 border border-amber-100 rounded-xl text-[10px] font-bold text-amber-700 uppercase tracking-tighter">
+                                Use tempo2026 for your first signup
+                            </div>
                         </Card>
                     </div>
                 );
             }
 
-            if (userProfile?.error) {
-                return (
-                    <div className="fixed inset-0 bg-slate-900 z-50 flex items-center justify-center p-4 text-center text-white">
-                        <div className="max-w-md">
-                            <h2 className="text-2xl font-bold mb-4">Registry Error</h2>
-                            <p className="mb-6 opacity-80">{userProfile.message}</p>
-                            <button onClick={() => supabase.auth.signOut()} className="px-8 py-2 bg-blue-600 rounded-lg font-bold">Logout</button>
-                        </div>
-                    </div>
-                );
-            }
-
-            if (!userProfile) return <div className="flex h-screen items-center justify-center font-bold">Loading Security Profile...</div>;
+            if (userProfile?.error) return <div className="flex flex-col h-screen items-center justify-center font-bold gap-4 p-8 text-center">{userProfile.message} <button onClick={() => supabase.auth.signOut()} className="px-6 py-2 bg-blue-600 text-white rounded">Logout</button></div>;
+            if (!userProfile) return <div className="flex h-screen items-center justify-center font-bold">Verifying authorization...</div>;
 
             const visibleTabs = userProfile.allowed_tabs || defaultTabs;
-            const filteredLogs = tasks.filter(t => (categories[t.type]?.label || '').toLowerCase().includes(searchTerm.toLowerCase()) || t.agent.toLowerCase().includes(searchTerm.toLowerCase()));
-            const paginatedLogs = filteredLogs.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
             return (
                 <div className="min-h-screen bg-slate-50 pb-20">
@@ -478,18 +472,12 @@
                             </div>
                             <nav className="flex gap-1">
                                 {visibleTabs.map(tab => (
-                                    <button key={tab} onClick={() => setActiveTab(tab)} className={`px-4 py-2 text-xs font-black rounded-lg transition-colors uppercase tracking-widest ${activeTab === tab ? 'bg-slate-100 text-slate-900' : 'text-slate-400 hover:bg-slate-50'}`}>
-                                        {tab}
-                                    </button>
+                                    <button key={tab} onClick={() => setActiveTab(tab)} className={`px-4 py-2 text-xs font-black rounded-lg transition-colors uppercase tracking-widest ${activeTab === tab ? 'bg-slate-100 text-slate-900' : 'text-slate-400 hover:bg-slate-50'}`}>{tab}</button>
                                 ))}
                                 {userProfile.role === 'Admin' && <button onClick={() => setActiveTab('admin')} className={`px-4 py-2 text-xs font-black rounded-lg transition-colors uppercase tracking-widest ${activeTab === 'admin' ? 'bg-slate-100 text-slate-900' : 'text-slate-400 hover:bg-slate-50'}`}>Admin</button>}
                             </nav>
                             <div className="flex items-center gap-4">
                                 <div className={`h-2 w-2 rounded-full ${connectionStatus === 'online' ? 'bg-emerald-500' : 'bg-rose-500 animate-pulse'}`} />
-                                <div className="text-right hidden md:block">
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Authorized as</p>
-                                    <p className="text-xs font-black leading-none">{userProfile.email.split('@')[0]}</p>
-                                </div>
                                 <button onClick={() => supabase.auth.signOut()} className="p-2 text-slate-400 hover:text-rose-500 transition-colors"><LogOut className="h-4 w-4" /></button>
                             </div>
                         </div>
@@ -499,16 +487,14 @@
                         {activeTab === 'dashboard' && (
                             <div className="space-y-8 animate-fade-in">
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                    <Card className="p-6 bg-slate-900 text-white shadow-xl"><p className="text-slate-400 text-[10px] font-black uppercase mb-1">Total Logs</p><h3 className="text-4xl font-bold">{tasks.length}</h3></Card>
-                                    <Card className="p-6 border-l-4 border-l-rose-500"><p className="text-slate-400 text-[10px] font-black uppercase mb-1">Pending</p><h3 className="text-4xl font-bold text-rose-600">{tasks.filter(t => t.status === 'Pending').length}</h3></Card>
-                                    <Card className="p-6 border-l-4 border-l-emerald-500"><p className="text-slate-400 text-[10px] font-black uppercase mb-1">Resolved Today</p><h3 className="text-4xl font-bold text-emerald-600">{tasks.filter(t => t.status !== 'Pending' && new Date(t.date).toDateString() === new Date().toDateString()).length}</h3></Card>
+                                    <Card className="p-6 bg-slate-900 text-white shadow-xl"><p className="text-slate-400 text-[10px] font-black uppercase mb-1">Total Records</p><h3 className="text-4xl font-bold">{tasks.length}</h3></Card>
+                                    <Card className="p-6 border-l-4 border-l-rose-500"><p className="text-slate-400 text-[10px] font-black uppercase mb-1">Pending Tasks</p><h3 className="text-4xl font-bold text-rose-600">{tasks.filter(t => t.status === 'Pending').length}</h3></Card>
+                                    <Card className="p-6 border-l-4 border-l-emerald-500"><p className="text-slate-400 text-[10px] font-black uppercase mb-1">Resolved (New)</p><h3 className="text-4xl font-bold text-emerald-600">{tasks.filter(t => t.status !== 'Pending' && new Date(t.date).toDateString() === new Date().toDateString()).length}</h3></Card>
                                 </div>
                                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
                                     {Object.entries(categories).map(([key, cfg]) => (
-                                        <button key={key} onClick={() => { setNewTaskType(key); setEditingTaskId(null); setFormData({}); setIsFormOpen(true); }} className="p-4 bg-white border rounded-xl text-center hover:shadow-md transition-all group">
-                                            <div className={`h-10 w-10 mx-auto rounded-lg flex items-center justify-center mb-2 bg-${cfg.color}-100`}>
-                                                {React.createElement(cfg.icon, { className: `h-5 w-5 text-${cfg.color}-600` })}
-                                            </div>
+                                        <button key={key} onClick={() => { setNewTaskType(key); setEditingTaskId(null); setFormData({}); setIsFormOpen(true); }} className="p-4 bg-white border rounded-xl text-center hover:shadow-md transition-all">
+                                            <div className={`h-10 w-10 mx-auto rounded-lg flex items-center justify-center mb-2 bg-${cfg.color}-100`}>{React.createElement(cfg.icon, { className: `h-5 w-5 text-${cfg.color}-600` })}</div>
                                             <p className="text-[9px] font-black text-slate-500 uppercase">{cfg.label}</p>
                                             <p className="text-lg font-black">{tasks.filter(t => t.type === key).length}</p>
                                         </button>
@@ -520,16 +506,13 @@
                         {activeTab === 'logs' && (
                             <div className="space-y-4 animate-fade-in">
                                 <div className="flex justify-between bg-white p-4 rounded-xl border">
-                                    <div className="relative flex-1 max-w-md">
-                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                                        <input type="text" placeholder="Search..." className="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
-                                    </div>
-                                    <button onClick={() => { setEditingTaskId(null); setFormData({}); setIsFormOpen(true); }} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-black uppercase tracking-widest">+ NEW ENTRY</button>
+                                    <div className="relative flex-1 max-w-md"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" /><input type="text" placeholder="Search..." className="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 border rounded-lg" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} /></div>
+                                    <button onClick={() => { setIsFormOpen(true); setEditingTaskId(null); }} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-black uppercase tracking-widest">+ NEW ENTRY</button>
                                 </div>
                                 <Card className="overflow-hidden">
                                     <table className="w-full text-left text-sm">
                                         <thead className="bg-slate-50 border-b"><tr><th className="px-6 py-4">Category</th><th className="px-6 py-4">Agent</th><th className="px-6 py-4">Status</th><th className="px-6 py-4 text-right">Actions</th></tr></thead>
-                                        <tbody className="divide-y">{paginatedLogs.map(t => (<tr key={t.id} className="hover:bg-slate-50"><td className="px-6 py-4 font-bold">{categories[t.type]?.label}</td><td className="px-6 py-4">{t.agent}</td><td className="px-6 py-4"><Badge color={t.status === 'Pending' ? 'amber' : (['Resolved', 'Won', 'Activated'].includes(t.status) ? 'green' : 'slate')}>{t.status}</Badge></td><td className="px-6 py-4 text-right"><button onClick={() => handleEditTask(t)} className="p-2 text-slate-400 hover:text-blue-600"><Edit className="h-4 w-4" /></button></td></tr>))}</tbody>
+                                        <tbody className="divide-y">{filteredLogs.slice((currentPage-1)*itemsPerPage, currentPage*itemsPerPage).map(t => (<tr key={t.id} className="hover:bg-slate-50"><td className="px-6 py-4 font-bold">{categories[t.type]?.label}</td><td className="px-6 py-4">{t.agent}</td><td className="px-6 py-4"><Badge color={t.status === 'Pending' ? 'amber' : 'green'}>{t.status}</Badge></td><td className="px-6 py-4 text-right"><button onClick={() => handleEditTask(t)} className="p-2 text-slate-400 hover:text-blue-600 transition-colors"><Edit className="h-4 w-4" /></button></td></tr>))}</tbody>
                                     </table>
                                     <div className="p-4 bg-slate-50 flex justify-between items-center text-xs font-black text-slate-500 uppercase">
                                         <span>Showing {(currentPage-1)*itemsPerPage+1} to {Math.min(currentPage*itemsPerPage, filteredLogs.length)} of {filteredLogs.length}</span>
@@ -547,10 +530,10 @@
                                 <Card className="p-6">
                                     <div className="flex items-center gap-3 mb-6"><BarChart3 className="h-6 w-6 text-blue-600" /><h2 className="text-xl font-bold uppercase tracking-widest">Analytics Dashboard</h2></div>
                                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-                                        <select className="p-2.5 bg-slate-50 border rounded-lg text-sm" value={analyticsCategory} onChange={e => setAnalyticsCategory(e.target.value)}>{Object.entries(categories).map(([k, c]) => <option key={k} value={k}>{c.label}</option>)}</select>
-                                        <select className="p-2.5 bg-slate-50 border rounded-lg text-sm" value={analyticsField} onChange={e => setAnalyticsField(e.target.value)}><option value="status">Status</option><option value="agent">Agent</option>{categories[analyticsCategory]?.fields.filter(f => !f.includes('Module')).map(f => <option key={f} value={f}>{f.replace(/([A-Z])/g, ' $1')}</option>)}</select>
-                                        <input type="date" className="p-2.5 bg-slate-50 border rounded-lg text-sm" value={analyticsDateRange.start} onChange={e => setAnalyticsDateRange(p => ({...p, start: e.target.value}))} />
-                                        <input type="date" className="p-2.5 bg-slate-50 border rounded-lg text-sm" value={analyticsDateRange.end} onChange={e => setAnalyticsDateRange(p => ({...p, end: e.target.value}))} />
+                                        <select className="p-2.5 bg-slate-50 border rounded-lg text-sm outline-none" value={analyticsCategory} onChange={e => setAnalyticsCategory(e.target.value)}>{Object.entries(categories).map(([k, c]) => <option key={k} value={k}>{c.label}</option>)}</select>
+                                        <select className="p-2.5 bg-slate-50 border rounded-lg text-sm outline-none" value={analyticsField} onChange={e => setAnalyticsField(e.target.value)}><option value="status">Status</option><option value="agent">Agent</option>{categories[analyticsCategory]?.fields.filter(f => !f.includes('Module')).map(f => <option key={f} value={f}>{f.replace(/([A-Z])/g, ' $1')}</option>)}</select>
+                                        <input type="date" className="p-2.5 bg-slate-50 border rounded-lg text-sm outline-none" value={analyticsDateRange.start} onChange={e => setAnalyticsDateRange(p => ({...p, start: e.target.value}))} />
+                                        <input type="date" className="p-2.5 bg-slate-50 border rounded-lg text-sm outline-none" value={analyticsDateRange.end} onChange={e => setAnalyticsDateRange(p => ({...p, end: e.target.value}))} />
                                     </div>
                                     <div className="h-[400px] flex items-center justify-center p-4 bg-slate-50 rounded-xl"><canvas ref={chartRef}></canvas></div>
                                 </Card>
@@ -561,16 +544,14 @@
                             <div className="space-y-6 animate-fade-in">
                                 <Card className="p-6 space-y-6">
                                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                        <select className="w-full p-2.5 border rounded-lg text-sm" value={reportFilters.category} onChange={e => setReportFilters(f => ({ ...f, category: e.target.value }))}><option value="all">All Types</option>{Object.entries(categories).map(([k, c]) => <option key={k} value={k}>{c.label}</option>)}</select>
-                                        <select className="w-full p-2.5 border rounded-lg text-sm" value={reportFilters.agent} onChange={e => setReportFilters(f => ({ ...f, agent: e.target.value }))}><option value="all">All Mentors</option>{mentorList.map(m => <option key={m} value={m}>{m}</option>)}</select>
-                                        <input type="date" className="w-full p-2.5 border rounded-lg text-sm" value={reportFilters.startDate} onChange={e => setReportFilters(f => ({ ...f, startDate: e.target.value }))} />
-                                        <input type="date" className="w-full p-2.5 border rounded-lg text-sm" value={reportFilters.endDate} onChange={e => setReportFilters(f => ({ ...f, endDate: e.target.value }))} />
+                                        <select className="w-full p-2.5 border rounded-lg text-sm outline-none" value={reportFilters.category} onChange={e => setReportFilters(f => ({ ...f, category: e.target.value }))}><option value="all">All Types</option>{Object.entries(categories).map(([k, c]) => <option key={k} value={k}>{c.label}</option>)}</select>
+                                        <select className="w-full p-2.5 border rounded-lg text-sm outline-none" value={reportFilters.agent} onChange={e => setReportFilters(f => ({ ...f, agent: e.target.value }))}><option value="all">All Mentors</option>{mentorList.map(m => <option key={m} value={m}>{m}</option>)}</select>
+                                        <input type="date" className="w-full p-2.5 border rounded-lg text-sm outline-none" value={reportFilters.startDate} onChange={e => setReportFilters(f => ({ ...f, startDate: e.target.value }))} />
+                                        <input type="date" className="w-full p-2.5 border rounded-lg text-sm outline-none" value={reportFilters.endDate} onChange={e => setReportFilters(f => ({ ...f, endDate: e.target.value }))} />
                                     </div>
                                     <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-100">
                                         {['agent', 'status', 'date', ...(reportFilters.category !== 'all' ? categories[reportFilters.category].fields : [])].filter(col => !col.includes('Module')).map(col => (
-                                            <button key={col} onClick={() => toggleReportColumn(col)} className={`px-3 py-1.5 rounded-full text-[10px] font-bold border ${selectedReportColumns.includes(col) ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-200 text-slate-500'}`}>
-                                                {col.toUpperCase()}
-                                            </button>
+                                            <button key={col} onClick={() => toggleReportColumn(col)} className={`px-3 py-1.5 rounded-full text-[10px] font-bold border ${selectedReportColumns.includes(col) ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-200 text-slate-500'}`}>{col.toUpperCase()}</button>
                                         ))}
                                     </div>
                                     <div className="flex justify-end pt-2"><button onClick={handleGenerateReport} className="px-6 py-2.5 bg-slate-900 text-white font-bold rounded-lg shadow-lg">GENERATE REPORT</button></div>
@@ -600,28 +581,28 @@
                         {activeTab === 'admin' && userProfile.role === 'Admin' && (
                             <div className="space-y-8 animate-fade-in">
                                 <Card className="p-8">
-                                    <div className="flex items-center gap-3 mb-6"><Shield className="h-6 w-6 text-indigo-600" /><h2 className="text-xl font-black uppercase">Admin Control Panel</h2></div>
+                                    <div className="flex items-center gap-3 mb-6"><Shield className="h-6 w-6 text-indigo-600" /><h2 className="text-xl font-black uppercase tracking-tight">Admin Control Panel</h2></div>
                                     <div className="flex gap-4 mb-10 bg-slate-50 p-6 rounded-2xl border border-dashed">
-                                        <input type="email" placeholder="tempo.fit email" className="flex-1 p-3 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" onChange={e => setFormData(p => ({...p, newEmail: e.target.value}))} value={formData.newEmail || ''} />
-                                        <select className="p-3 border rounded-xl outline-none" onChange={e => setFormData(p => ({...p, newRole: e.target.value}))} value={formData.newRole || 'Mentor'}><option value="Mentor">Mentor</option><option value="Admin">Admin</option></select>
-                                        <button onClick={handleAddUser} className="px-8 py-3 bg-indigo-600 text-white rounded-xl font-black uppercase text-xs hover:bg-indigo-700 transition-all">Register User</button>
+                                        <input type="email" placeholder="tempo.fit email" className="flex-1 p-3 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 bg-white" onChange={e => setFormData(p => ({...p, newEmail: e.target.value}))} value={formData.newEmail || ''} />
+                                        <select className="p-3 border rounded-xl outline-none bg-white" onChange={e => setFormData(p => ({...p, newRole: e.target.value}))} value={formData.newRole || 'Mentor'}><option value="Mentor">Mentor</option><option value="Admin">Admin</option></select>
+                                        <button onClick={handleAddUser} className="px-8 py-3 bg-indigo-600 text-white rounded-xl font-black uppercase text-xs hover:bg-indigo-700 transition-all">Authorize Email</button>
                                     </div>
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full text-left text-xs uppercase font-black">
-                                            <thead className="bg-slate-50 border-b text-slate-400"><tr><th className="px-6 py-4">Approved User</th><th className="px-6 py-4">Project Role</th><th className="px-6 py-4">Tab Permissions</th><th className="px-6 py-4"></th></tr></thead>
+                                    <div className="overflow-x-auto text-xs">
+                                        <table className="w-full text-left uppercase font-black">
+                                            <thead className="bg-slate-50 border-b text-slate-400"><tr><th className="px-6 py-4">User Email</th><th className="px-6 py-4">Role</th><th className="px-6 py-4 text-center">Accessible Tabs</th><th className="px-6 py-4"></th></tr></thead>
                                             <tbody className="divide-y">{registry.map(u => (
                                                 <tr key={u.id} className="hover:bg-slate-50">
-                                                    <td className="px-6 py-4">{u.email}</td>
+                                                    <td className="px-6 py-4 font-bold lowercase">{u.email}</td>
                                                     <td className="px-6 py-4"><Badge color={u.role === 'Admin' ? 'purple' : 'slate'}>{u.role}</Badge></td>
-                                                    <td className="px-6 py-4 flex gap-2">
+                                                    <td className="px-6 py-4 flex gap-2 justify-center">
                                                         {['dashboard', 'logs', 'analytics', 'reports'].map(t => (
-                                                            <label key={t} className="flex items-center gap-1 cursor-pointer bg-white px-2 py-1 border rounded shadow-sm hover:border-blue-400 transition-all">
+                                                            <label key={t} className="flex items-center gap-1.5 cursor-pointer bg-white px-2 py-1 border rounded shadow-sm hover:border-blue-400 transition-all">
                                                                 <input type="checkbox" checked={u.allowed_tabs?.includes(t)} onChange={() => toggleTabForUser(u.email, t)} />
-                                                                <span className="text-[9px]">{t}</span>
+                                                                <span className="text-[9px] uppercase">{t}</span>
                                                             </label>
                                                         ))}
                                                     </td>
-                                                    <td className="px-6 py-4 text-right">{u.email !== 'mohamed.abdelmagid@tempo.fit' && <button onClick={async () => { if(confirm("Revoke access for " + u.email + "?")) { await supabase.from('users_registry').delete().eq('id', u.id); fetchData(); } }} className="text-rose-400 hover:text-rose-600 transition-all"><Trash className="h-4 w-4" /></button>}</td>
+                                                    <td className="px-6 py-4 text-right">{u.email !== 'mohamed.abdelmagid@tempo.fit' && <button onClick={async () => { if(confirm("Revoke access for " + u.email + "?")) { await supabase.from('users_registry').delete().eq('id', u.id); fetchData(); } }} className="text-rose-400 transition-colors hover:text-rose-600"><Trash className="h-4 w-4" /></button>}</td>
                                                 </tr>
                                             ))}</tbody>
                                         </table>
@@ -631,14 +612,13 @@
                         )}
                     </main>
 
-                    {/* Form Modal Layer */}
                     {isFormOpen && (
                         <div className="fixed inset-0 z-50 flex justify-end">
                             <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsFormOpen(false)} />
                             <div className="relative w-full max-w-md bg-white h-full shadow-2xl p-8 overflow-y-auto animate-slide-in-right">
-                                <div className="flex justify-between items-center mb-8"><h2 className="text-2xl font-black italic uppercase tracking-tighter">{editingTaskId ? 'EDIT' : 'NEW'} {categories[newTaskType].label}</h2><button onClick={() => setIsFormOpen(false)} className="text-slate-400 font-black uppercase text-[10px] hover:text-slate-800">Close</button></div>
+                                <div className="flex justify-between items-center mb-8"><h2 className="text-2xl font-black italic uppercase tracking-tighter">{editingTaskId ? 'EDIT' : 'NEW'} {categories[newTaskType].label}</h2><button onClick={() => setIsFormOpen(false)} className="text-slate-400 font-black uppercase text-[10px]">Close</button></div>
                                 <form onSubmit={handleAddTask} className="space-y-6">
-                                    {!editingTaskId && <div><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Change Category</label><select className="w-full p-3 bg-slate-50 border rounded-xl outline-none font-bold" value={newTaskType} onChange={e => { setNewTaskType(e.target.value); setFormData({}); }}>{Object.entries(categories).map(([k, c]) => <option key={k} value={k}>{c.label}</option>)}</select></div>}
+                                    {!editingTaskId && <div><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Category Type</label><select className="w-full p-3 bg-slate-50 border rounded-xl outline-none font-bold" value={newTaskType} onChange={e => { setNewTaskType(e.target.value); setFormData({}); }}>{Object.entries(categories).map(([k, c]) => <option key={k} value={k}>{c.label}</option>)}</select></div>}
                                     <div className="bg-slate-50 p-4 rounded-2xl border space-y-4">
                                         {categories[newTaskType].fields.map(field => {
                                             const isValidNo = (newTaskType === 'floorwalker' && formData.validRequest === 'No') || (newTaskType === 'hip_request' && formData.validHip === 'No');
@@ -648,19 +628,15 @@
                                                 const items = field === 'auditModule' ? auditAttributes : quizModules;
                                                 return (
                                                     <div key={field} className="space-y-6 pt-2">
-                                                        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{field.replace('Module','')} Quality Metrics</h3>
+                                                        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest uppercase tracking-widest">{field.replace('Module','')} Scoring</h3>
                                                         {items.map(m => (
                                                             <div key={m.id} className="bg-white p-4 rounded-xl border border-slate-200">
                                                                 <p className="font-bold text-sm mb-1">{m.title || m.label}</p>
                                                                 <p className="text-[10px] text-slate-400 mb-4">{m.desc}</p>
                                                                 <div className="flex justify-center gap-2 mb-4">
-                                                                    {field === 'auditModule' ? ['Yes', 'No'].map(s => (
-                                                                        <button key={s} type="button" onClick={() => handleAuditScore(m.id, s)} className={`px-4 py-1.5 rounded-lg border-2 text-[10px] font-black transition-all ${formData.auditScores?.[m.id] === s ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white border-slate-200 text-slate-400'}`}>{s.toUpperCase()}</button>
-                                                                    )) : [1, 2, 3, 4, 5].map(s => (
-                                                                        <button key={s} type="button" onClick={() => handleQuizScore(m.id, s)} className={`w-8 h-8 rounded-full border-2 text-xs font-bold transition-all ${formData.quizScores?.[m.id] === s ? 'bg-cyan-500 border-cyan-500 text-white shadow-lg shadow-cyan-100' : 'bg-white border-slate-200 text-slate-400'}`}>{s}</button>
-                                                                    ))}
+                                                                    {field === 'auditModule' ? ['Yes', 'No'].map(s => (<button key={s} type="button" onClick={() => handleAuditScore(m.id, s)} className={`px-4 py-1.5 rounded-lg border-2 text-[10px] font-black transition-all ${formData.auditScores?.[m.id] === s ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white border-slate-200 text-slate-400'}`}>{s.toUpperCase()}</button>)) : [1, 2, 3, 4, 5].map(s => (<button key={s} type="button" onClick={() => handleQuizScore(m.id, s)} className={`w-8 h-8 rounded-full border-2 text-xs font-bold transition-all ${formData.quizScores?.[m.id] === s ? 'bg-cyan-500 border-cyan-500 text-white shadow-lg shadow-cyan-100' : 'bg-white border-slate-200 text-slate-400'}`}>{s}</button>))}
                                                                 </div>
-                                                                <input type="text" placeholder="Add specific feedback comment..." className="w-full p-2 bg-slate-50 border-b text-[10px] outline-none focus:border-blue-500 transition-colors" onChange={e => setFormData(p => ({...p, quizComments: {...(p.quizComments || {}), [m.id]: e.target.value}}))} value={formData.quizComments?.[m.id] || ''} />
+                                                                <input type="text" placeholder="Comment..." className="w-full p-2 bg-slate-50 border-b text-[10px] outline-none" onChange={e => setFormData(p => ({...p, quizComments: {...(p.quizComments || {}), [m.id]: e.target.value}}))} value={formData.quizComments?.[m.id] || ''} />
                                                             </div>
                                                         ))}
                                                     </div>
@@ -669,26 +645,26 @@
 
                                             if (field === 'hipLogReference' && newTaskType === 'mentor_audit') return (
                                                 <div key={field} className="pt-2">
-                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Audit Target Selection</label>
-                                                    <div className="flex gap-2"><div className="flex-1 p-3 bg-white border rounded-xl text-sm font-medium">{formData.auditedTicket || 'Pick Random Log ->'}</div>
-                                                    <button type="button" onClick={pickRandomHIP} className="p-3 bg-blue-100 text-blue-600 rounded-xl hover:bg-blue-200 transition-all"><Dice className="h-5 w-5" /></button></div>
+                                                    <label className="text-[10px] font-black text-slate-400 uppercase block mb-1.5">Audit Target</label>
+                                                    <div className="flex gap-2"><div className="flex-1 p-3 bg-white border rounded-xl text-sm font-medium">{formData.auditedTicket || 'No Log Selected'}</div>
+                                                    <button type="button" onClick={pickRandomHIP} className="p-3 bg-blue-100 text-blue-600 rounded-xl"><Dice className="h-5 w-5" /></button></div>
                                                 </div>
                                             );
 
                                             if (newTaskType === 'hip_request' && field === 'hipProduct') return (
                                                 <div key={field}><label className="text-[10px] font-black text-slate-400 uppercase block mb-1.5">Product</label>
                                                 <select className="w-full p-3 bg-white border border-slate-200 rounded-xl outline-none text-sm" value={formData.hipProduct || ''} onChange={e => setFormData(p => ({ ...p, hipProduct: e.target.value, hipCategory: '', hipRequestType: '' }))}>
-                                                <option value="">Select Product...</option>{Object.keys(HIP_HIERARCHY).map(k => <option key={k} value={k}>{k}</option>)}</select></div>
+                                                <option value="">Select...</option>{Object.keys(HIP_HIERARCHY).map(k => <option key={k} value={k}>{k}</option>)}</select></div>
                                             );
                                             if (newTaskType === 'hip_request' && field === 'hipCategory') return (
                                                 <div key={field}><label className="text-[10px] font-black text-slate-400 uppercase block mb-1.5">Category</label>
                                                 <select className="w-full p-3 bg-white border border-slate-200 rounded-xl outline-none text-sm" disabled={!formData.hipProduct} value={formData.hipCategory || ''} onChange={e => setFormData(p => ({ ...p, hipCategory: e.target.value, hipRequestType: '' }))}>
-                                                <option value="">Select Category...</option>{formData.hipProduct && Object.keys(HIP_HIERARCHY[formData.hipProduct] || {}).map(c => <option key={c} value={c}>{c}</option>)}</select></div>
+                                                <option value="">Select...</option>{formData.hipProduct && Object.keys(HIP_HIERARCHY[formData.hipProduct] || {}).map(c => <option key={c} value={c}>{c}</option>)}</select></div>
                                             );
                                             if (newTaskType === 'hip_request' && field === 'hipRequestType') return (
                                                 <div key={field}><label className="text-[10px] font-black text-slate-400 uppercase block mb-1.5">Request Type</label>
                                                 <select className="w-full p-3 bg-white border border-slate-200 rounded-xl outline-none text-sm" disabled={!formData.hipCategory} value={formData.hipRequestType || ''} onChange={e => handleInputChange(field, e.target.value)}>
-                                                <option value="">Select Type...</option>{(formData.hipProduct && formData.hipCategory) && HIP_HIERARCHY[formData.hipProduct][formData.hipCategory].map(o => <option key={o} value={o}>{o}</option>)}</select></div>
+                                                <option value="">Select...</option>{(formData.hipProduct && formData.hipCategory) && HIP_HIERARCHY[formData.hipProduct][formData.hipCategory].map(o => <option key={o} value={o}>{o}</option>)}</select></div>
                                             );
 
                                             const isDropdown = ['associateName', 'associateEmail', 'mentorName', 'team', 'productType', 'surpriseAndDelightType', 'resolution', 'pendingReason', 'disputeReason', 'reasonForSupport', 'requestType', 'validHip', 'validRequest', 'subscriptionStatus', 'emailSent', 'disputedProduct', 'invalidReason', 'surpriseAndDelightReason'].includes(field);
@@ -707,7 +683,7 @@
                                                                 <option value="ADD_NEW_CUSTOM" className="text-blue-600 font-bold">+ Add New Item...</option>
                                                             </select>
                                                             {customInputTarget === field && (
-                                                                <div className="flex gap-2 animate-fade-in"><input type="text" id={`custom-${field}`} placeholder={`Add custom ${field}...`} className="flex-1 p-2 text-xs border rounded-lg outline-none" /><button type="button" onClick={() => handleAddCustomValue(field, document.getElementById(`custom-${field}`).value)} className="px-4 py-2 bg-blue-600 text-white text-[10px] font-bold rounded-lg uppercase">Add</button></div>
+                                                                <div className="flex gap-2 animate-fade-in"><input type="text" id={`custom-${field}`} placeholder={`New value...`} className="flex-1 p-2 text-xs border rounded-lg outline-none focus:ring-1 focus:ring-blue-500" /><button type="button" onClick={() => handleAddCustomValue(field, document.getElementById(`custom-${field}`).value)} className="px-4 py-2 bg-blue-600 text-white text-[10px] font-bold rounded-lg uppercase">Add</button></div>
                                                             )}
                                                         </div>
                                                     ) : (
@@ -722,7 +698,7 @@
                                             <select className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm font-bold" value={formData.status || 'Pending'} onChange={e => handleInputChange('status', e.target.value)}><option value="Pending">Pending</option><option value="Resolved">Resolved</option><option value="In Progress">In Progress</option></select>
                                         </div>
                                     )}
-                                    <button type="submit" className="w-full py-4 bg-blue-600 text-white font-black rounded-2xl shadow-xl hover:bg-blue-700 transition-all uppercase tracking-widest shadow-blue-100">Save Final Record</button>
+                                    <button type="submit" className="w-full py-4 bg-blue-600 text-white font-black rounded-2xl shadow-xl hover:bg-blue-700 transition-all uppercase tracking-widest shadow-blue-100">Save Log Record</button>
                                 </form>
                             </div>
                         </div>
