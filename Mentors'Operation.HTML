@@ -274,7 +274,7 @@
             }, []);
 
             const fetchUserProfile = async (email) => {
-                const { data, error } = await supabase.from('users_registry').select('*').eq('email', email).single();
+                const { data, error } = await supabase.from('users_registry').select('*').eq('email', email).maybeSingle();
                 if (data) {
                     setUserProfile(data);
                 } else if (email === 'mohamed.abdelmagid@tempo.fit') {
@@ -288,29 +288,36 @@
 
             const fetchData = async () => {
                 setConnectionStatus('connecting');
+                
+                // Fetch tasks
                 const tasksRes = await supabase.from('tasks').select('*').order('date', { ascending: false });
                 if (!tasksRes.error) { 
                     setTasks(tasksRes.data || []); 
                     setConnectionStatus('online'); 
                     discoverCustomOptions(tasksRes.data || []);
                 }
+
+                // Fetch registry
                 if (userProfile?.role === 'Admin') {
                     const regRes = await supabase.from('users_registry').select('*');
                     if (!regRes.error) setRegistry(regRes.data || []);
                 }
 
                 // Fetch app_config for dynamic lists & hierarchies
-                const { data: configData } = await supabase.from('app_config').select('*').single();
-                if (configData) {
-                    if (configData.hip_hierarchy) setGlobalHipHierarchy(configData.hip_hierarchy);
-                    if (configData.associates) setGlobalAssociates(configData.associates);
-                    if (configData.mentors) setGlobalMentors(configData.mentors);
-                    if (configData.custom_options) setCustomOptions(configData.custom_options);
+                try {
+                    const { data: configData, error: configErr } = await supabase.from('app_config').select('*').eq('id', 1).maybeSingle();
+                    if (!configErr && configData) {
+                        if (configData.hip_hierarchy) setGlobalHipHierarchy(configData.hip_hierarchy);
+                        if (configData.associates) setGlobalAssociates(configData.associates);
+                        if (configData.mentors) setGlobalMentors(configData.mentors);
+                        if (configData.custom_options) setCustomOptions(configData.custom_options);
+                    }
+                } catch (e) {
+                    console.error("Config fetch failed", e);
                 }
             };
 
             const discoverCustomOptions = (allTasks) => {
-                // Not clearing local defaults, just merging discovery
                 setCustomOptions(prev => {
                     const newDiscovery = { ...prev };
                     allTasks.forEach(t => {
@@ -423,7 +430,7 @@
                     if (f === 'correctionModule') { quizModules.forEach(m => { if (!(formData.quizScores?.[m.id])) missingFields.push(m.title); }); return; }
                     if (f === 'auditModule') { auditAttributes.forEach(a => { if (!(formData.auditScores?.[a.id])) missingFields.push(a.label); }); return; }
                     if (newTaskType === 'hip_request' && formData.status === 'Pending' && f === 'pendingReasonDetail' && !formData[f]) { missingFields.push("Pending Reason Detail"); return; }
-                    if (f === 'pendingReasonDetail' || f === 'invalidReason') return; // Skip if conditions aren't met
+                    if (f === 'pendingReasonDetail' || f === 'invalidReason') return; 
                     if (!formData[f] || formData[f] === '') missingFields.push(f.replace(/([A-Z])/g, ' $1'));
                 });
                 if (missingFields.length > 0) return alert("Required: " + missingFields.join(', '));
@@ -435,6 +442,7 @@
                 };
                 const { error } = editingTaskId ? await supabase.from('tasks').update(taskData).eq('id', editingTaskId) : await supabase.from('tasks').insert([taskData]);
                 if (!error) { setIsFormOpen(false); setFormData({}); setEditingTaskId(null); fetchData(); }
+                else alert(error.message);
             };
 
             // Analytics Lifecycle
@@ -476,7 +484,6 @@
                 return () => { if (chartInstance.current) chartInstance.current.destroy(); };
             }, [activeTab, analyticsCategory, analyticsField, analyticsDateRange, tasks, isDarkMode]);
 
-            // Requirement 2: Permanent Config Center logic
             const saveGlobalConfig = async (newConfig) => {
                 const { error } = await supabase.from('app_config').upsert({ id: 1, ...newConfig });
                 if (error) alert("Error saving config: " + error.message);
@@ -523,7 +530,6 @@
                 const a = document.createElement('a'); a.href = url; a.download = 'export.csv'; a.click();
             };
 
-            // Deep Search & Filter logic (Requirement 3 & 4)
             const searchedPendingTasks = tasks.filter(t => {
                 if (t.status !== 'Pending') return false;
                 if (dashboardCategory !== 'all' && t.type !== dashboardCategory) return false;
@@ -606,7 +612,6 @@
                                     <Card className="p-6 border-l-4 border-l-emerald-500"><p className="text-slate-400 dark:text-slate-500 text-[10px] font-black uppercase mb-1">Resolved Today</p><h3 className="text-4xl font-bold text-emerald-600">{tasks.filter(t => t.status !== 'Pending' && new Date(t.date).toDateString() === new Date().toDateString()).length}</h3></Card>
                                 </div>
 
-                                {/* Pending Actions Hub */}
                                 <div className="space-y-4">
                                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                                         <h2 className="text-xl font-black uppercase tracking-tight dark:text-slate-200">Pending Actions</h2>
@@ -700,7 +705,6 @@
                                 <Card className="p-8">
                                     <div className="flex items-center gap-3 mb-8"><Shield className="h-6 w-6 text-indigo-600" /><h2 className="text-xl font-black uppercase dark:text-white">Admin Console</h2></div>
                                     
-                                    {/* User Permissions Management */}
                                     <div className="space-y-6">
                                         <h3 className="text-xs font-black uppercase text-slate-400">User Authorizations</h3>
                                         <div className="flex gap-4 bg-slate-50 dark:bg-slate-800/50 p-6 rounded-2xl border dark:border-slate-700">
@@ -713,7 +717,7 @@
                                                     <td className="px-6 py-4 lowercase font-bold dark:text-slate-400">{u.email}</td>
                                                     <td className="px-6 py-4"><Badge color={u.role === 'Admin' ? 'purple' : 'slate'}>{u.role}</Badge></td>
                                                     <td className="px-6 py-4 flex gap-2 justify-center">
-                                                        {['dashboard', 'logs', 'analytics', 'reports', 'data_control'].map(t => (
+                                                        {['dashboard', 'logs', 'analytics', 'reports', 'admin'].map(t => (
                                                             <label key={t} className="flex items-center gap-1.5 cursor-pointer bg-white dark:bg-slate-800 px-2 py-1 border dark:border-slate-700 rounded shadow-sm">
                                                                 <input type="checkbox" checked={u.allowed_tabs?.includes(t)} onChange={() => toggleTabForUser(u.email, t)} />
                                                                 <span className="text-[9px] dark:text-slate-400 font-bold">{t.replace('_', ' ')}</span>
@@ -724,11 +728,9 @@
                                                 </tr>))}</tbody></table></div>
                                     </div>
 
-                                    {/* Data Control Section (Dropdown Validation) */}
                                     <div className="mt-12 space-y-8 pt-12 border-t dark:border-slate-800">
                                         <div className="flex items-center gap-3"><DatabaseIcon className="h-5 w-5 text-emerald-600" /><h3 className="text-sm font-black uppercase text-slate-400">Data Validation & Lists</h3></div>
                                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                                            {/* Manage Associates */}
                                             <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border dark:border-slate-700 space-y-4">
                                                 <h4 className="text-xs font-black uppercase text-slate-400">Personnel Registry</h4>
                                                 <div className="flex gap-2">
@@ -740,7 +742,6 @@
                                                 </div>
                                             </div>
 
-                                            {/* Dropdown Options Manager */}
                                             <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border dark:border-slate-700 space-y-4">
                                                 <h4 className="text-xs font-black uppercase text-slate-400">General Dropdown Management</h4>
                                                 <div className="grid grid-cols-2 gap-2">
@@ -757,7 +758,6 @@
                                             </div>
                                         </div>
 
-                                        {/* HIP Hierarchy Extension */}
                                         <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border dark:border-slate-700 space-y-4">
                                             <h4 className="text-xs font-black uppercase text-slate-400">HIP Hierarchy Extension (RTs)</h4>
                                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -786,7 +786,6 @@
                         )}
                     </main>
 
-                    {/* Form Modal Layer */}
                     {isFormOpen && (
                         <div className="fixed inset-0 z-50 flex justify-end">
                             <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsFormOpen(false)} />
@@ -798,7 +797,6 @@
                                         {categories[newTaskType].fields.map(field => {
                                             const isValidNo = (newTaskType === 'floorwalker' && formData.validRequest === 'No') || (newTaskType === 'hip_request' && formData.validHip === 'No');
                                             
-                                            // Requirement 5: HIP dependent dropdown logic
                                             if (field === 'pendingReasonDetail' && formData.status !== 'Pending') return null;
                                             if (field === 'invalidReason' && !isValidNo) return null;
                                             
@@ -817,7 +815,6 @@
                                             }
                                             if (field === 'hipLogReference' && newTaskType === 'mentor_audit') return (<div key={field} className="pt-2"><label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase block mb-1.5 font-bold">Audit Target</label><div className="flex gap-2"><div className="flex-1 p-3 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-xl text-sm font-medium dark:text-slate-300 font-bold">{formData.auditedTicket || 'Pick Random Log'}</div><button type="button" onClick={pickRandomHIP} className="p-3 bg-blue-100 dark:bg-blue-900/30 text-blue-600 rounded-xl"><Dice className="h-5 w-5" /></button></div></div>);
                                             
-                                            // Dynamic Hierarchy & Dropdowns
                                             const isDropdown = ['associateName', 'associateEmail', 'mentorName', 'team', 'productType', 'surpriseAndDelightType', 'resolution', 'pendingReason', 'disputeReason', 'reasonForSupport', 'validHip', 'validRequest', 'subscriptionStatus', 'emailSent', 'disputedProduct', 'invalidReason', 'surpriseAndDelightReason', 'hipProduct', 'hipCategory', 'hipRequestType', 'status', 'pendingReasonDetail'].includes(field);
                                             
                                             return (<div key={field}><label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 block font-bold">{field.replace(/([A-Z])/g, ' $1')}</label>
@@ -848,7 +845,6 @@
                         </div>
                     )}
 
-                    {/* Security Modal */}
                     {isSettingsOpen && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 text-slate-900 dark:text-white">
                             <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsSettingsOpen(false)} />
