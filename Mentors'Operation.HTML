@@ -529,7 +529,7 @@
                                 await fetch(GOOGLE_SCRIPT_URL, {
                                     method: 'POST',
                                     mode: 'no-cors', 
-                                    headers: { 'Content-Type': 'application/json' },
+                                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                                     body: JSON.stringify({
                                         to: formData.associateEmail,
                                         subject: `Weekly Quiz Results - ${formData.date}`,
@@ -733,7 +733,7 @@
                         {activeTab === 'dashboard' && (
                             <div className="space-y-8 animate-fade-in font-bold">
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                    <Card className="p-6 border-l-4 border-l-blue-500 shadow-sm"><p className="text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase mb-1">Lifetime Records</p><h3 className="text-4xl font-bold text-slate-900 dark:text-white">{tasks.length}</h3></Card>
+                                    <Card className="p-6 border-l-4 border-l-blue-500 shadow-sm"><p className="text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase mb-1">Lifetime Records</p><h3 className="text-4xl font-bold text-black dark:text-white">{tasks.length}</h3></Card>
                                     <Card className="p-6 border-l-4 border-l-rose-500"><p className="text-slate-400 dark:text-slate-500 text-[10px] font-black uppercase mb-1">Pending Actions</p><h3 className="text-4xl font-bold text-rose-600">{tasks.filter(t => t.status === 'Pending').length}</h3></Card>
                                     <Card className="p-6 border-l-4 border-l-emerald-500"><p className="text-slate-400 dark:text-slate-500 text-[10px] font-black uppercase mb-1">Resolved Today</p><h3 className="text-4xl font-bold text-emerald-600">{tasks.filter(t => t.status !== 'Pending' && new Date(t.date).toDateString() === new Date().toDateString()).length}</h3></Card>
                                 </div>
