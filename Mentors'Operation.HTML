@@ -71,6 +71,10 @@
         const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1pZmJwY2tzdGZ3cGhrd3Rxa3NhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5MzcyMDksImV4cCI6MjA4NjUxMzIwOX0.PDZwE9hII9kPOjrBeJAI8T28oetruK-ogFtKOICMlOQ";
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+        // --- Google Script Config ---
+        // PASTE YOUR DEPLOYED WEB APP URL HERE
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/a/macros/tempo.fit/s/AKfycbz2ngPXazyFO1WvRVBVaidZpUVql83HomMP4XPlKkqO7mnbKYYGZgu348O5_xq0XoKM/exec"; 
+
         // --- Core UI Components ---
         function Card({ children, className = "" }) {
             return (
@@ -505,12 +509,35 @@
                 const { error } = editingTaskId ? await supabase.from('tasks').update(taskData).eq('id', editingTaskId) : await supabase.from('tasks').insert([taskData]);
                 if (!error) { 
                     if (newTaskType === 'weekly_quiz' && formData.associateEmail) {
-                        const emailBody = `Hello ${formData.associateName},\n\nHere are the details for your Weekly Quiz:\n\nOverall Score: ${formData.overallScore}\n\nDate: ${formData.date}\n\nComments:\n${Object.entries(formData.quizComments || {}).map(([k,v]) => `- ${quizModules.find(m=>m.id===k)?.title}: ${v}`).join('\n')}\n\nBest regards,\n${session.user.email}`;
-                        const subject = `Weekly Quiz Results - ${formData.date}`;
-                        const mailtoLink = `mailto:${formData.associateEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(emailBody)}`;
-                        
-                        alert(`Success! Opening email client to send score to ${formData.associateEmail}.`);
-                        window.open(mailtoLink, '_blank');
+                        if (GOOGLE_SCRIPT_URL) {
+                            // Automatic flow
+                            const emailBody = `Hello ${formData.associateName},\n\nHere are the details for your Weekly Quiz:\n\nOverall Score: ${formData.overallScore}\n\nDate: ${formData.date}\n\nComments:\n${Object.entries(formData.quizComments || {}).map(([k,v]) => `- ${quizModules.find(m=>m.id===k)?.title}: ${v}`).join('\n')}\n\nBest regards,\n${session.user.email}`;
+                            
+                            try {
+                                // Using no-cors mode is standard for client-side calls to GAS Web Apps without preflight issues
+                                await fetch(GOOGLE_SCRIPT_URL, {
+                                    method: 'POST',
+                                    mode: 'no-cors', 
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        to: formData.associateEmail,
+                                        subject: `Weekly Quiz Results - ${formData.date}`,
+                                        body: emailBody
+                                    })
+                                });
+                                alert(`Quiz recorded! Automatic email trigger sent to ${formData.associateEmail}.`);
+                            } catch (err) {
+                                alert("Quiz recorded, but email automation failed. Check console.");
+                                console.error(err);
+                            }
+                        } else {
+                            const emailBody = `Hello ${formData.associateName},\n\nHere are the details for your Weekly Quiz:\n\nOverall Score: ${formData.overallScore}\n\nDate: ${formData.date}\n\nComments:\n${Object.entries(formData.quizComments || {}).map(([k,v]) => `- ${quizModules.find(m=>m.id===k)?.title}: ${v}`).join('\n')}\n\nBest regards,\n${session.user.email}`;
+                            const subject = `Weekly Quiz Results - ${formData.date}`;
+                            const mailtoLink = `mailto:${formData.associateEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(emailBody)}`;
+                            
+                            alert(`Success! Opening email client to send score to ${formData.associateEmail}.`);
+                            window.open(mailtoLink, '_blank');
+                        }
                     }
                     setIsFormOpen(false); setFormData({}); setEditingTaskId(null); fetchData(); 
                 }
