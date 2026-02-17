@@ -250,6 +250,9 @@
             // Admin task type filtering state
             const [adminSelectedTaskType, setAdminSelectedTaskType] = useState('floorwalker');
 
+            // Auto-Resolution Types
+            const autoResolvedTypes = ['weekly_quiz', 'mentor_audit', 'pending_subs', 'duplicate_iap', 'surprise_delight'];
+
             // Dashboard Collapsible State
             const [isPendingCollapsed, setIsPendingCollapsed] = useState(false);
 
@@ -316,6 +319,29 @@
                 });
                 return () => subscription.unsubscribe();
             }, []);
+
+            // Automatic Rule to Fix Previous Submissions (Legacy Data Cleanup)
+            useEffect(() => {
+                if (userProfile?.role === 'Admin' && tasks.length > 0) {
+                    const dirtyTasks = tasks.filter(t => autoResolvedTypes.includes(t.type) && t.status === 'Pending');
+                    
+                    if (dirtyTasks.length > 0) {
+                        console.log(`Auto-Fix: Found ${dirtyTasks.length} pending tasks that should be resolved.`);
+                        const fixTasks = async () => {
+                            // Process in batches or individually to ensure data integrity
+                            for (const task of dirtyTasks) {
+                                await supabase.from('tasks').update({ 
+                                    status: 'Resolved', 
+                                    details: { ...task.details, status: 'Resolved' } 
+                                }).eq('id', task.id);
+                            }
+                            // Re-fetch to update UI after fixes
+                            fetchData();
+                        };
+                        fixTasks();
+                    }
+                }
+            }, [tasks, userProfile]);
 
             const fetchUserProfile = async (email) => {
                 const { data, error } = await supabase.from('users_registry').select('*').eq('email', email).maybeSingle();
@@ -496,7 +522,7 @@
 
                 // Status enforcement logic
                 let finalStatus = formData.status || 'Pending';
-                if (['weekly_quiz', 'mentor_audit', 'pending_subs'].includes(newTaskType)) finalStatus = 'Resolved';
+                if (autoResolvedTypes.includes(newTaskType)) finalStatus = 'Resolved';
                 if (newTaskType === 'disputes' && (formData.resolution === 'Won' || formData.resolution === 'Lost')) finalStatus = 'Resolved';
 
                 // Email Status Initialization
@@ -521,7 +547,7 @@
 
                     if (newTaskType === 'weekly_quiz' && formData.associateEmail && savedTask) {
                         if (GOOGLE_SCRIPT_URL) {
-                            // Automatic flow
+                            // Automatic flow with Detailed Breakdown
                             const breakdown = quizModules.map(m => {
                                 const score = formData.quizScores?.[m.id];
                                 const comment = formData.quizComments?.[m.id];
@@ -1047,7 +1073,7 @@
                                             return (<div key={field} className="font-bold font-bold"><label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 block font-bold font-bold font-bold">{field.replace(/([A-Z])/g, ' $1')}</label>
                                                 {isDropdown ? (
                                                     <div className="font-bold">
-                                                        {(field === 'status' && ['weekly_quiz', 'mentor_audit', 'pending_subs'].includes(newTaskType)) ? (
+                                                        {(field === 'status' && autoResolvedTypes.includes(newTaskType)) ? (
                                                             <div className="p-3 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-xl text-emerald-600 text-sm font-bold text-emerald-600 uppercase text-center italic tracking-tighter font-bold">Enforced Resolved</div>
                                                         ) : (
                                                             <select className="w-full p-3 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500 dark:text-white font-bold font-bold" value={formData[field] || ''} onChange={e => { 
