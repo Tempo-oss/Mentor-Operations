@@ -499,16 +499,27 @@
                 if (['weekly_quiz', 'mentor_audit', 'pending_subs'].includes(newTaskType)) finalStatus = 'Resolved';
                 if (newTaskType === 'disputes' && (formData.resolution === 'Won' || formData.resolution === 'Lost')) finalStatus = 'Resolved';
 
+                // Email Status Initialization
+                let emailDeliveryStatus = 'N/A';
+                if (newTaskType === 'weekly_quiz' && formData.associateEmail) {
+                    emailDeliveryStatus = 'Queued';
+                }
+
                 const taskData = { 
                     type: newTaskType, title: categories[newTaskType].label + ' Log', 
                     agent: agent, status: finalStatus, 
-                    details: { ...formData, status: finalStatus }, 
+                    details: { ...formData, status: finalStatus, email_delivery_status: emailDeliveryStatus }, 
                     date: creationDate 
                 };
 
-                const { error } = editingTaskId ? await supabase.from('tasks').update(taskData).eq('id', editingTaskId) : await supabase.from('tasks').insert([taskData]);
+                const { data, error } = editingTaskId 
+                    ? await supabase.from('tasks').update(taskData).eq('id', editingTaskId).select() 
+                    : await supabase.from('tasks').insert([taskData]).select();
+
                 if (!error) { 
-                    if (newTaskType === 'weekly_quiz' && formData.associateEmail) {
+                    const savedTask = data ? data[0] : null;
+
+                    if (newTaskType === 'weekly_quiz' && formData.associateEmail && savedTask) {
                         if (GOOGLE_SCRIPT_URL) {
                             // Automatic flow
                             const emailBody = `Hello ${formData.associateName},\n\nHere are the details for your Weekly Quiz:\n\nOverall Score: ${formData.overallScore}\n\nDate: ${formData.date}\n\nComments:\n${Object.entries(formData.quizComments || {}).map(([k,v]) => `- ${quizModules.find(m=>m.id===k)?.title}: ${v}`).join('\n')}\n\nBest regards,\n${session.user.email}`;
@@ -525,12 +536,28 @@
                                         body: emailBody
                                     })
                                 });
+                                
+                                // Update Supabase Record with 'Sent'
+                                await supabase.from('tasks').update({ 
+                                    details: { ...savedTask.details, email_delivery_status: 'Sent' } 
+                                }).eq('id', savedTask.id);
+
                                 alert(`Quiz recorded! Automatic email trigger sent to ${formData.associateEmail}.`);
                             } catch (err) {
+                                // Update Supabase Record with 'Failed'
+                                await supabase.from('tasks').update({ 
+                                    details: { ...savedTask.details, email_delivery_status: 'Failed' } 
+                                }).eq('id', savedTask.id);
+
                                 alert("Quiz recorded, but email automation failed. Check console.");
                                 console.error(err);
                             }
                         } else {
+                            // Manual Flow fallback
+                            await supabase.from('tasks').update({ 
+                                details: { ...savedTask.details, email_delivery_status: 'Manual Draft' } 
+                            }).eq('id', savedTask.id);
+
                             const emailBody = `Hello ${formData.associateName},\n\nHere are the details for your Weekly Quiz:\n\nOverall Score: ${formData.overallScore}\n\nDate: ${formData.date}\n\nComments:\n${Object.entries(formData.quizComments || {}).map(([k,v]) => `- ${quizModules.find(m=>m.id===k)?.title}: ${v}`).join('\n')}\n\nBest regards,\n${session.user.email}`;
                             const subject = `Weekly Quiz Results - ${formData.date}`;
                             const mailtoLink = `mailto:${formData.associateEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(emailBody)}`;
