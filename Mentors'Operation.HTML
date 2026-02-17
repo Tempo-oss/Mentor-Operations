@@ -124,13 +124,43 @@
         const DatabaseIcon = (props) => <Icon {...props} path={<><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/></>} />;
         const Moon = (props) => <Icon {...props} path={<><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></>} />;
         const Sun = (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></>} />;
-        const SettingsIcon = (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1-2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></>} />;
+        const SettingsIcon = (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1-2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></>} />;
         const ClipboardList = (props) => <Icon {...props} path={<React.Fragment><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></React.Fragment>} />;
         const ChevronDown = (props) => <Icon {...props} path={<polyline points="6 9 12 15 18 9"/>} />;
         const ChevronUp = (props) => <Icon {...props} path={<polyline points="18 15 12 9 6 15"/>} />;
 
-        // --- Data Defaults (The "Old" Dropdowns) ---
-        const initialAssociateList = [ "Ariath Piol", "Job James", "Lina Hesham", "Mohab Magdy", "Marwa Ahmed", "Ramadan Philip", "Aida Clement", "Hassan Khallaf", "Nada Ashraf", "Ruben Joseph", "Esraa Tarek Eroq", "Ahmed Abdelghany", "Nour Ayman", "Ashraf Essam", "Hala Ayman", "Rania Mohamed", "Salma Ahmed", "Marwan Hassan", "Osama M. Adam", "Marwan Zakaria", "Shahd Emad", "Ahmed Nasser abdelhakim" ];
+        // --- Associate Email Map ---
+        const associateEmailMap = {
+            "Ariath Piol": "ariath.piol@tempo.fit",
+            "Job James": "job.james@tempo.fit",
+            "Lina Hesham": "linahesham@tempo.fit",
+            "Mohab Magdy": "mohab.magdy@tempo.fit",
+            "Marwa Ahmed": "marwa.ahmed@tempo.fit",
+            "Ramadan Philip": "ramadan.philip@tempo.fit",
+            "Aida Clement": "aida.clement@tempo.fit",
+            "Hassan Khallaf": "hassan@tempo.fit",
+            "Nada Ashraf": "nada.ashraf@tempo.fit",
+            "Ruben Joseph": "ruben.joseph@tempo.fit",
+            "Esraa Tarek Eroq": "esraa.tarek@tempo.fit",
+            "Ahmed Abdelghany": "ahmed.abdelghany@tempo.fit",
+            "Nour Ayman": "nour.ayman@tempo.fit",
+            "Ashraf Essam": "ashraf.essam@tempo.fit",
+            "Hala Ayman": "hala.ayman@tempo.fit",
+            "Rania Mohamed": "rania.mohamed@tempo.fit",
+            "Salma Ahmed": "salma.ahmed@tempo.fit",
+            "Marwan Hassan": "marwan.hassan@tempo.fit",
+            "Osama M. Adam": "osama.adam@tempo.fit",
+            "Marwan Zakaria": "marwan.zakaria@tempo.fit",
+            "Shahd Emad": "shahd.emad@tempo.fit",
+            "Ahmed Nasser abdelhakim": "ahmed.abdelhakim@tempo.fit",
+            "Mohamed Kheer": "mohamed.kheer@tempo.fit",
+            "Rima Khaled Hassan Zaki": "rima.khaled@tempo.fit",
+            "Santos Nyikang": "santos.nyikang@tempo.fit",
+            "Youkabed Farid": "youkabed.farid@tempo.fit"
+        };
+
+        // --- Data Defaults ---
+        const initialAssociateList = Object.keys(associateEmailMap);
         const initialMentorList = [ "Noha Radwan", "Rashad Mohamed", "Emad Mohamed", "Mohamed Mounir" ];
         const defaultTabs = ['dashboard', 'logs', 'analytics', 'reports'];
         
@@ -472,7 +502,17 @@
                 };
 
                 const { error } = editingTaskId ? await supabase.from('tasks').update(taskData).eq('id', editingTaskId) : await supabase.from('tasks').insert([taskData]);
-                if (!error) { setIsFormOpen(false); setFormData({}); setEditingTaskId(null); fetchData(); }
+                if (!error) { 
+                    if (newTaskType === 'weekly_quiz' && formData.associateEmail) {
+                        const emailBody = `Hello ${formData.associateName},\n\nHere are the details for your Weekly Quiz:\n\nOverall Score: ${formData.overallScore}\n\nDate: ${formData.date}\n\nComments:\n${Object.entries(formData.quizComments || {}).map(([k,v]) => `- ${quizModules.find(m=>m.id===k)?.title}: ${v}`).join('\n')}\n\nBest regards,\n${session.user.email}`;
+                        const subject = `Weekly Quiz Results - ${formData.date}`;
+                        const mailtoLink = `mailto:${formData.associateEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(emailBody)}`;
+                        
+                        alert(`Success! Opening email client to send score to ${formData.associateEmail}.`);
+                        window.open(mailtoLink, '_blank');
+                    }
+                    setIsFormOpen(false); setFormData({}); setEditingTaskId(null); fetchData(); 
+                }
                 else alert(error.message);
             };
 
@@ -926,18 +966,23 @@
                                                             <select className="w-full p-3 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500 dark:text-white font-bold font-bold" value={formData[field] || ''} onChange={e => { 
                                                                         if(field === 'hipProduct') setFormData(p=>({...p, hipProduct:e.target.value, hipCategory:'', hipRequestType:''})); 
                                                                         else if(field === 'hipCategory') setFormData(p=>({...p, hipCategory:e.target.value, hipRequestType:''})); 
+                                                                        else if(field === 'associateName' && newTaskType === 'weekly_quiz') {
+                                                                            const val = e.target.value;
+                                                                            const email = associateEmailMap[val] || '';
+                                                                            setFormData(p => ({ ...p, [field]: val, associateEmail: email }));
+                                                                        }
                                                                         else handleInputChange(field, e.target.value);
-                                                                    }}><option value="" font-bold>Select...</option>
-                                                                    {field === 'associateName' && globalAssociates.map((a, idx) => <option key={`${a}-${idx}`} value={a} font-bold>{a}</option>)}
-                                                                    {field === 'associateEmail' && globalAssociates.map((a, idx) => <option key={`${a}-${idx}`} value={a} font-bold>{a}</option>)}
-                                                                    {field === 'mentorName' && globalMentors.map((a, idx) => <option key={`${a}-${idx}`} value={a} font-bold>{a}</option>)}
-                                                                    {field === 'status' && ['Pending', 'Resolved'].map((o, idx) => <option key={`${o}-${idx}`} value={o} font-bold>{o}</option>)}
-                                                                    {field === 'resolution' && (newTaskType === 'pending_subs' ? ['Activated', 'Cancelled'] : newTaskType === 'disputes' ? ['Pending', 'Lost', 'Won'] : ['Pending', 'Resolved']).map((o, idx) => <option key={`${o}-${idx}`} value={o} font-bold>{o}</option>)}
-                                                                    {field === 'hipProduct' && Object.keys(globalHipHierarchy).map((k, idx) => <option key={`${k}-${idx}`} value={k} font-bold>{k}</option>)}
-                                                                    {field === 'hipCategory' && formData.hipProduct && Object.keys(globalHipHierarchy[formData.hipProduct] || {}).map((c, idx) => <option key={`${c}-${idx}`} value={c} font-bold>{c}</option>)}
-                                                                    {field === 'hipRequestType' && formData.hipCategory && globalHipHierarchy[formData.hipProduct][formData.hipCategory].map((o, idx) => <option key={`${o}-${idx}`} value={o} font-bold>{o}</option>)}
-                                                                    {field !== 'resolution' && !field.startsWith('hip') && !['associateName', 'associateEmail', 'mentorName', 'pendingReasonDetail', 'status'].includes(field) && (customOptions[field] || []).map((o, idx) => <option key={`${o}-${idx}`} value={o} font-bold>{o}</option>)}
-                                                                    {field === 'pendingReasonDetail' && customOptions.pendingReasonDetail.map((o, idx) => <option key={`${o}-${idx}`} value={o} font-bold>{o}</option>)}
+                                                                    }}><option value="" className="font-bold">Select...</option>
+                                                                    {field === 'associateName' && globalAssociates.map((a, idx) => <option key={`${a}-${idx}`} value={a} className="font-bold">{a}</option>)}
+                                                                    {field === 'associateEmail' && globalAssociates.map((a, idx) => <option key={`${a}-${idx}`} value={a} className="font-bold">{a}</option>)}
+                                                                    {field === 'mentorName' && globalMentors.map((a, idx) => <option key={`${a}-${idx}`} value={a} className="font-bold">{a}</option>)}
+                                                                    {field === 'status' && ['Pending', 'Resolved'].map((o, idx) => <option key={`${o}-${idx}`} value={o} className="font-bold">{o}</option>)}
+                                                                    {field === 'resolution' && (newTaskType === 'pending_subs' ? ['Activated', 'Cancelled'] : newTaskType === 'disputes' ? ['Pending', 'Lost', 'Won'] : ['Pending', 'Resolved']).map((o, idx) => <option key={`${o}-${idx}`} value={o} className="font-bold">{o}</option>)}
+                                                                    {field === 'hipProduct' && Object.keys(globalHipHierarchy).map((k, idx) => <option key={`${k}-${idx}`} value={k} className="font-bold">{k}</option>)}
+                                                                    {field === 'hipCategory' && formData.hipProduct && Object.keys(globalHipHierarchy[formData.hipProduct] || {}).map((c, idx) => <option key={`${c}-${idx}`} value={c} className="font-bold">{c}</option>)}
+                                                                    {field === 'hipRequestType' && formData.hipCategory && globalHipHierarchy[formData.hipProduct][formData.hipCategory].map((o, idx) => <option key={`${o}-${idx}`} value={o} className="font-bold">{o}</option>)}
+                                                                    {field !== 'resolution' && !field.startsWith('hip') && !['associateName', 'associateEmail', 'mentorName', 'pendingReasonDetail', 'status'].includes(field) && (customOptions[field] || []).map((o, idx) => <option key={`${o}-${idx}`} value={o} className="font-bold">{o}</option>)}
+                                                                    {field === 'pendingReasonDetail' && customOptions.pendingReasonDetail.map((o, idx) => <option key={`${o}-${idx}`} value={o} className="font-bold">{o}</option>)}
                                                                     <option value="ADD_NEW_CUSTOM" className="text-blue-600 italic font-black font-bold uppercase text-[10px] font-bold">+ Add New Item...</option>
                                                             </select>
                                                         )}
