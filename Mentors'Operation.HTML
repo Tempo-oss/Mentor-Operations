@@ -524,34 +524,45 @@
                             // Automatic flow
                             const emailBody = `Hello ${formData.associateName},\n\nHere are the details for your Weekly Quiz:\n\nOverall Score: ${formData.overallScore}\n\nDate: ${formData.date}\n\nComments:\n${Object.entries(formData.quizComments || {}).map(([k,v]) => `- ${quizModules.find(m=>m.id===k)?.title}: ${v}`).join('\n')}\n\nBest regards,\n${session.user.email}`;
                             
-                            try {
-                                // Using no-cors mode is standard for client-side calls to GAS Web Apps without preflight issues
-                                await fetch(GOOGLE_SCRIPT_URL, {
-                                    method: 'POST',
-                                    mode: 'no-cors', 
-                                    credentials: 'include',
-                                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                                    body: JSON.stringify({
-                                        to: formData.associateEmail,
-                                        subject: `Weekly Quiz Results - ${formData.date}`,
-                                        body: emailBody
-                                    })
-                                });
-                                
-                                // Update Supabase Record with 'Sent'
+                            const payload = JSON.stringify({
+                                to: formData.associateEmail,
+                                subject: `Weekly Quiz Results - ${formData.date}`,
+                                body: emailBody
+                            });
+
+                            // Use sendBeacon for more robust delivery through auth redirects
+                            const success = navigator.sendBeacon(GOOGLE_SCRIPT_URL, payload);
+
+                            if (success) {
+                                // Update Supabase Record with 'Sent' (Optimistic update)
                                 await supabase.from('tasks').update({ 
                                     details: { ...savedTask.details, email_delivery_status: 'Sent' } 
                                 }).eq('id', savedTask.id);
 
-                                alert(`Quiz recorded! Automatic email trigger sent to ${formData.associateEmail}.`);
-                            } catch (err) {
-                                // Update Supabase Record with 'Failed'
-                                await supabase.from('tasks').update({ 
-                                    details: { ...savedTask.details, email_delivery_status: 'Failed' } 
-                                }).eq('id', savedTask.id);
-
-                                alert("Quiz recorded, but email automation failed. Check console.");
-                                console.error(err);
+                                alert(`Quiz recorded! Email request queued for ${formData.associateEmail}.`);
+                            } else {
+                                // Fallback to fetch if beacon fails
+                                try {
+                                    await fetch(GOOGLE_SCRIPT_URL, {
+                                        method: 'POST',
+                                        mode: 'no-cors', 
+                                        credentials: 'include',
+                                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                                        body: payload
+                                    });
+                                    
+                                    await supabase.from('tasks').update({ 
+                                        details: { ...savedTask.details, email_delivery_status: 'Sent' } 
+                                    }).eq('id', savedTask.id);
+                                    
+                                    alert(`Quiz recorded! Email triggered via backup method.`);
+                                } catch (err) {
+                                    await supabase.from('tasks').update({ 
+                                        details: { ...savedTask.details, email_delivery_status: 'Failed' } 
+                                    }).eq('id', savedTask.id);
+                                    console.error("Email failed:", err);
+                                    alert("Quiz saved, but email trigger failed.");
+                                }
                             }
                         } else {
                             // Manual Flow fallback
