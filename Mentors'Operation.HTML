@@ -240,7 +240,7 @@
             const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('theme') === 'dark');
             const [searchTerm, setSearchTerm] = useState('');
             const [dashboardSearch, setDashboardSearch] = useState('');
-            const [dashboardCategory, setDashboardCategory] = useState('all');
+            const [dashboardCategory, setDashboardCategory] = useState(null);
             const [editingTaskId, setEditingTaskId] = useState(null);
             const [newTaskType, setNewTaskType] = useState('disputes');
             const [formData, setFormData] = useState({});
@@ -342,6 +342,20 @@
                     }
                 }
             }, [tasks, userProfile]);
+
+            // Pending Counts Memo
+            const pendingCounts = useMemo(() => {
+                const counts = {};
+                Object.keys(categories).forEach(k => counts[k] = 0);
+                tasks.forEach(t => {
+                    if (t.status === 'Pending' && counts[t.type] !== undefined) {
+                        counts[t.type]++;
+                    }
+                });
+                return counts;
+            }, [tasks]);
+
+            const pendingCategories = Object.keys(categories).filter(k => pendingCounts[k] > 0);
 
             const fetchUserProfile = async (email) => {
                 const { data, error } = await supabase.from('users_registry').select('*').eq('email', email).maybeSingle();
@@ -725,7 +739,7 @@
 
             const searchedPendingTasks = tasks.filter(t => {
                 if (t.status !== 'Pending') return false;
-                if (dashboardCategory !== 'all' && t.type !== dashboardCategory) return false;
+                if (dashboardCategory && t.type !== dashboardCategory) return false;
                 const searchStr = (JSON.stringify(t) + " " + JSON.stringify(t.details)).toLowerCase();
                 return searchStr.includes(dashboardSearch.toLowerCase());
             });
@@ -808,35 +822,86 @@
                                             </button>
                                             <h2 className="text-xl font-black uppercase tracking-tight dark:text-slate-200">Pending Actions</h2>
                                         </div>
-                                        <div className="flex gap-2 w-full sm:w-auto">
-                                            <select className="px-3 py-2 text-xs bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-lg outline-none dark:text-slate-300 font-bold" value={dashboardCategory} onChange={e => setDashboardCategory(e.target.value)}>
-                                                <option value="all">All Types</option>
-                                                {Object.entries(categories).map(([k,v]) => <option key={k} value={k}>{v.label}</option>)}
-                                            </select>
-                                            <div className="relative flex-1 sm:w-64">
-                                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-                                                <input type="text" placeholder="Deep Search entries..." className="w-full pl-9 pr-4 py-2 text-xs bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-lg outline-none focus:ring-1 focus:ring-blue-500 dark:text-slate-200" value={dashboardSearch} onChange={e => setDashboardSearch(e.target.value)} />
-                                            </div>
-                                        </div>
                                     </div>
                                     
                                     {!isPendingCollapsed && (
-                                        <div className="grid grid-cols-1 gap-3 font-bold animate-fade-in">
-                                            {searchedPendingTasks.length > 0 ? searchedPendingTasks.map(t => (
-                                                <button key={t.id} onClick={() => handleEditTask(t)} className="flex items-center justify-between p-4 bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-xl hover:border-blue-500 transition-all text-left">
-                                                    <div className="flex items-center gap-4">
-                                                        <div className={`h-8 w-8 rounded-lg flex items-center justify-center bg-${categories[t.type].color}-100 dark:bg-${categories[t.type].color}-900/30`}>{React.createElement(categories[t.type].icon, { className: `h-4 w-4 text-${categories[t.type].color}-600` })}</div>
-                                                        <div>
-                                                            <p className="text-xs font-black uppercase dark:text-slate-200">{categories[t.type].label}</p>
-                                                            <p className="text-[10px] text-slate-400">Original Owner: {t.agent} • {new Date(t.date).toLocaleDateString()}</p>
+                                        <div className="animate-fade-in space-y-6">
+                                            {/* Category Grid */}
+                                            {pendingCategories.length > 0 ? (
+                                                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                                                    {pendingCategories.map(catKey => {
+                                                        const cfg = categories[catKey];
+                                                        const isSelected = dashboardCategory === catKey;
+                                                        return (
+                                                            <button 
+                                                                key={catKey}
+                                                                onClick={() => setDashboardCategory(isSelected ? null : catKey)}
+                                                                className={`relative p-4 rounded-xl border transition-all flex flex-col items-center gap-2 
+                                                                    ${isSelected 
+                                                                        ? `bg-${cfg.color}-50 border-${cfg.color}-500 ring-2 ring-${cfg.color}-200 dark:bg-${cfg.color}-900/40 dark:border-${cfg.color}-500` 
+                                                                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-blue-300 dark:hover:border-blue-700'
+                                                                    }`}
+                                                            >
+                                                                <div className={`h-10 w-10 rounded-full flex items-center justify-center bg-${cfg.color}-100 dark:bg-${cfg.color}-900/50`}>
+                                                                    {React.createElement(cfg.icon, { className: `h-5 w-5 text-${cfg.color}-600` })}
+                                                                </div>
+                                                                <div className="text-center">
+                                                                    <p className="text-[10px] font-black uppercase text-slate-500">{cfg.label}</p>
+                                                                    <p className={`text-xl font-bold ${isSelected ? `text-${cfg.color}-600` : 'dark:text-white'}`}>
+                                                                        {pendingCounts[catKey]}
+                                                                    </p>
+                                                                </div>
+                                                                {isSelected && (
+                                                                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white dark:bg-slate-900 border-b border-r border-slate-200 dark:border-slate-800 rotate-45 transform"></div>
+                                                                )}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            ) : (
+                                                 <div className="p-8 text-center border-2 border-dashed dark:border-slate-800 rounded-2xl text-slate-400 uppercase text-[10px] font-black tracking-widest font-bold">All caught up! No pending actions.</div>
+                                            )}
+
+                                            {/* Task List for Selected Category */}
+                                            {dashboardCategory && (
+                                                <div className="animate-fade-in bg-slate-50 dark:bg-slate-900/50 p-6 rounded-2xl border dark:border-slate-800">
+                                                    <div className="flex justify-between items-center mb-4">
+                                                        <h3 className="text-sm font-bold uppercase text-slate-500 flex items-center gap-2">
+                                                             {React.createElement(categories[dashboardCategory].icon, { className: "h-4 w-4" })}
+                                                             {categories[dashboardCategory].label} Tasks
+                                                        </h3>
+                                                        <div className="relative w-64">
+                                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                                                            <input 
+                                                                type="text" 
+                                                                placeholder="Search this list..." 
+                                                                className="w-full pl-9 pr-4 py-2 text-xs bg-white dark:bg-slate-900 border dark:border-slate-700 rounded-lg outline-none focus:ring-1 focus:ring-blue-500 dark:text-slate-200" 
+                                                                value={dashboardSearch} 
+                                                                onChange={e => setDashboardSearch(e.target.value)} 
+                                                            />
                                                         </div>
                                                     </div>
-                                                    <div className="flex items-center gap-4">
-                                                        {t.status === 'Pending' && <Badge color="amber">{t.details.pendingReasonDetail || 'Pending'}</Badge>}
-                                                        <div className="text-slate-300 dark:text-slate-700 font-bold uppercase text-[10px]">EDIT →</div>
+
+                                                    <div className="grid grid-cols-1 gap-3">
+                                                         {searchedPendingTasks.map(t => (
+                                                            <button key={t.id} onClick={() => handleEditTask(t)} className="flex items-center justify-between p-4 bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-xl hover:border-blue-500 transition-all text-left">
+                                                                <div className="flex items-center gap-4">
+                                                                    <div className={`h-8 w-8 rounded-lg flex items-center justify-center bg-${categories[t.type].color}-100 dark:bg-${categories[t.type].color}-900/30`}>{React.createElement(categories[t.type].icon, { className: `h-4 w-4 text-${categories[t.type].color}-600` })}</div>
+                                                                    <div>
+                                                                        <p className="text-xs font-black uppercase dark:text-slate-200">{categories[t.type].label}</p>
+                                                                        <p className="text-[10px] text-slate-400">Original Owner: {t.agent} • {new Date(t.date).toLocaleDateString()}</p>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="flex items-center gap-4">
+                                                                    {t.status === 'Pending' && <Badge color="amber">{t.details.pendingReasonDetail || 'Pending'}</Badge>}
+                                                                    <div className="text-slate-300 dark:text-slate-700 font-bold uppercase text-[10px]">EDIT →</div>
+                                                                </div>
+                                                            </button>
+                                                         ))}
+                                                         {searchedPendingTasks.length === 0 && <p className="text-center text-xs text-slate-400 py-4">No matching tasks found.</p>}
                                                     </div>
-                                                </button>
-                                            )) : <div className="p-8 text-center border-2 border-dashed dark:border-slate-800 rounded-2xl text-slate-400 uppercase text-[10px] font-black tracking-widest font-bold">No matching pending tasks</div>}
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                 </div>
