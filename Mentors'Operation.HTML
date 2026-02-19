@@ -534,8 +534,9 @@
 
                 let agent = session.user.email.split('@')[0];
                 let creationDate = new Date().toISOString();
+                const isNew = !warningData.id;
                 
-                if (warningData.id) {
+                if (!isNew) {
                     const originalTask = tasks.find(t => t.id === warningData.id);
                     if (originalTask) {
                         agent = originalTask.agent;
@@ -543,12 +544,19 @@
                     }
                 }
 
+                // Calculate expiration date (3 months from notice date)
+                const noticeDate = new Date(warningData.date);
+                noticeDate.setMonth(noticeDate.getMonth() + 3);
+                const expirationDate = noticeDate.toISOString().split('T')[0];
+                
+                const finalWarningData = { ...warningData, expirationDate };
+
                 const taskData = { 
                     type: 'warning', 
                     title: 'Warning Record', 
                     agent: agent, 
                     status: 'Issued', 
-                    details: warningData, 
+                    details: finalWarningData, 
                     date: creationDate 
                 };
 
@@ -557,6 +565,35 @@
                     : await supabase.from('tasks').insert([taskData]).select();
 
                 if (!error) { 
+                    const savedTask = data ? data[0] : null;
+
+                    // Send email notification for newly created warnings
+                    if (isNew && warningData.mentorEmail && savedTask && GOOGLE_SCRIPT_URL) {
+                        const emailBody = `Hello ${warningData.mentorName},\n\nThis is a formal notification regarding a ${warningData.warningType} Warning.\n\nReason: ${warningData.warningReason}\nDate of Notice: ${warningData.date}\nExpiration Date: ${expirationDate}\n\nDetails:\n${warningData.notes}\n\nPlease review these details. You can also view this record securely in the MentorOps System under your Warnings tab.\n\nBest regards,\nTempo Management`;
+                        
+                        // We construct the "to" field with the mentor and the requested CCs to ensure delivery 
+                        // even if generic email scripts don't naturally support 'cc' properties.
+                        const payload = JSON.stringify({
+                            to: `${warningData.mentorEmail}, khaledsabban@tempo.fit, salmaramadan@tempo.fit`,
+                            subject: `Disciplinary Notice: ${warningData.warningType} Warning - ${warningData.mentorName}`,
+                            body: emailBody
+                        });
+
+                        const success = navigator.sendBeacon(GOOGLE_SCRIPT_URL, payload);
+
+                        if (!success) {
+                            try {
+                                await fetch(GOOGLE_SCRIPT_URL, {
+                                    method: 'POST', mode: 'no-cors', credentials: 'include',
+                                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                                    body: payload
+                                });
+                            } catch (err) {
+                                console.error("Email failed:", err);
+                            }
+                        }
+                    }
+
                     setIsWarningModalOpen(false); 
                     setWarningData({}); 
                     fetchData(); 
@@ -1055,7 +1092,7 @@
                                 
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                     {tasks.filter(t => t.type === 'pip' && (userProfile.role === 'Admin' || t.details?.mentorEmail === userProfile.email)).map(p => (
-                                        <Card key={p.id} onClick={() => { if(userProfile.role === 'Admin') { setPipData({ ...p.details, id: p.id, status: p.status }); setIsPipModalOpen(true); } }} className="p-6 cursor-pointer hover:border-purple-500 transition-all border-l-4 border-l-purple-500 relative overflow-hidden group">
+                                        <Card key={p.id} onClick={() => { setPipData({ ...p.details, id: p.id, status: p.status }); setIsPipModalOpen(true); }} className="p-6 cursor-pointer hover:border-purple-500 transition-all border-l-4 border-l-purple-500 relative overflow-hidden group">
                                             <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                                                 <Target className="h-20 w-20 text-purple-600" />
                                             </div>
@@ -1105,7 +1142,7 @@
                                 
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                     {tasks.filter(t => t.type === 'warning' && (userProfile.role === 'Admin' || t.details?.mentorEmail === userProfile.email)).map(w => (
-                                        <Card key={w.id} onClick={() => { if(userProfile.role === 'Admin') { setWarningData({ ...w.details, id: w.id }); setIsWarningModalOpen(true); } }} className={`p-6 cursor-pointer hover:shadow-lg transition-all border-l-4 ${w.details?.warningType === 'Final' ? 'border-l-rose-600' : w.details?.warningType === 'Written' ? 'border-l-amber-500' : 'border-l-blue-500'} relative overflow-hidden group`}>
+                                        <Card key={w.id} onClick={() => { setWarningData({ ...w.details, id: w.id }); setIsWarningModalOpen(true); }} className={`p-6 cursor-pointer hover:shadow-lg transition-all border-l-4 ${w.details?.warningType === 'Final' ? 'border-l-rose-600' : w.details?.warningType === 'Written' ? 'border-l-amber-500' : 'border-l-blue-500'} relative overflow-hidden group`}>
                                             <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
                                                 <AlertTriangle className={`h-20 w-20 ${w.details?.warningType === 'Final' ? 'text-rose-600' : w.details?.warningType === 'Written' ? 'text-amber-500' : 'text-blue-500'}`} />
                                             </div>
@@ -1122,9 +1159,15 @@
                                                     </div>
                                                     <Badge color={w.details?.warningType === 'Final' ? 'red' : w.details?.warningType === 'Written' ? 'amber' : 'blue'}>{w.details?.warningType}</Badge>
                                                 </div>
-                                                <div className="pt-4 border-t dark:border-slate-800/50 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-                                                    <Calendar className="h-4 w-4" /> 
-                                                    <span>{new Date(w.details?.date).toLocaleDateString()}</span>
+                                                <div className="pt-4 border-t dark:border-slate-800/50 flex flex-col gap-2 text-xs text-slate-500 dark:text-slate-400">
+                                                    <div className="flex items-center gap-2">
+                                                        <Calendar className="h-4 w-4" /> 
+                                                        <span>Issued: {new Date(w.details?.date).toLocaleDateString()}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <AlertCircle className="h-4 w-4" /> 
+                                                        <span>Expires: {w.details?.expirationDate ? new Date(w.details.expirationDate).toLocaleDateString() : 'N/A'}</span>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </Card>
@@ -1470,6 +1513,17 @@
                                                 ) : (
                                                     <div className="w-full p-3 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-xl text-sm font-bold text-slate-600 dark:text-slate-400">{warningData.warningReason}</div>
                                                 )}
+                                            </div>
+                                            
+                                            <div>
+                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Expiration Date (3 Months)</label>
+                                                <div className="w-full p-3 bg-slate-100 dark:bg-slate-900/50 border dark:border-slate-700 rounded-xl text-sm font-bold text-slate-600 dark:text-slate-400">
+                                                    {warningData.date ? (() => {
+                                                        const d = new Date(warningData.date);
+                                                        d.setMonth(d.getMonth() + 3);
+                                                        return d.toLocaleDateString();
+                                                    })() : '---'}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
