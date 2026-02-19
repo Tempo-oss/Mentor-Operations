@@ -121,6 +121,7 @@
         const Dice = (props) => <Icon {...props} path={<React.Fragment><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><circle cx="15.5" cy="15.5" r="1.5"/><circle cx="15.5" cy="8.5" r="1.5"/><circle cx="8.5" cy="15.5" r="1.5"/><circle cx="12" cy="12" r="1.5"/></React.Fragment>} />;
         const Plus = (props) => <Icon {...props} path={<React.Fragment><path d="M5 12h14"/><path d="M12 5v14"/></React.Fragment>} />;
         const BarChart3 = (props) => <Icon {...props} path={<React.Fragment><line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/></React.Fragment>} />;
+        const PieChart = (props) => <Icon {...props} path={<><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></>} />;
         const MessageCircle = (props) => <Icon {...props} path={<React.Fragment><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></React.Fragment>} />;
         const LogOut = (props) => <Icon {...props} path={<React.Fragment><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></React.Fragment>} />;
         const Shield = (props) => <Icon {...props} path={<React.Fragment><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></React.Fragment>} />;
@@ -242,7 +243,79 @@
             }
         };
 
-        // --- App Component ---
+        // --- Individual Pie Chart Sub-Component ---
+        function IndividualAnalyticsChart({ categoryKey, categoryLabel, fields, allTasks, isDarkMode }) {
+            const chartRef = useRef(null);
+            const chartInstance = useRef(null);
+            const [field, setField] = useState('status');
+            const [startDate, setStartDate] = useState('');
+            const [endDate, setEndDate] = useState('');
+
+            useEffect(() => {
+                if (chartRef.current) {
+                    if (chartInstance.current) chartInstance.current.destroy();
+                    let filteredData = allTasks.filter(t => t.type === categoryKey);
+                    if (startDate) filteredData = filteredData.filter(t => new Date(t.date) >= new Date(startDate));
+                    if (endDate) {
+                        const end = new Date(endDate); end.setHours(23,59,59);
+                        filteredData = filteredData.filter(t => new Date(t.date) <= end);
+                    }
+                    
+                    if (filteredData.length === 0) return; 
+                    
+                    const counts = {};
+                    filteredData.forEach(t => {
+                        let value = ['status', 'agent'].includes(field) ? t[field] : t.details?.[field] || 'N/A';
+                        counts[value] = (counts[value] || 0) + 1;
+                    });
+                    
+                    const ctx = chartRef.current.getContext('2d');
+                    const numKeys = Object.keys(counts).length;
+                    const bgColors = Object.keys(counts).map((_, i) => `hsl(${(i * 360) / Math.max(numKeys, 1)}, 70%, 55%)`);
+                    
+                    chartInstance.current = new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: Object.keys(counts),
+                            datasets: [{ data: Object.values(counts), backgroundColor: bgColors, borderWidth: 0 }]
+                        },
+                        options: {
+                            responsive: true, maintainAspectRatio: false,
+                            plugins: { legend: { position: 'right', labels: { color: isDarkMode ? '#cbd5e1' : '#475569', font: { family: 'Inter', weight: 'bold', size: 10 } } } }
+                        }
+                    });
+                }
+                return () => { if (chartInstance.current) chartInstance.current.destroy(); };
+            }, [categoryKey, field, startDate, endDate, allTasks, isDarkMode]);
+
+            const hasData = allTasks.filter(t => t.type === categoryKey).length > 0;
+
+            return (
+                <Card className="p-5 font-bold flex flex-col h-full bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-xl shadow-sm">
+                    <h3 className="text-xs font-black uppercase tracking-widest dark:text-white mb-4 text-slate-700">{categoryLabel}</h3>
+                    <div className="flex flex-col gap-2 mb-4">
+                        <select className="w-full p-2 bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-lg text-[10px] outline-none dark:text-slate-200 font-bold uppercase tracking-widest" value={field} onChange={e => setField(e.target.value)}>
+                            <option value="status">Status</option>
+                            <option value="agent">Agent</option>
+                            {fields.map(f => <option key={f} value={f}>{f.replace(/([A-Z])/g, ' $1').trim()}</option>)}
+                        </select>
+                        <div className="flex gap-2">
+                            <input type="date" className="flex-1 p-2 bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-lg text-[10px] outline-none dark:text-slate-200 font-bold" value={startDate} onChange={e => setStartDate(e.target.value)} title="Start Date" />
+                            <input type="date" className="flex-1 p-2 bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-lg text-[10px] outline-none dark:text-slate-200 font-bold" value={endDate} onChange={e => setEndDate(e.target.value)} title="End Date" />
+                        </div>
+                    </div>
+                    <div className="flex-1 min-h-[180px] relative flex items-center justify-center">
+                        {hasData ? (
+                            <canvas ref={chartRef}></canvas>
+                        ) : (
+                             <div className="text-slate-400 text-[10px] uppercase font-black tracking-widest text-center">No Data in Range</div>
+                        )}
+                    </div>
+                </Card>
+            );
+        }
+
+        // --- Main App Component ---
         function MentorOpsCenter() {
             const [userProfile, setUserProfile] = useState(null);
             const [session, setSession] = useState(null);
@@ -318,6 +391,8 @@
             // Analytics State
             const chartRef = useRef(null);
             const chartInstance = useRef(null);
+            const pieChartRef = useRef(null);
+            const pieChartInstance = useRef(null);
             const [analyticsCategory, setAnalyticsCategory] = useState('disputes');
             const [analyticsField, setAnalyticsField] = useState('status');
             const [analyticsDateRange, setAnalyticsDateRange] = useState({ start: '', end: '' });
@@ -785,6 +860,17 @@
                 if (!error) { 
                     const savedTask = data ? data[0] : null;
 
+                    // Mark HIP as Audited
+                    if (newTaskType === 'mentor_audit' && formData.hipLogReference) {
+                        const originalHip = tasks.find(t => t.id === formData.hipLogReference);
+                        if (originalHip && originalHip.status !== 'Audited') {
+                            await supabase.from('tasks').update({ 
+                                status: 'Audited', 
+                                details: { ...originalHip.details, status: 'Audited' } 
+                            }).eq('id', originalHip.id);
+                        }
+                    }
+
                     // Email logic for Weekly Quiz
                     if (newTaskType === 'weekly_quiz' && formData.associateEmail && savedTask && GOOGLE_SCRIPT_URL) {
                         const breakdown = quizModules.map(m => {
@@ -899,8 +985,35 @@
                             }
                         }
                     });
+
+                    // Comprehensive Pie Chart for all tasks
+                    if (pieChartRef.current) {
+                        if (pieChartInstance.current) pieChartInstance.current.destroy();
+                        const pieCtx = pieChartRef.current.getContext('2d');
+                        const pieCounts = {};
+                        tasks.forEach(t => {
+                            const lbl = categories[t.type]?.label || adminValidationCategories[t.type]?.label || t.type;
+                            pieCounts[lbl] = (pieCounts[lbl] || 0) + 1;
+                        });
+                        const bgColors = Object.keys(pieCounts).map((_, i) => `hsl(${(i * 360) / Math.max(Object.keys(pieCounts).length, 1)}, 70%, 55%)`);
+                        
+                        pieChartInstance.current = new Chart(pieCtx, {
+                            type: 'doughnut',
+                            data: {
+                                labels: Object.keys(pieCounts),
+                                datasets: [{ data: Object.values(pieCounts), backgroundColor: bgColors, borderWidth: 0 }]
+                            },
+                            options: {
+                                responsive: true, maintainAspectRatio: false,
+                                plugins: { legend: { position: 'right', labels: { color: isDarkMode ? '#cbd5e1' : '#475569', font: { family: 'Inter', weight: 'bold' } } } }
+                            }
+                        });
+                    }
                 }
-                return () => { if (chartInstance.current) chartInstance.current.destroy(); };
+                return () => { 
+                    if (chartInstance.current) chartInstance.current.destroy(); 
+                    if (pieChartInstance.current) pieChartInstance.current.destroy();
+                };
             }, [activeTab, analyticsCategory, analyticsField, analyticsDateRange, tasks, isDarkMode]);
 
             const saveGlobalConfig = async (newConfig) => {
@@ -951,7 +1064,13 @@
             const handleGenerateReport = () => {
                 let filtered = tasks;
                 if (reportFilters.category !== 'all') filtered = filtered.filter(t => t.type === reportFilters.category);
-                if (reportFilters.agent !== 'all') filtered = filtered.filter(t => t.agent === reportFilters.agent);
+                if (reportFilters.agent !== 'all') {
+                    filtered = filtered.filter(t => 
+                        t.agent === reportFilters.agent || 
+                        t.details?.mentorName === reportFilters.agent || 
+                        t.details?.associateName === reportFilters.agent
+                    );
+                }
                 if (reportFilters.startDate) filtered = filtered.filter(t => new Date(t.date) >= new Date(reportFilters.startDate));
                 if (reportFilters.endDate) { const end = new Date(reportFilters.endDate); end.setHours(23,59,59); filtered = filtered.filter(t => new Date(t.date) <= end); }
                 setGeneratedReport(filtered);
@@ -1110,7 +1229,7 @@
                                                     <button onClick={() => togglePendingGroup(type)} className="w-full flex items-center justify-between p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                                                         <div className="flex items-center gap-4">
                                                             <div className={`h-10 w-10 rounded-lg flex items-center justify-center bg-${categories[type]?.color || 'slate'}-100 dark:bg-${categories[type]?.color || 'slate'}-900/30`}>
-                                                                {categories[type]?.icon ? React.createElement(categories[type].icon, { className: `h-5 w-5 text-${categories[type].color}-600` }) : <AlertCircle className="h-5 w-5 text-slate-600" />}
+                                                                {categories[type]?.icon ? React.createElement(categories[type].icon, { className: `h-5 w-5 text-${categories[type].color}-600`, key: type }) : <AlertCircle className="h-5 w-5 text-slate-600" key={type} />}
                                                             </div>
                                                             <div className="text-left">
                                                                 <h3 className="text-sm font-black uppercase dark:text-slate-200">{categories[type]?.label || type}</h3>
@@ -1253,7 +1372,7 @@
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y dark:divide-slate-800">
-                                            {tasks.filter(t => t.type === 'mentor_audit' && (t.details?.mentorName?.toLowerCase().includes(searchTerm.toLowerCase()) || t.agent.toLowerCase().includes(searchTerm.toLowerCase()))).map(t => (
+                                            {tasks.filter(t => t.type === 'mentor_audit' && (JSON.stringify(t) + " " + JSON.stringify(t.details)).toLowerCase().includes(searchTerm.toLowerCase())).map(t => (
                                                 <tr key={t.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                                                     <td className="px-6 py-4 dark:text-slate-300">{new Date(t.date).toLocaleDateString()}</td>
                                                     <td className="px-6 py-4 font-bold dark:text-slate-200">{t.details?.mentorName}</td>
@@ -1273,10 +1392,10 @@
 
                         {activeTab === 'logs' && (
                             <div className="space-y-4 animate-fade-in font-bold">
-                                <div className="flex justify-between bg-white dark:bg-slate-900 p-4 rounded-xl border dark:border-slate-800 font-bold"><div className="relative flex-1 max-w-md font-bold"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" /><input type="text" placeholder="Search logs..." className="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 dark:text-white rounded-lg outline-none font-bold" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} /></div><button onClick={() => { setEditingTaskId(null); setFormData({}); setIsFormOpen(true); }} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-black uppercase tracking-widest font-bold">+ NEW ENTRY</button></div>
+                                <div className="flex justify-between bg-white dark:bg-slate-900 p-4 rounded-xl border dark:border-slate-800 font-bold"><div className="relative flex-1 max-w-md font-bold"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" /><input type="text" placeholder="Deep Search logs (Names, Tickets, Emails, Slack URLs, HIP details)..." className="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 dark:text-white rounded-lg outline-none focus:ring-1 focus:ring-blue-500 font-bold" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} /></div><button onClick={() => { setEditingTaskId(null); setFormData({}); setIsFormOpen(true); }} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-black uppercase tracking-widest font-bold">+ NEW ENTRY</button></div>
                                 <Card className="overflow-hidden">
                                     <table className="w-full text-left text-sm font-bold"><thead className="bg-slate-50 dark:bg-slate-800 border-b dark:border-slate-700 font-bold"><tr><th className="px-6 py-4 dark:text-slate-300 uppercase font-black text-[10px] font-bold">Category</th><th className="px-6 py-4 dark:text-slate-300 uppercase font-black text-[10px] font-bold">Original Agent</th><th className="px-6 py-4 dark:text-slate-300 uppercase font-black text-[10px] font-bold">Status</th><th className="px-6 py-4 text-right dark:text-slate-300 uppercase font-black text-[10px] font-bold">Actions</th></tr></thead>
-                                        <tbody className="divide-y dark:divide-slate-800 font-bold">{tasks.filter(t => t.type !== 'pip' && t.type !== 'warning' && t.type !== 'mentor_audit' && ((categories[t.type]?.label || '').toLowerCase().includes(searchTerm.toLowerCase()) || t.agent.toLowerCase().includes(searchTerm.toLowerCase()))).slice((currentPage-1)*itemsPerPage, currentPage*itemsPerPage).map(t => (<tr key={t.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 font-bold"><td className="px-6 py-4 font-bold dark:text-slate-200">{categories[t.type]?.label}</td><td className="px-6 py-4 dark:text-slate-400 font-bold">{t.agent}</td><td className="px-6 py-4 font-bold"><Badge color={t.status === 'Pending' ? 'amber' : (['Resolved', 'Won', 'Activated'].includes(t.status) ? 'green' : 'slate')}>{t.status}</Badge></td><td className="px-6 py-4 text-right font-bold"><button onClick={() => handleEditTask(t)} className="p-2 text-slate-400 hover:text-blue-600 transition-colors font-bold"><Edit className="h-4 w-4" /></button></td></tr>))}</tbody>
+                                        <tbody className="divide-y dark:divide-slate-800 font-bold">{tasks.filter(t => t.type !== 'pip' && t.type !== 'warning' && t.type !== 'mentor_audit' && ((JSON.stringify(t) + " " + JSON.stringify(t.details) + " " + (categories[t.type]?.label || '')).toLowerCase().includes(searchTerm.toLowerCase()))).slice((currentPage-1)*itemsPerPage, currentPage*itemsPerPage).map(t => (<tr key={t.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 font-bold"><td className="px-6 py-4 font-bold dark:text-slate-200">{categories[t.type]?.label}</td><td className="px-6 py-4 dark:text-slate-400 font-bold">{t.agent}</td><td className="px-6 py-4 font-bold"><Badge color={t.status === 'Pending' ? 'amber' : (['Resolved', 'Won', 'Activated', 'Audited'].includes(t.status) ? 'green' : 'slate')}>{t.status}</Badge></td><td className="px-6 py-4 text-right font-bold"><button onClick={() => handleEditTask(t)} className="p-2 text-slate-400 hover:text-blue-600 transition-colors font-bold"><Edit className="h-4 w-4" /></button></td></tr>))}</tbody>
                                     </table>
                                 </Card>
                             </div>
@@ -1284,8 +1403,9 @@
 
                         {activeTab === 'analytics' && (
                             <div className="space-y-6 animate-fade-in font-bold">
+                                {/* Main Bar Chart */}
                                 <Card className="p-6 font-bold">
-                                    <div className="flex items-center gap-3 mb-6 font-bold"><BarChart3 className="h-6 w-6 text-blue-600" /><h2 className="text-xl font-bold uppercase tracking-widest dark:text-white font-bold">Analytics</h2></div>
+                                    <div className="flex items-center gap-3 mb-6 font-bold"><BarChart3 className="h-6 w-6 text-blue-600" /><h2 className="text-xl font-bold uppercase tracking-widest dark:text-white font-bold">Filtered Analytics</h2></div>
                                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8 font-bold">
                                         <select className="p-2.5 bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-lg text-sm outline-none dark:text-slate-200 font-bold" value={analyticsCategory} onChange={e => setAnalyticsCategory(e.target.value)}>{Object.entries(categories).map(([k, c]) => <option key={k} value={k}>{c.label}</option>)}</select>
                                         <select className="p-2.5 bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-lg text-sm outline-none dark:text-slate-200 font-bold" value={analyticsField} onChange={e => setAnalyticsField(e.target.value)}><option value="status">Status</option><option value="agent">Agent</option>{categories[analyticsCategory]?.fields.filter(f => !f.includes('Module')).map(f => <option key={f} value={f}>{f.replace(/([A-Z])/g, ' $1')}</option>)}</select>
@@ -1294,6 +1414,30 @@
                                     </div>
                                     <div className="h-[400px] flex items-center justify-center p-4 bg-slate-50 dark:bg-slate-800 rounded-xl relative font-bold"><canvas ref={chartRef}></canvas></div>
                                 </Card>
+                                
+                                {/* Main Pie Chart */}
+                                <Card className="p-6 font-bold">
+                                    <div className="flex items-center gap-3 mb-6 font-bold"><PieChart className="h-6 w-6 text-purple-600" /><h2 className="text-xl font-bold uppercase tracking-widest dark:text-white font-bold">Total Operations Distribution</h2></div>
+                                    <div className="h-[300px] flex items-center justify-center p-4 bg-slate-50 dark:bg-slate-800 rounded-xl relative font-bold"><canvas ref={pieChartRef}></canvas></div>
+                                </Card>
+                                
+                                {/* Individual Task Pie Charts */}
+                                <div className="flex items-center gap-3 pt-6 font-bold">
+                                    <PieChart className="h-6 w-6 text-indigo-500" />
+                                    <h2 className="text-xl font-black uppercase tracking-widest dark:text-white">Individual Task Breakdown</h2>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                                    {Object.entries(adminValidationCategories).map(([k, c]) => (
+                                        <IndividualAnalyticsChart 
+                                            key={k} 
+                                            categoryKey={k} 
+                                            categoryLabel={c.label} 
+                                            fields={c.fields.filter(f => !f.includes('Module'))} 
+                                            allTasks={tasks} 
+                                            isDarkMode={isDarkMode} 
+                                        />
+                                    ))}
+                                </div>
                             </div>
                         )}
 
@@ -1302,12 +1446,12 @@
                                 <Card className="p-6 space-y-6 font-bold">
                                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 font-bold">
                                         <select className="w-full p-2.5 border dark:border-slate-700 dark:bg-slate-800 rounded-lg text-sm outline-none dark:text-slate-200 font-bold" value={reportFilters.category} onChange={e => setReportFilters(f => ({ ...f, category: e.target.value }))}><option value="all">All Types</option>{Object.entries(categories).map(([k, c]) => <option key={k} value={k}>{c.label}</option>)}</select>
-                                        <select className="w-full p-2.5 border dark:border-slate-700 dark:bg-slate-800 rounded-lg text-sm outline-none dark:text-slate-200 font-bold" value={reportFilters.agent} onChange={e => setReportFilters(f => ({ ...f, agent: e.target.value }))}><option value="all">All Mentors</option>{globalMentors.map(m => <option key={m} value={m}>{m}</option>)}</select>
+                                        <select className="w-full p-2.5 border dark:border-slate-700 dark:bg-slate-800 rounded-lg text-sm outline-none dark:text-slate-200 font-bold" value={reportFilters.agent} onChange={e => setReportFilters(f => ({ ...f, agent: e.target.value }))}><option value="all">All Staff</option>{Array.from(new Set([...globalMentors, ...globalAssociates])).sort().map(m => <option key={m} value={m}>{m}</option>)}</select>
                                         <input type="date" className="w-full p-2.5 border dark:border-slate-700 dark:bg-slate-800 rounded-lg text-sm outline-none dark:text-slate-200 font-bold" value={reportFilters.startDate} onChange={e => setReportFilters(f => ({ ...f, startDate: e.target.value }))} />
                                         <input type="date" className="w-full p-2.5 border dark:border-slate-700 dark:bg-slate-800 rounded-lg text-sm outline-none dark:text-slate-200 font-bold" value={reportFilters.endDate} onChange={e => setReportFilters(f => ({ ...f, endDate: e.target.value }))} />
                                     </div>
                                     <div className="flex flex-wrap gap-2 pt-2 border-t dark:border-slate-800 border-slate-100 font-bold uppercase text-[10px] font-bold">
-                                        {['agent', 'status', 'date', ...(reportFilters.category !== 'all' ? categories[reportFilters.category].fields : [])].filter(col => !col.includes('Module')).map(col => (
+                                        {Array.from(new Set(['agent', 'status', 'date', ...(reportFilters.category !== 'all' ? categories[reportFilters.category].fields : [])])).filter(col => !col.includes('Module')).map(col => (
                                             <button key={col} onClick={() => toggleReportColumn(col)} className={`px-3 py-1.5 rounded-full border ${selectedReportColumns.includes(col) ? 'bg-blue-600 border-blue-600 text-white font-bold' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 font-bold'}`}>{col.replace(/([A-Z])/g, ' $1')}</button>
                                         ))}
                                     </div>
@@ -1870,7 +2014,8 @@
                                                         </div>
                                                         {!isAuditReadOnly && (
                                                             <button type="button" onClick={() => { 
-                                                                let hL = tasks.filter(t => t.type === 'hip_request'); 
+                                                                const auditedHipIds = tasks.filter(t => t.type === 'mentor_audit').map(t => t.details?.hipLogReference).filter(Boolean);
+                                                                let hL = tasks.filter(t => t.type === 'hip_request' && t.status !== 'Audited' && !auditedHipIds.includes(t.id)); 
                                                                 if (formData.mentorName) {
                                                                     const expectedAgent = (mentorEmailMap[formData.mentorName] || '').split('@')[0];
                                                                     if (expectedAgent) hL = hL.filter(t => t.agent.toLowerCase() === expectedAgent.toLowerCase());
@@ -1881,7 +2026,7 @@
                                                                     endD.setHours(23, 59, 59);
                                                                     hL = hL.filter(t => new Date(t.date) <= endD);
                                                                 }
-                                                                if (!hL.length) return alert("No HIP logs found for the selected criteria."); 
+                                                                if (!hL.length) return alert("No eligible unaudited HIP logs found for the selected criteria."); 
                                                                 const r = hL[Math.floor(Math.random() * hL.length)]; 
                                                                 const foundMentorName = Object.keys(mentorEmailMap).find(k => mentorEmailMap[k].split('@')[0].toLowerCase() === r.agent.toLowerCase()) || r.agent;
                                                                 setFormData(p => ({ 
