@@ -204,7 +204,7 @@
             weekly_quiz: { label: 'Weekly Quiz', icon: ClipboardList, color: 'cyan', fields: ['associateName', 'associateEmail', 'date', 'correctionModule'] },
             duplicate_iap: { label: 'Duplicate IAP', icon: FileText, color: 'indigo', fields: ['customerEmail', 'emailSent', 'subscriptionStatus'] },
             surprise_delight: { label: 'Surprise & Delight', icon: Gift, color: 'purple', fields: ['associateName', 'team', 'customerName', 'customerEmail', 'productType', 'ticketUrl', 'surpriseAndDelightReason', 'surpriseAndDelightType', 'amount', 'date', 'notes'] },
-            mentor_audit: { label: 'Mentor Audit', icon: UserCheck, color: 'emerald', fields: ['mentorName', 'hipLogReference', 'auditModule'] },
+            mentor_audit: { label: 'Mentor Audit', icon: UserCheck, color: 'emerald', fields: ['mentorName', 'mentorEmail', 'hipLogReference', 'auditModule'] },
         };
 
         const adminValidationCategories = {
@@ -246,7 +246,16 @@
         function MentorOpsCenter() {
             const [userProfile, setUserProfile] = useState(null);
             const [session, setSession] = useState(null);
-            const [activeTab, setActiveTab] = useState('dashboard');
+            
+            // Start Active Tab from URL params for deep linking
+            const [activeTab, setActiveTab] = useState(() => {
+                if (typeof window !== 'undefined') {
+                    const params = new URLSearchParams(window.location.search);
+                    return params.get('tab') || 'dashboard';
+                }
+                return 'dashboard';
+            });
+            
             const [tasks, setTasks] = useState([]);
             const [registry, setRegistry] = useState([]);
             const [connectionStatus, setConnectionStatus] = useState('connecting');
@@ -270,6 +279,13 @@
             const [isWarningModalOpen, setIsWarningModalOpen] = useState(false);
             const [warningData, setWarningData] = useState({});
 
+            // Audit Dashboard State (For Dashboard view)
+            const [auditDashMentor, setAuditDashMentor] = useState('');
+            const [auditDashRange, setAuditDashRange] = useState({ start: '', end: '' });
+            
+            // New Randomizer State
+            const [auditRandomizerRange, setAuditRandomizerRange] = useState({ start: '', end: '' });
+
             // Admin task type filtering state
             const [adminSelectedTaskType, setAdminSelectedTaskType] = useState('floorwalker');
 
@@ -279,6 +295,9 @@
             // Dashboard Collapsible State
             const [isPendingCollapsed, setIsPendingCollapsed] = useState(false);
             const [expandedPendingGroups, setExpandedPendingGroups] = useState({});
+            
+            // Deep Link Handler State
+            const [hasHandledDeepLink, setHasHandledDeepLink] = useState(false);
 
             const togglePendingGroup = (type) => {
                 setExpandedPendingGroups(prev => ({ ...prev, [type]: !prev[type] }));
@@ -354,7 +373,7 @@
                 if (data) {
                     setUserProfile(data);
                 } else if (email === 'mohamed.abdelmagid@tempo.fit') {
-                    const initial = { email, role: 'Admin', allowed_tabs: defaultTabs.concat(['admin']) };
+                    const initial = { email, role: 'Admin', allowed_tabs: defaultTabs.concat(['admin', 'audits']) };
                     await supabase.from('users_registry').insert([initial]);
                     setUserProfile(initial);
                 } else {
@@ -417,6 +436,55 @@
                 const channel = supabase.channel('tasks-channel').on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, fetchData).subscribe();
                 return () => supabase.removeChannel(channel);
             }, [userProfile]);
+
+            // Set up Audit Dashboard Mentor mapping
+            useEffect(() => {
+                if (userProfile) {
+                    const foundMentor = Object.keys(mentorEmailMap).find(name => mentorEmailMap[name] === userProfile.email);
+                    if (foundMentor) {
+                        setAuditDashMentor(foundMentor);
+                    } else if (userProfile.role === 'Admin') {
+                        setAuditDashMentor(globalMentors[0] || '');
+                    } else {
+                        setAuditDashMentor(userProfile.email.split('@')[0]);
+                    }
+                }
+            }, [userProfile, globalMentors]);
+            
+            // Deep Linking Handler
+            useEffect(() => {
+                if (!hasHandledDeepLink && tasks.length > 0) {
+                    const params = new URLSearchParams(window.location.search);
+                    const taskId = params.get('taskId');
+                    
+                    if (taskId) {
+                        const targetTask = tasks.find(t => String(t.id) === String(taskId));
+                        if (targetTask) {
+                            if (targetTask.type === 'pip') {
+                                setPipData({ ...targetTask.details, id: targetTask.id, status: targetTask.status });
+                                setIsPipModalOpen(true);
+                            } else if (targetTask.type === 'warning') {
+                                setWarningData({ ...targetTask.details, id: targetTask.id });
+                                setIsWarningModalOpen(true);
+                            } else {
+                                handleEditTask(targetTask);
+                            }
+                            
+                            // Clean the URL to prevent reopening on accidental page refresh
+                            let cleanTab = activeTab;
+                            if (targetTask.type === 'warning') cleanTab = 'warnings';
+                            else if (targetTask.type === 'pip') cleanTab = 'pip';
+                            else if (targetTask.type === 'mentor_audit' && userProfile?.role === 'Admin') cleanTab = 'audits';
+                            else if (targetTask.type === 'mentor_audit' && userProfile?.role !== 'Admin') cleanTab = 'dashboard';
+                            
+                            const newUrl = window.location.href.split('?')[0] + '?tab=' + cleanTab;
+                            window.history.replaceState({}, document.title, newUrl);
+                            if (cleanTab !== activeTab) setActiveTab(cleanTab);
+                        }
+                    }
+                    setHasHandledDeepLink(true);
+                }
+            }, [tasks, hasHandledDeepLink, activeTab, userProfile]);
 
             // Handlers
             const handleAuth = async (e) => {
@@ -494,8 +562,9 @@
 
                 let agent = session.user.email.split('@')[0];
                 let creationDate = new Date().toISOString();
+                const isNew = !pipData.id;
                 
-                if (pipData.id) {
+                if (!isNew) {
                     const originalTask = tasks.find(t => t.id === pipData.id);
                     if (originalTask) {
                         agent = originalTask.agent;
@@ -517,6 +586,40 @@
                     : await supabase.from('tasks').insert([taskData]).select();
 
                 if (!error) { 
+                    const savedTask = data ? data[0] : null;
+
+                    // Send email notification for newly created PIPs
+                    if (isNew && pipData.mentorEmail && savedTask && GOOGLE_SCRIPT_URL) {
+                        const noticeDate = new Date(pipData.startDate);
+                        noticeDate.setDate(noticeDate.getDate() + 28);
+                        const estimatedEndDate = noticeDate.toLocaleDateString();
+                        
+                        const baseUrl = window.location.href.split('?')[0];
+                        const recordUrl = `${baseUrl}?tab=pip&taskId=${savedTask.id}`;
+
+                        const emailBody = `Hello ${pipData.mentorName},\n\nThis is a formal notification regarding the initiation of a Performance Improvement Plan (PIP).\n\nStart Date: ${new Date(pipData.startDate).toLocaleDateString()}\nEstimated End Date: ${estimatedEndDate}\n\nReason for PIP:\n${pipData.reason}\n\nImprovement Goals (Criteria for Success):\n${pipData.goals || 'N/A'}\n\nPlease review these details securely via the following direct link to your MentorOps portal:\n${recordUrl}\n\nBest regards,\nTempo Management`;
+                        
+                        const payload = JSON.stringify({
+                            to: `${pipData.mentorEmail}, khaledsabban@tempo.fit, salmaramadan@tempo.fit`,
+                            subject: `Notice: Performance Improvement Plan (PIP) Initiated - ${pipData.mentorName}`,
+                            body: emailBody
+                        });
+
+                        const success = navigator.sendBeacon(GOOGLE_SCRIPT_URL, payload);
+
+                        if (!success) {
+                            try {
+                                await fetch(GOOGLE_SCRIPT_URL, {
+                                    method: 'POST', mode: 'no-cors', credentials: 'include',
+                                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                                    body: payload
+                                });
+                            } catch (err) {
+                                console.error("Email failed:", err);
+                            }
+                        }
+                    }
+
                     setIsPipModalOpen(false); 
                     setPipData({}); 
                     fetchData(); 
@@ -569,10 +672,12 @@
 
                     // Send email notification for newly created warnings
                     if (isNew && warningData.mentorEmail && savedTask && GOOGLE_SCRIPT_URL) {
-                        const emailBody = `Hello ${warningData.mentorName},\n\nThis is a formal notification regarding a ${warningData.warningType} Warning.\n\nReason: ${warningData.warningReason}\nDate of Notice: ${warningData.date}\nExpiration Date: ${expirationDate}\n\nDetails:\n${warningData.notes}\n\nPlease review these details. You can also view this record securely in the MentorOps System under your Warnings tab.\n\nBest regards,\nTempo Management`;
+                        const baseUrl = window.location.href.split('?')[0];
+                        const recordUrl = `${baseUrl}?tab=warnings&taskId=${savedTask.id}`;
+                        
+                        const emailBody = `Hello ${warningData.mentorName},\n\nThis is a formal notification regarding a ${warningData.warningType} Warning.\n\nReason: ${warningData.warningReason}\nDate of Notice: ${warningData.date}\nExpiration Date: ${expirationDate}\n\nDetails:\n${warningData.notes}\n\nPlease review these details securely via the following direct link to your MentorOps portal:\n${recordUrl}\n\nBest regards,\nTempo Management`;
                         
                         // We construct the "to" field with the mentor and the requested CCs to ensure delivery 
-                        // even if generic email scripts don't naturally support 'cc' properties.
                         const payload = JSON.stringify({
                             to: `${warningData.mentorEmail}, khaledsabban@tempo.fit, salmaramadan@tempo.fit`,
                             subject: `Disciplinary Notice: ${warningData.warningType} Warning - ${warningData.mentorName}`,
@@ -647,7 +752,9 @@
 
                 let agent = session.user.email.split('@')[0];
                 let creationDate = new Date().toISOString();
-                if (editingTaskId) {
+                const isNew = !editingTaskId;
+
+                if (!isNew) {
                     const originalTask = tasks.find(t => t.id === editingTaskId);
                     if (originalTask) {
                         agent = originalTask.agent;
@@ -678,56 +785,80 @@
                 if (!error) { 
                     const savedTask = data ? data[0] : null;
 
-                    if (newTaskType === 'weekly_quiz' && formData.associateEmail && savedTask) {
-                        if (GOOGLE_SCRIPT_URL) {
-                            const breakdown = quizModules.map(m => {
-                                const score = formData.quizScores?.[m.id];
-                                const comment = formData.quizComments?.[m.id];
-                                let entry = `• ${m.title}: ${score !== undefined ? score : 0}/5`;
-                                if (comment) entry += `\n   Note: ${comment}`;
-                                return entry;
-                            }).join('\n\n');
+                    // Email logic for Weekly Quiz
+                    if (newTaskType === 'weekly_quiz' && formData.associateEmail && savedTask && GOOGLE_SCRIPT_URL) {
+                        const breakdown = quizModules.map(m => {
+                            const score = formData.quizScores?.[m.id];
+                            const comment = formData.quizComments?.[m.id];
+                            let entry = `• ${m.title}: ${score !== undefined ? score : 0}/5`;
+                            if (comment) entry += `\n   Note: ${comment}`;
+                            return entry;
+                        }).join('\n\n');
 
-                            const emailBody = `Hello ${formData.associateName},\n\nHere are the results of your Weekly Quiz submitted on ${formData.date}.\n\nOverall Score: ${formData.overallScore}\n\nDetailed Breakdown:\n-----------------------------------\n${breakdown}\n-----------------------------------\n\nBest regards,\n${session.user.email}`;
-                            
-                            const payload = JSON.stringify({
-                                to: formData.associateEmail,
-                                subject: `Weekly Quiz Results - ${formData.date}`,
-                                body: emailBody
-                            });
+                        const emailBody = `Hello ${formData.associateName},\n\nHere are the results of your Weekly Quiz submitted on ${formData.date}.\n\nOverall Score: ${formData.overallScore}\n\nDetailed Breakdown:\n-----------------------------------\n${breakdown}\n-----------------------------------\n\nBest regards,\n${session.user.email}`;
+                        
+                        const payload = JSON.stringify({
+                            to: formData.associateEmail,
+                            subject: `Weekly Quiz Results - ${formData.date}`,
+                            body: emailBody
+                        });
 
-                            const success = navigator.sendBeacon(GOOGLE_SCRIPT_URL, payload);
+                        const success = navigator.sendBeacon(GOOGLE_SCRIPT_URL, payload);
 
-                            if (success) {
+                        if (success) {
+                            await supabase.from('tasks').update({ 
+                                details: { ...savedTask.details, email_delivery_status: 'Sent' } 
+                            }).eq('id', savedTask.id);
+                            alert(`Quiz recorded! Email request queued for ${formData.associateEmail}.`);
+                        } else {
+                            try {
+                                await fetch(GOOGLE_SCRIPT_URL, {
+                                    method: 'POST', mode: 'no-cors', credentials: 'include',
+                                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                                    body: payload
+                                });
                                 await supabase.from('tasks').update({ 
                                     details: { ...savedTask.details, email_delivery_status: 'Sent' } 
                                 }).eq('id', savedTask.id);
-                                alert(`Quiz recorded! Email request queued for ${formData.associateEmail}.`);
-                            } else {
-                                try {
-                                    await fetch(GOOGLE_SCRIPT_URL, {
-                                        method: 'POST',
-                                        mode: 'no-cors', 
-                                        credentials: 'include',
-                                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                                        body: payload
-                                    });
-                                    
-                                    await supabase.from('tasks').update({ 
-                                        details: { ...savedTask.details, email_delivery_status: 'Sent' } 
-                                    }).eq('id', savedTask.id);
-                                    
-                                    alert(`Quiz recorded! Email triggered via backup method.`);
-                                } catch (err) {
-                                    await supabase.from('tasks').update({ 
-                                        details: { ...savedTask.details, email_delivery_status: 'Failed' } 
-                                    }).eq('id', savedTask.id);
-                                    console.error("Email failed:", err);
-                                    alert("Quiz saved, but email trigger failed.");
-                                }
+                                alert(`Quiz recorded! Email triggered via backup method.`);
+                            } catch (err) {
+                                await supabase.from('tasks').update({ 
+                                    details: { ...savedTask.details, email_delivery_status: 'Failed' } 
+                                }).eq('id', savedTask.id);
+                                console.error("Email failed:", err);
+                                alert("Quiz saved, but email trigger failed.");
                             }
                         }
                     }
+
+                    // Email logic for Mentor Audit
+                    if (isNew && newTaskType === 'mentor_audit' && formData.mentorEmail && savedTask && GOOGLE_SCRIPT_URL) {
+                        const baseUrl = window.location.href.split('?')[0];
+                        const recordUrl = `${baseUrl}?tab=dashboard&taskId=${savedTask.id}`; 
+                        
+                        let emailBody = `Hello ${formData.mentorName},\n\nA new Audit has been submitted regarding your recent support interaction.\n\n`;
+                        emailBody += `Overall Score: ${formData.overallAuditScore || 0}%\n`;
+                        emailBody += `Reference Ticket: ${formData.auditedTicket || formData.hipLogReference || 'N/A'}\n\n`;
+                        emailBody += `Please review your complete audit breakdown and performance metrics in your Tempo MentorOps dashboard via this link:\n${recordUrl}\n\nBest regards,\nTempo Management`;
+
+                        const payload = JSON.stringify({
+                            to: formData.mentorEmail, // "alert only the audited mentor"
+                            subject: `Notice: Mentor Audit Score Available - ${formData.mentorName}`,
+                            body: emailBody
+                        });
+
+                        const success = navigator.sendBeacon(GOOGLE_SCRIPT_URL, payload);
+                        if (!success) {
+                            try {
+                                await fetch(GOOGLE_SCRIPT_URL, {
+                                    method: 'POST', mode: 'no-cors', credentials: 'include',
+                                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                                    body: payload
+                                });
+                            } catch (err) {}
+                        }
+                    }
+
                     setIsFormOpen(false); setFormData({}); setEditingTaskId(null); fetchData(); 
                 }
                 else alert(error.message);
@@ -839,7 +970,7 @@
                 return acc;
             }, {});
 
-            // Handle Dynamic Tabs Visibility (Adding PIP and Warnings conditionally)
+            // Handle Dynamic Tabs Visibility
             const getVisibleTabs = () => {
                 if (!userProfile) return defaultTabs;
                 
@@ -852,6 +983,7 @@
                 
                 if ((isAdmin || hasMyPips) && !finalTabs.includes('pip')) finalTabs.push('pip');
                 if ((isAdmin || hasMyWarnings) && !finalTabs.includes('warnings')) finalTabs.push('warnings');
+                if (isAdmin && !finalTabs.includes('audits')) finalTabs.push('audits');
                 
                 return Array.from(new Set(finalTabs));
             };
@@ -863,6 +995,21 @@
                 d.setDate(d.getDate() + 28);
                 return d.toLocaleDateString();
             };
+
+            // Calculated Audit Data for Dashboard
+            const myDashboardAudits = tasks.filter(t => t.type === 'mentor_audit' && t.details?.mentorName === auditDashMentor);
+            const myFilteredAudits = myDashboardAudits.filter(t => {
+                if (!auditDashRange.start && !auditDashRange.end) return true;
+                const d = new Date(t.date);
+                const start = auditDashRange.start ? new Date(auditDashRange.start) : new Date('2000-01-01');
+                const end = auditDashRange.end ? new Date(auditDashRange.end) : new Date('2100-01-01');
+                end.setHours(23, 59, 59);
+                return d >= start && d <= end;
+            });
+            const myAvgAuditScore = myFilteredAudits.length ? (myFilteredAudits.reduce((acc, curr) => acc + (parseInt(curr.details?.overallAuditScore) || 0), 0) / myFilteredAudits.length).toFixed(1) : 0;
+            
+            // ReadOnly Form state logic for Mentors reviewing Audits
+            const isAuditReadOnly = newTaskType === 'mentor_audit' && userProfile?.role !== 'Admin';
 
             if (!session) {
                 return (
@@ -928,8 +1075,12 @@
                                     <Card className="p-6 border-l-4 border-l-emerald-500"><p className="text-slate-400 dark:text-slate-500 text-[10px] font-black uppercase mb-1">Resolved Today</p><h3 className="text-4xl font-bold text-emerald-600">{tasks.filter(t => t.status !== 'Pending' && t.type !== 'pip' && t.type !== 'warning' && new Date(t.date).toDateString() === new Date().toDateString()).length}</h3></Card>
                                 </div>
 
-                                {/* Task Buttons Priority above pending actions */}
-                                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">{Object.entries(categories).map(([key, cfg]) => (<button key={key} onClick={() => { setNewTaskType(key); setEditingTaskId(null); setFormData({}); setIsFormOpen(true); }} className="p-4 bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-xl text-center hover:shadow-md transition-all group"><div className={`h-10 w-10 mx-auto rounded-lg flex items-center justify-center mb-2 bg-${cfg.color}-100 dark:bg-${cfg.color}-900/30`}>{React.createElement(cfg.icon, { className: `h-5 w-5 text-${cfg.color}-600` })}</div><p className="text-[9px] font-black text-slate-500 uppercase font-bold">{cfg.label}</p><p className="text-lg font-black dark:text-white font-bold">{tasks.filter(t => t.type === key).length}</p></button>))}</div>
+                                {/* Task Buttons Priority above pending actions (Filter out mentor_audit so it strictly stays in the Audits tab for creation) */}
+                                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+                                    {Object.entries(categories).filter(([key]) => key !== 'mentor_audit').map(([key, cfg]) => (
+                                        <button key={key} onClick={() => { setNewTaskType(key); setEditingTaskId(null); setFormData({}); setIsFormOpen(true); }} className="p-4 bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-xl text-center hover:shadow-md transition-all group"><div className={`h-10 w-10 mx-auto rounded-lg flex items-center justify-center mb-2 bg-${cfg.color}-100 dark:bg-${cfg.color}-900/30`}>{React.createElement(cfg.icon, { className: `h-5 w-5 text-${cfg.color}-600` })}</div><p className="text-[9px] font-black text-slate-500 uppercase font-bold">{cfg.label}</p><p className="text-lg font-black dark:text-white font-bold">{tasks.filter(t => t.type === key).length}</p></button>
+                                    ))}
+                                </div>
 
                                 {/* Collapsible Pending Actions Section */}
                                 <div className="space-y-4">
@@ -943,7 +1094,7 @@
                                         <div className="flex gap-2 w-full sm:w-auto">
                                             <select className="px-3 py-2 text-xs bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-lg outline-none dark:text-slate-300 font-bold" value={dashboardCategory} onChange={e => setDashboardCategory(e.target.value)}>
                                                 <option value="all">All Types</option>
-                                                {Object.entries(categories).map(([k,v]) => <option key={k} value={k}>{v.label}</option>)}
+                                                {Object.entries(categories).filter(([k]) => k !== 'mentor_audit').map(([k,v]) => <option key={k} value={k}>{v.label}</option>)}
                                             </select>
                                             <div className="relative flex-1 sm:w-64">
                                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
@@ -993,6 +1144,130 @@
                                         </div>
                                     )}
                                 </div>
+
+                                {/* MENTOR PERFORMANCE DASHBOARD WIDGET */}
+                                <div className="mt-12 pt-8 border-t dark:border-slate-800 space-y-6">
+                                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                                        <h2 className="text-xl font-black uppercase tracking-tight dark:text-slate-200 flex items-center gap-2">
+                                            <UserCheck className="h-6 w-6 text-emerald-500" /> Audit Performance Dashboard
+                                        </h2>
+                                        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                                            {userProfile.role === 'Admin' ? (
+                                                <select className="px-3 py-2 text-xs bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-lg outline-none dark:text-slate-300 font-bold" value={auditDashMentor} onChange={e => setAuditDashMentor(e.target.value)}>
+                                                    <option value="" disabled>Select Mentor</option>
+                                                    {globalMentors.map(m => <option key={m} value={m}>{m}</option>)}
+                                                </select>
+                                            ) : (
+                                                <div className="px-3 py-2 text-xs bg-slate-100 dark:bg-slate-800 border dark:border-slate-700 rounded-lg font-bold text-slate-500 dark:text-slate-400">{auditDashMentor || 'My Dashboard'}</div>
+                                            )}
+                                            <div className="flex items-center gap-1">
+                                                <input type="date" className="px-3 py-2 text-xs bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-lg outline-none dark:text-slate-300" value={auditDashRange.start} onChange={e => setAuditDashRange(p => ({...p, start: e.target.value}))} title="Start Date" />
+                                                <span className="text-slate-400 text-xs">-</span>
+                                                <input type="date" className="px-3 py-2 text-xs bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-lg outline-none dark:text-slate-300" value={auditDashRange.end} onChange={e => setAuditDashRange(p => ({...p, end: e.target.value}))} title="End Date" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <Card className="p-6 bg-gradient-to-br from-emerald-500 to-emerald-600 dark:from-emerald-600 dark:to-emerald-800 text-white shadow-lg border-none relative overflow-hidden">
+                                            <div className="relative z-10">
+                                                <p className="text-[10px] font-black uppercase mb-1 opacity-80 tracking-widest">Average Overall Score</p>
+                                                <h3 className="text-5xl font-black">{myAvgAuditScore}%</h3>
+                                                <p className="text-xs font-medium mt-2 opacity-90">{auditDashMentor}</p>
+                                            </div>
+                                            <UserCheck className="absolute -bottom-4 -right-4 h-32 w-32 opacity-20" />
+                                        </Card>
+                                        <Card className="p-6 border-l-4 border-l-emerald-500 flex flex-col justify-center">
+                                            <p className="text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase mb-1 tracking-widest">Audits in Selected Range</p>
+                                            <h3 className="text-4xl font-bold dark:text-white">{myFilteredAudits.length}</h3>
+                                        </Card>
+                                    </div>
+                                    
+                                    <Card className="overflow-hidden">
+                                        <div className="p-4 bg-slate-50 dark:bg-slate-800 border-b dark:border-slate-700">
+                                            <h3 className="text-xs font-black uppercase tracking-widest text-slate-500">Filtered Audit Log</h3>
+                                        </div>
+                                        <table className="w-full text-left text-sm font-bold">
+                                            <thead className="bg-slate-50/50 dark:bg-slate-800/50 text-[10px] uppercase tracking-widest text-slate-400">
+                                                <tr>
+                                                    <th className="px-6 py-4">Date</th>
+                                                    <th className="px-6 py-4">Ticket Ref</th>
+                                                    <th className="px-6 py-4">Score</th>
+                                                    <th className="px-6 py-4 text-right">Action</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y dark:divide-slate-800">
+                                                {myFilteredAudits.map(t => (
+                                                    <tr key={t.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                                        <td className="px-6 py-4 dark:text-slate-300">{new Date(t.date).toLocaleDateString()}</td>
+                                                        <td className="px-6 py-4 text-blue-500 font-medium text-xs">{t.details?.auditedTicket || t.details?.hipLogReference || 'N/A'}</td>
+                                                        <td className="px-6 py-4"><Badge color={t.details?.overallAuditScore >= 80 ? 'green' : t.details?.overallAuditScore >= 60 ? 'amber' : 'red'}>{t.details?.overallAuditScore || 0}%</Badge></td>
+                                                        <td className="px-6 py-4 text-right">
+                                                            <button onClick={() => handleEditTask(t)} className="px-3 py-1.5 bg-white dark:bg-slate-900 border dark:border-slate-700 text-[10px] font-black uppercase tracking-widest rounded-lg hover:border-emerald-500 hover:text-emerald-500 transition-colors shadow-sm">View Details</button>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                                {myFilteredAudits.length === 0 && (
+                                                    <tr>
+                                                        <td colSpan="4" className="px-6 py-8 text-center text-slate-400 text-xs uppercase tracking-widest">No audits found in this range.</td>
+                                                    </tr>
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </Card>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'audits' && userProfile.role === 'Admin' && (
+                            <div className="space-y-6 animate-fade-in font-bold">
+                                <div className="flex justify-between items-center bg-white dark:bg-slate-900 p-6 rounded-xl border dark:border-slate-800">
+                                    <div>
+                                        <h2 className="text-xl font-black uppercase tracking-widest dark:text-white flex items-center gap-3">
+                                            <UserCheck className="h-6 w-6 text-emerald-600" /> 
+                                            Mentor Audits Management
+                                        </h2>
+                                        <p className="text-xs text-slate-500 uppercase mt-2 tracking-tighter">Conduct and review all mentor audits.</p>
+                                    </div>
+                                    <button onClick={() => { setNewTaskType('mentor_audit'); setEditingTaskId(null); setFormData({}); setIsFormOpen(true); }} className="px-5 py-3 bg-emerald-600 hover:bg-emerald-700 transition-colors text-white rounded-xl text-xs font-black uppercase tracking-widest">
+                                        + NEW AUDIT
+                                    </button>
+                                </div>
+                                
+                                <Card className="overflow-hidden">
+                                    <div className="p-4 bg-slate-50 dark:bg-slate-800 border-b dark:border-slate-700 flex justify-between items-center">
+                                        <h3 className="text-xs font-black uppercase tracking-widest text-slate-500">Audit Master Log</h3>
+                                        <div className="relative">
+                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                                            <input type="text" placeholder="Search audits..." className="pl-9 pr-4 py-2 text-xs bg-white dark:bg-slate-900 border dark:border-slate-700 rounded-lg outline-none focus:ring-1 focus:ring-emerald-500 dark:text-white" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                                        </div>
+                                    </div>
+                                    <table className="w-full text-left text-sm font-bold">
+                                        <thead className="bg-slate-50/50 dark:bg-slate-800/50 text-[10px] uppercase tracking-widest text-slate-400">
+                                            <tr>
+                                                <th className="px-6 py-4">Date</th>
+                                                <th className="px-6 py-4">Mentor Name</th>
+                                                <th className="px-6 py-4">Audited By</th>
+                                                <th className="px-6 py-4">Score</th>
+                                                <th className="px-6 py-4 text-right">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y dark:divide-slate-800">
+                                            {tasks.filter(t => t.type === 'mentor_audit' && (t.details?.mentorName?.toLowerCase().includes(searchTerm.toLowerCase()) || t.agent.toLowerCase().includes(searchTerm.toLowerCase()))).map(t => (
+                                                <tr key={t.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                                    <td className="px-6 py-4 dark:text-slate-300">{new Date(t.date).toLocaleDateString()}</td>
+                                                    <td className="px-6 py-4 font-bold dark:text-slate-200">{t.details?.mentorName}</td>
+                                                    <td className="px-6 py-4 text-slate-500 text-xs">{t.agent}</td>
+                                                    <td className="px-6 py-4"><Badge color={t.details?.overallAuditScore >= 80 ? 'green' : t.details?.overallAuditScore >= 60 ? 'amber' : 'red'}>{t.details?.overallAuditScore || 0}%</Badge></td>
+                                                    <td className="px-6 py-4 text-right">
+                                                        <button onClick={() => handleEditTask(t)} className="p-2 text-slate-400 hover:text-emerald-500 transition-colors"><Edit className="h-4 w-4 inline" /></button>
+                                                        <button onClick={() => handleDeleteTask(t.id)} className="p-2 text-slate-400 hover:text-rose-500 transition-colors ml-2"><Trash className="h-4 w-4 inline" /></button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </Card>
                             </div>
                         )}
 
@@ -1001,7 +1276,7 @@
                                 <div className="flex justify-between bg-white dark:bg-slate-900 p-4 rounded-xl border dark:border-slate-800 font-bold"><div className="relative flex-1 max-w-md font-bold"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" /><input type="text" placeholder="Search logs..." className="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 dark:text-white rounded-lg outline-none font-bold" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} /></div><button onClick={() => { setEditingTaskId(null); setFormData({}); setIsFormOpen(true); }} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-black uppercase tracking-widest font-bold">+ NEW ENTRY</button></div>
                                 <Card className="overflow-hidden">
                                     <table className="w-full text-left text-sm font-bold"><thead className="bg-slate-50 dark:bg-slate-800 border-b dark:border-slate-700 font-bold"><tr><th className="px-6 py-4 dark:text-slate-300 uppercase font-black text-[10px] font-bold">Category</th><th className="px-6 py-4 dark:text-slate-300 uppercase font-black text-[10px] font-bold">Original Agent</th><th className="px-6 py-4 dark:text-slate-300 uppercase font-black text-[10px] font-bold">Status</th><th className="px-6 py-4 text-right dark:text-slate-300 uppercase font-black text-[10px] font-bold">Actions</th></tr></thead>
-                                        <tbody className="divide-y dark:divide-slate-800 font-bold">{tasks.filter(t => t.type !== 'pip' && t.type !== 'warning' && ((categories[t.type]?.label || '').toLowerCase().includes(searchTerm.toLowerCase()) || t.agent.toLowerCase().includes(searchTerm.toLowerCase()))).slice((currentPage-1)*itemsPerPage, currentPage*itemsPerPage).map(t => (<tr key={t.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 font-bold"><td className="px-6 py-4 font-bold dark:text-slate-200">{categories[t.type]?.label}</td><td className="px-6 py-4 dark:text-slate-400 font-bold">{t.agent}</td><td className="px-6 py-4 font-bold"><Badge color={t.status === 'Pending' ? 'amber' : (['Resolved', 'Won', 'Activated'].includes(t.status) ? 'green' : 'slate')}>{t.status}</Badge></td><td className="px-6 py-4 text-right font-bold"><button onClick={() => handleEditTask(t)} className="p-2 text-slate-400 hover:text-blue-600 transition-colors font-bold"><Edit className="h-4 w-4" /></button></td></tr>))}</tbody>
+                                        <tbody className="divide-y dark:divide-slate-800 font-bold">{tasks.filter(t => t.type !== 'pip' && t.type !== 'warning' && t.type !== 'mentor_audit' && ((categories[t.type]?.label || '').toLowerCase().includes(searchTerm.toLowerCase()) || t.agent.toLowerCase().includes(searchTerm.toLowerCase()))).slice((currentPage-1)*itemsPerPage, currentPage*itemsPerPage).map(t => (<tr key={t.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 font-bold"><td className="px-6 py-4 font-bold dark:text-slate-200">{categories[t.type]?.label}</td><td className="px-6 py-4 dark:text-slate-400 font-bold">{t.agent}</td><td className="px-6 py-4 font-bold"><Badge color={t.status === 'Pending' ? 'amber' : (['Resolved', 'Won', 'Activated'].includes(t.status) ? 'green' : 'slate')}>{t.status}</Badge></td><td className="px-6 py-4 text-right font-bold"><button onClick={() => handleEditTask(t)} className="p-2 text-slate-400 hover:text-blue-600 transition-colors font-bold"><Edit className="h-4 w-4" /></button></td></tr>))}</tbody>
                                     </table>
                                 </Card>
                             </div>
@@ -1221,8 +1496,8 @@
                                                 <td className="px-6 py-4 lowercase font-bold dark:text-slate-400 font-bold">{u.email}</td>
                                                 <td className="px-6 py-4 font-bold"><Badge color={u.role === 'Admin' ? 'purple' : 'slate'}>{u.role}</Badge></td>
                                                 <td className="px-6 py-4 flex flex-wrap gap-2 justify-center font-bold">
-                                                    {['dashboard', 'logs', 'analytics', 'reports', 'pip', 'warnings', 'admin'].map(t => {
-                                                        const isForceEnabled = (t === 'pip' || t === 'warnings') && u.role === 'Admin';
+                                                    {['dashboard', 'logs', 'analytics', 'reports', 'pip', 'warnings', 'admin', 'audits'].map(t => {
+                                                        const isForceEnabled = (t === 'pip' || t === 'warnings' || t === 'audits') && u.role === 'Admin';
                                                         return (
                                                             <label key={t} className="flex items-center gap-1.5 cursor-pointer bg-white dark:bg-slate-800 px-2 py-1 border dark:border-slate-700 rounded shadow-sm font-bold">
                                                                 <input type="checkbox" checked={u.allowed_tabs?.includes(t) || isForceEnabled} disabled={isForceEnabled} onChange={() => toggleTabForUser(u.email, t)} />
@@ -1550,12 +1825,12 @@
                         </div>
                     )}
 
-                    {/* Standard Form Modal */}
+                    {/* Standard Form Modal (Supports Audits read-only logic) */}
                     {isFormOpen && (
                         <div className="fixed inset-0 z-50 flex justify-end font-bold">
                             <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm font-bold" onClick={() => setIsFormOpen(false)} />
                             <div className="relative w-full max-w-md bg-white dark:bg-slate-900 h-full shadow-2xl p-8 overflow-y-auto animate-slide-in-right font-bold">
-                                <div className="flex justify-between items-center mb-8 font-bold font-bold"><h2 className="text-2xl font-black italic uppercase tracking-tighter dark:text-white font-bold leading-none font-bold">{editingTaskId ? 'EDIT' : 'NEW'} {categories[newTaskType].label}</h2><button onClick={() => setIsFormOpen(false)} className="text-slate-400 font-black uppercase text-[10px] hover:text-slate-800 dark:hover:text-white transition-colors font-bold">Close &times;</button></div>
+                                <div className="flex justify-between items-center mb-8 font-bold font-bold"><h2 className="text-2xl font-black italic uppercase tracking-tighter dark:text-white font-bold leading-none font-bold">{editingTaskId ? (isAuditReadOnly ? 'VIEW' : 'EDIT') : 'NEW'} {categories[newTaskType].label}</h2><button onClick={() => setIsFormOpen(false)} className="text-slate-400 font-black uppercase text-[10px] hover:text-slate-800 dark:hover:text-white transition-colors font-bold">Close &times;</button></div>
                                 <form onSubmit={handleAddTask} className="space-y-6 font-bold">
                                     {!editingTaskId && <div className="font-bold"><label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 block font-bold">Category Type</label><select className="w-full p-3 bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-xl outline-none font-bold dark:text-white font-bold" value={newTaskType} onChange={e => { setNewTaskType(e.target.value); setFormData(e.target.value === 'floorwalker' ? {status: 'Resolved'} : {}); }}>{Object.entries(categories).map(([k, c]) => <option key={k} value={k}>{c.label}</option>)}</select></div>}
                                     <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border dark:border-slate-700 space-y-4 font-bold font-bold">
@@ -1567,10 +1842,66 @@
                                             if (field === 'auditModule' || field === 'correctionModule') {
                                                 const items = field === 'auditModule' ? auditAttributes : quizModules;
                                                 return (<div key={field} className="space-y-6 pt-2 font-bold font-bold"><div className="flex justify-between items-center mb-2 font-bold font-bold"><h3 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-bold font-bold">{field.replace('Module','')} Quality</h3>{field === 'correctionModule' && <Badge color="cyan">AVG: {formData.overallScore || '0.0'}</Badge>}{field === 'auditModule' && <Badge color="green">Score: {formData.overallAuditScore || '0'}%</Badge>}</div>
-                                                    {items.map((m, idx) => (<div key={`${m.id}-${idx}`} className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm font-bold font-bold"><p className="font-bold text-sm mb-1 dark:text-slate-200 font-bold">{m.title || m.label}</p><p className="text-[10px] text-slate-400 mb-4 font-bold">{m.desc}</p><div className="flex justify-center gap-2 mb-4 font-bold font-bold">{field === 'auditModule' ? ['Yes', 'No'].map(s => (<button key={s} type="button" onClick={() => handleAuditScore(m.id, s)} className={`px-4 py-1.5 rounded-lg border-2 text-[10px] font-black transition-all font-bold ${formData.auditScores?.[m.id] === s ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white dark:bg-slate-800 dark:border-slate-700 text-slate-400'}`}>{s.toUpperCase()}</button>)) : [1, 2, 3, 4, 5].map(s => (<button key={s} type="button" onClick={() => handleQuizScore(m.id, s)} className={`w-8 h-8 rounded-full border-2 text-xs font-bold transition-all font-bold ${formData.quizScores?.[m.id] === s ? 'bg-cyan-500 border-cyan-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400'}`}>{s}</button>))}</div><input type="text" placeholder="Detail..." className="w-full p-2 bg-slate-50 dark:bg-slate-800 border-b dark:border-slate-700 text-[10px] outline-none dark:text-white font-bold font-bold" onChange={e => setFormData(p => ({...p, quizComments: {...(p.quizComments || {}), [m.id]: e.target.value}}))} value={formData.quizComments?.[m.id] || ''} /></div>))}</div>);
+                                                    {items.map((m, idx) => (<div key={`${m.id}-${idx}`} className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm font-bold font-bold"><p className="font-bold text-sm mb-1 dark:text-slate-200 font-bold">{m.title || m.label}</p><p className="text-[10px] text-slate-400 mb-4 font-bold">{m.desc}</p><div className="flex justify-center gap-2 mb-4 font-bold font-bold">{field === 'auditModule' ? ['Yes', 'No'].map(s => (<button key={s} type="button" onClick={() => !isAuditReadOnly && handleAuditScore(m.id, s)} className={`px-4 py-1.5 rounded-lg border-2 text-[10px] font-black transition-all font-bold ${formData.auditScores?.[m.id] === s ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white dark:bg-slate-800 dark:border-slate-700 text-slate-400'} ${isAuditReadOnly ? 'cursor-not-allowed opacity-80' : ''}`}>{s.toUpperCase()}</button>)) : [1, 2, 3, 4, 5].map(s => (<button key={s} type="button" onClick={() => !isAuditReadOnly && handleQuizScore(m.id, s)} className={`w-8 h-8 rounded-full border-2 text-xs font-bold transition-all font-bold ${formData.quizScores?.[m.id] === s ? 'bg-cyan-500 border-cyan-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400'} ${isAuditReadOnly ? 'cursor-not-allowed opacity-80' : ''}`}>{s}</button>))}</div><input type="text" placeholder="Detail..." className="w-full p-2 bg-slate-50 dark:bg-slate-800 border-b dark:border-slate-700 text-[10px] outline-none dark:text-white font-bold font-bold" readOnly={isAuditReadOnly} onChange={e => setFormData(p => ({...p, quizComments: {...(p.quizComments || {}), [m.id]: e.target.value}}))} value={formData.quizComments?.[m.id] || ''} /></div>))}</div>);
                                             }
-                                            if (field === 'hipLogReference' && newTaskType === 'mentor_audit') return (<div key={field} className="pt-2 font-bold font-bold"><label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase block mb-1.5 font-bold font-bold">Audit Target</label><div className="flex gap-2 font-bold font-bold font-bold"><div className="flex-1 p-3 bg-white dark:bg-slate-900 border dark:border-slate-700 rounded-xl text-sm font-medium dark:text-slate-300 font-bold font-bold">{formData.auditedTicket || 'Pick Random Log'}</div><button type="button" onClick={() => { const hL = tasks.filter(t => t.type === 'hip_request'); if (!hL.length) return alert("No HIP logs."); const r = hL[Math.floor(Math.random() * hL.length)]; setFormData(p => ({ ...p, hipLogReference: r.id, auditedTicket: r.details.ticketLink, mentorName: r.agent })); }} className="p-3 bg-blue-100 dark:bg-blue-900/30 text-blue-600 rounded-xl font-bold"><Dice className="h-5 w-5 font-bold" /></button></div></div>);
+                                            if (field === 'hipLogReference' && newTaskType === 'mentor_audit') return (
+                                                <div key={field} className="pt-2 font-bold font-bold">
+                                                    <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase block mb-1.5 font-bold font-bold">Audit Target Randomizer</label>
+                                                    {!isAuditReadOnly && (
+                                                        <div className="flex items-center gap-2 mb-3 font-bold font-bold">
+                                                            <input type="date" className="flex-1 p-2 bg-slate-50 dark:bg-slate-900 border dark:border-slate-700 rounded-lg text-xs outline-none focus:ring-1 focus:ring-emerald-500 dark:text-slate-300 font-bold" value={auditRandomizerRange.start} onChange={e => setAuditRandomizerRange(p => ({...p, start: e.target.value}))} title="Start Date" />
+                                                            <span className="text-slate-400 text-[10px] font-black uppercase font-bold">To</span>
+                                                            <input type="date" className="flex-1 p-2 bg-slate-50 dark:bg-slate-900 border dark:border-slate-700 rounded-lg text-xs outline-none focus:ring-1 focus:ring-emerald-500 dark:text-slate-300 font-bold" value={auditRandomizerRange.end} onChange={e => setAuditRandomizerRange(p => ({...p, end: e.target.value}))} title="End Date" />
+                                                        </div>
+                                                    )}
+                                                    <div className="flex gap-2 font-bold font-bold font-bold">
+                                                        <div className="flex-1 p-3 bg-white dark:bg-slate-900 border dark:border-slate-700 rounded-xl text-sm font-medium dark:text-slate-300 flex flex-wrap items-center gap-4 font-bold">
+                                                            {formData.auditedSlack && (
+                                                                <a href={formData.auditedSlack.startsWith('http') ? formData.auditedSlack : `https://${formData.auditedSlack}`} target="_blank" className="flex items-center gap-1.5 text-teal-600 dark:text-teal-400 hover:underline font-bold">
+                                                                    <MessageCircle className="h-4 w-4" /> Slack
+                                                                </a>
+                                                            )}
+                                                            {formData.auditedTicket && (
+                                                                <a href={formData.auditedTicket.startsWith('http') ? formData.auditedTicket : `https://${formData.auditedTicket}`} target="_blank" className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 hover:underline font-bold">
+                                                                    <FileText className="h-4 w-4" /> Ticket
+                                                                </a>
+                                                            )}
+                                                            {(!formData.auditedSlack && !formData.auditedTicket) && <span className="text-slate-400 text-xs italic font-bold">No log selected</span>}
+                                                        </div>
+                                                        {!isAuditReadOnly && (
+                                                            <button type="button" onClick={() => { 
+                                                                let hL = tasks.filter(t => t.type === 'hip_request'); 
+                                                                if (formData.mentorName) {
+                                                                    const expectedAgent = (mentorEmailMap[formData.mentorName] || '').split('@')[0];
+                                                                    if (expectedAgent) hL = hL.filter(t => t.agent.toLowerCase() === expectedAgent.toLowerCase());
+                                                                }
+                                                                if (auditRandomizerRange.start) hL = hL.filter(t => new Date(t.date) >= new Date(auditRandomizerRange.start));
+                                                                if (auditRandomizerRange.end) {
+                                                                    const endD = new Date(auditRandomizerRange.end);
+                                                                    endD.setHours(23, 59, 59);
+                                                                    hL = hL.filter(t => new Date(t.date) <= endD);
+                                                                }
+                                                                if (!hL.length) return alert("No HIP logs found for the selected criteria."); 
+                                                                const r = hL[Math.floor(Math.random() * hL.length)]; 
+                                                                const foundMentorName = Object.keys(mentorEmailMap).find(k => mentorEmailMap[k].split('@')[0].toLowerCase() === r.agent.toLowerCase()) || r.agent;
+                                                                setFormData(p => ({ 
+                                                                    ...p, 
+                                                                    hipLogReference: r.id, 
+                                                                    auditedTicket: r.details.ticketLink, 
+                                                                    auditedSlack: r.details.slackLink,
+                                                                    mentorName: foundMentorName,
+                                                                    mentorEmail: mentorEmailMap[foundMentorName] || ''
+                                                                })); 
+                                                            }} className="p-3 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 hover:bg-emerald-200 dark:hover:bg-emerald-800/50 transition-colors rounded-xl flex items-center justify-center min-w-[3rem]" title="Pick Random Target">
+                                                                <Dice className="h-5 w-5 font-bold" />
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            );
+                                            if (field === 'mentorEmail' && newTaskType === 'mentor_audit') return (<div key={field} className="font-bold"><label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 block font-bold font-bold">Mentor Email</label><input type="email" className="w-full p-3 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500 dark:text-white font-bold font-bold" value={formData[field] || ''} readOnly={isAuditReadOnly || userProfile?.role !== 'Admin'} onChange={e => handleInputChange(field, e.target.value)} /></div>);
                                             if (field === 'associateEmail' && newTaskType === 'weekly_quiz') return (<div key={field} className="font-bold"><label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 block font-bold font-bold">Associate Email</label><input type="email" className="w-full p-3 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500 dark:text-white font-bold font-bold" value={formData[field] || ''} onChange={e => handleInputChange(field, e.target.value)} /></div>);
+                                            
                                             const isDropdown = ['associateName', 'associateEmail', 'mentorName', 'team', 'productType', 'surpriseAndDelightType', 'resolution', 'pendingReason', 'disputeReason', 'reasonForSupport', 'validHip', 'validRequest', 'subscriptionStatus', 'emailSent', 'disputedProduct', 'invalidReason', 'surpriseAndDelightReason', 'hipProduct', 'hipCategory', 'hipRequestType', 'status', 'pendingReasonDetail'].includes(field);
                                             return (<div key={field} className="font-bold font-bold"><label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 block font-bold font-bold font-bold">{field.replace(/([A-Z])/g, ' $1')}</label>
                                                 {isDropdown ? (
@@ -1578,13 +1909,18 @@
                                                         {(field === 'status' && autoResolvedTypes.includes(newTaskType)) ? (
                                                             <div className="p-3 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-xl text-emerald-600 text-sm font-bold text-emerald-600 uppercase text-center italic tracking-tighter font-bold">Enforced Resolved</div>
                                                         ) : (
-                                                            <select className="w-full p-3 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500 dark:text-white font-bold font-bold" value={formData[field] || ''} onChange={e => { 
+                                                            <select disabled={isAuditReadOnly} className="w-full p-3 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500 dark:text-white font-bold font-bold" value={formData[field] || ''} onChange={e => { 
                                                                     if(field === 'hipProduct') setFormData(p=>({...p, hipProduct:e.target.value, hipCategory:'', hipRequestType:''})); 
                                                                     else if(field === 'hipCategory') setFormData(p=>({...p, hipCategory:e.target.value, hipRequestType:''})); 
                                                                     else if(field === 'associateName' && newTaskType === 'weekly_quiz') {
                                                                         const val = e.target.value;
                                                                         const email = associateEmailMap[val] || '';
                                                                         setFormData(p => ({ ...p, [field]: val, associateEmail: email }));
+                                                                    }
+                                                                    else if(field === 'mentorName' && newTaskType === 'mentor_audit') {
+                                                                        const val = e.target.value;
+                                                                        const email = mentorEmailMap[val] || '';
+                                                                        setFormData(p => ({ ...p, [field]: val, mentorEmail: email }));
                                                                     }
                                                                     else handleInputChange(field, e.target.value);
                                                                 }}><option value="" className="font-bold">Select...</option>
@@ -1598,15 +1934,15 @@
                                                                 {field === 'hipRequestType' && formData.hipCategory && globalHipHierarchy[formData.hipProduct][formData.hipCategory].map((o, idx) => <option key={`${o}-${idx}`} value={o} className="font-bold">{o}</option>)}
                                                                 {field !== 'resolution' && !field.startsWith('hip') && !['associateName', 'associateEmail', 'mentorName', 'pendingReasonDetail', 'status'].includes(field) && (customOptions[field] || []).map((o, idx) => <option key={`${o}-${idx}`} value={o} className="font-bold">{o}</option>)}
                                                                 {field === 'pendingReasonDetail' && customOptions.pendingReasonDetail.map((o, idx) => <option key={`${o}-${idx}`} value={o} className="font-bold">{o}</option>)}
-                                                                <option value="ADD_NEW_CUSTOM" className="text-blue-600 italic font-black font-bold uppercase text-[10px] font-bold">+ Add New Item...</option>
+                                                                {!isAuditReadOnly && <option value="ADD_NEW_CUSTOM" className="text-blue-600 italic font-black font-bold uppercase text-[10px] font-bold">+ Add New Item...</option>}
                                                             </select>
                                                         )}
                                                         {customInputTarget === field && (<div className="mt-2 flex gap-2 animate-fade-in font-bold"><input type="text" id={`custom-${field}`} className="flex-1 p-2 border rounded-lg outline-none bg-white dark:bg-slate-900 dark:text-white font-bold" /><button type="button" onClick={() => handleAddCustomValue(field, document.getElementById(`custom-${field}`).value)} className="px-3 bg-blue-600 text-white rounded-lg text-[10px] font-black uppercase tracking-tighter font-bold">Add</button></div>)}
                                                     </div>
-                                                ) : (<input type={field.toLowerCase().includes('date') ? 'date' : 'text'} className="w-full p-3 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500 dark:text-white font-bold font-bold" value={formData[field] || ''} onChange={e => handleInputChange(field, e.target.value)} />)}</div>);
+                                                ) : (<input readOnly={isAuditReadOnly} type={field.toLowerCase().includes('date') ? 'date' : 'text'} className="w-full p-3 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500 dark:text-white font-bold font-bold" value={formData[field] || ''} onChange={e => handleInputChange(field, e.target.value)} />)}</div>);
                                         })}
                                     </div>
-                                    <button type="submit" className="w-full py-4 bg-blue-600 text-white font-black rounded-2xl shadow-xl hover:bg-blue-700 transition-all uppercase tracking-widest shadow-blue-100 font-bold font-bold">Commit Record Entry</button>
+                                    {!isAuditReadOnly && <button type="submit" className="w-full py-4 bg-blue-600 text-white font-black rounded-2xl shadow-xl hover:bg-blue-700 transition-all uppercase tracking-widest shadow-blue-100 font-bold font-bold">Commit Record Entry</button>}
                                 </form>
                             </div>
                         </div>
