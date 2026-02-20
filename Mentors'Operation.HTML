@@ -223,7 +223,7 @@
             disputes: { label: 'Disputes', icon: AlertCircle, color: 'red', fields: ['customerName', 'customerEmail', 'disputeAmount', 'disputeDate', 'disputeReason', 'disputedProduct', 'disputeLink', 'resolution'] },
             pending_subs: { label: 'Pending Subs', icon: CreditCard, color: 'blue', fields: ['customerName', 'customerEmail', 'pendingReason', 'resolution'] },
             floorwalker: { label: 'FloorWalker', icon: Footprints, color: 'amber', fields: ['associateName', 'validRequest', 'invalidReason', 'ticketLink', 'reasonForSupport', 'slackLink', 'comment', 'status'] },
-            hip_request: { label: 'HIP Request', icon: MessageCircle, color: 'teal', fields: ['associateName', 'ticketLink', 'slackLink', 'validHip', 'invalidReason', 'hipProduct', 'hipCategory', 'hipRequestType', 'status', 'pendingReasonDetail'] },
+            hip_request: { label: 'HIP Request', icon: MessageCircle, color: 'teal', fields: ['associateName', 'associateEmail', 'ticketLink', 'slackLink', 'validHip', 'invalidReason', 'invalidContext', 'associateCoached', 'hipProduct', 'hipCategory', 'hipRequestType', 'status', 'pendingReasonDetail'] },
             weekly_quiz: { label: 'Weekly Quiz', icon: ClipboardList, color: 'cyan', fields: ['associateName', 'associateEmail', 'date', 'correctionModule'] },
             duplicate_iap: { label: 'Duplicate IAP', icon: FileText, color: 'indigo', fields: ['customerEmail', 'emailSent', 'subscriptionStatus'] },
             surprise_delight: { label: 'Surprise & Delight', icon: Gift, color: 'purple', fields: ['associateName', 'team', 'customerName', 'customerEmail', 'productType', 'ticketUrl', 'surpriseAndDelightReason', 'surpriseAndDelightType', 'amount', 'date', 'notes'] },
@@ -366,6 +366,8 @@
             const [editingTaskId, setEditingTaskId] = useState(null);
             const [newTaskType, setNewTaskType] = useState('disputes');
             const [formData, setFormData] = useState({});
+            const [currentPage, setCurrentPage] = useState(1);
+            const itemsPerPage = 10;
             
             // PIP State
             const [isPipModalOpen, setIsPipModalOpen] = useState(false);
@@ -842,8 +844,14 @@
                     if (f === 'correctionModule') { quizModules.forEach(m => { if (!(formData.quizScores?.[m.id])) missingFields.push(m.title); }); return; }
                     if (f === 'auditModule') { auditAttributes.forEach(a => { if (!(formData.auditScores?.[a.id])) missingFields.push(a.label); }); return; }
                     if (newTaskType === 'hip_request' && formData.status === 'Pending' && f === 'pendingReasonDetail' && !formData[f]) { missingFields.push("Pending Reason Detail"); return; }
-                    if (newTaskType === 'floorwalker' && formData.validRequest === 'No' && f === 'invalidReason' && !formData[f]) { missingFields.push("Invalid Reason Detail"); return; }
-                    if (f === 'pendingReasonDetail' || f === 'invalidReason') return; 
+                    
+                    const isValidNo = (newTaskType === 'floorwalker' && formData.validRequest === 'No') || (newTaskType === 'hip_request' && formData.validHip === 'No');
+                    if (['invalidReason', 'invalidContext', 'associateCoached'].includes(f)) {
+                        if (isValidNo && !formData[f]) missingFields.push(f.replace(/([A-Z])/g, ' $1').trim());
+                        return;
+                    }
+                    if (f === 'pendingReasonDetail') return; 
+                    
                     if (!formData[f] || formData[f] === '') missingFields.push(f.replace(/([A-Z])/g, ' $1'));
                 });
                 if (missingFields.length > 0) return alert("Required: " + missingFields.join(', '));
@@ -891,6 +899,35 @@
                                 status: 'Audited', 
                                 details: { ...originalHip.details, status: 'Audited' } 
                             }).eq('id', originalHip.id);
+                        }
+                    }
+
+                    // Email logic for Invalid HIP Request
+                    if (newTaskType === 'hip_request' && formData.validHip === 'No' && formData.associateEmail && savedTask && !savedTask.details.invalid_hip_email_sent && GOOGLE_SCRIPT_URL) {
+                        const baseUrl = window.location.href.split('?')[0];
+                        const recordUrl = `${baseUrl}?tab=dashboard&taskId=${savedTask.id}`; 
+                        
+                        let emailBody = `Hello ${formData.associateName},\n\nThis is a notification regarding a recent HIP request that has been marked as Invalid.\n\n`;
+                        emailBody += `Ticket Reference: ${formData.ticketLink || 'N/A'}\n`;
+                        emailBody += `Invalid Reason Category: ${formData.invalidReason || 'N/A'}\n`;
+                        emailBody += `Associate Coached: ${formData.associateCoached || 'No'}\n\n`;
+                        emailBody += `Context / Details:\n${formData.invalidContext || 'N/A'}\n\n`;
+                        emailBody += `Please review these details securely via the following direct link to your MentorOps portal:\n${recordUrl}\n\nBest regards,\nTempo Management`;
+
+                        const payload = JSON.stringify({
+                            to: `${formData.associateEmail}, marwa.ahmed@tempo.fit, ahmed.elsawy@tempo.fit, khaledsabban@tempo.fit`,
+                            subject: `Notice: Invalid HIP Request - ${formData.associateName}`,
+                            body: emailBody
+                        });
+
+                        const success = navigator.sendBeacon(GOOGLE_SCRIPT_URL, payload);
+                        if (success) {
+                            await supabase.from('tasks').update({ details: { ...savedTask.details, invalid_hip_email_sent: true } }).eq('id', savedTask.id);
+                        } else {
+                            try {
+                                await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', mode: 'no-cors', credentials: 'include', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: payload });
+                                await supabase.from('tasks').update({ details: { ...savedTask.details, invalid_hip_email_sent: true } }).eq('id', savedTask.id);
+                            } catch (err) {}
                         }
                     }
 
@@ -2007,7 +2044,7 @@
                                         {categories[newTaskType].fields.map(field => {
                                             const isValidNo = (newTaskType === 'floorwalker' && formData.validRequest === 'No') || (newTaskType === 'hip_request' && formData.validHip === 'No');
                                             if (field === 'pendingReasonDetail' && formData.status !== 'Pending') return null;
-                                            if (field === 'invalidReason' && !isValidNo) return null;
+                                            if (['invalidReason', 'invalidContext', 'associateCoached'].includes(field) && !isValidNo) return null;
                                             
                                             if (field === 'auditModule' || field === 'correctionModule') {
                                                 const items = field === 'auditModule' ? auditAttributes : quizModules;
@@ -2071,9 +2108,16 @@
                                                 </div>
                                             );
                                             if (field === 'mentorEmail' && newTaskType === 'mentor_audit') return (<div key={field} className="font-bold"><label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 block font-bold font-bold">Mentor Email</label><input type="email" className="w-full p-3 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500 dark:text-white font-bold font-bold" value={formData[field] || ''} readOnly={isAuditReadOnly || userProfile?.role !== 'Admin'} onChange={e => handleInputChange(field, e.target.value)} /></div>);
-                                            if (field === 'associateEmail' && newTaskType === 'weekly_quiz') return (<div key={field} className="font-bold"><label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 block font-bold font-bold">Associate Email</label><input type="email" className="w-full p-3 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500 dark:text-white font-bold font-bold" value={formData[field] || ''} onChange={e => handleInputChange(field, e.target.value)} /></div>);
+                                            if (field === 'associateEmail' && (newTaskType === 'weekly_quiz' || newTaskType === 'hip_request')) return (<div key={field} className="font-bold"><label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 block font-bold font-bold">Associate Email</label><input type="email" className="w-full p-3 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500 dark:text-white font-bold font-bold" value={formData[field] || ''} onChange={e => handleInputChange(field, e.target.value)} /></div>);
                                             
-                                            const isDropdown = ['associateName', 'associateEmail', 'mentorName', 'team', 'productType', 'surpriseAndDelightType', 'resolution', 'pendingReason', 'disputeReason', 'reasonForSupport', 'validHip', 'validRequest', 'subscriptionStatus', 'emailSent', 'disputedProduct', 'invalidReason', 'surpriseAndDelightReason', 'hipProduct', 'hipCategory', 'hipRequestType', 'status', 'pendingReasonDetail'].includes(field);
+                                            if (field === 'invalidContext') return (
+                                                <div key={field} className="font-bold font-bold">
+                                                    <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 block font-bold font-bold font-bold">Invalid HIP Context / Reason</label>
+                                                    <textarea readOnly={isAuditReadOnly} rows="3" className="w-full p-3 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500 dark:text-white font-bold font-bold" value={formData[field] || ''} onChange={e => handleInputChange(field, e.target.value)} placeholder="Provide full context on why this HIP is invalid..."></textarea>
+                                                </div>
+                                            );
+                                            
+                                            const isDropdown = ['associateName', 'associateEmail', 'mentorName', 'team', 'productType', 'surpriseAndDelightType', 'resolution', 'pendingReason', 'disputeReason', 'reasonForSupport', 'validHip', 'validRequest', 'subscriptionStatus', 'emailSent', 'disputedProduct', 'invalidReason', 'surpriseAndDelightReason', 'hipProduct', 'hipCategory', 'hipRequestType', 'status', 'pendingReasonDetail', 'associateCoached'].includes(field);
                                             return (<div key={field} className="font-bold font-bold"><label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 block font-bold font-bold font-bold">{field.replace(/([A-Z])/g, ' $1')}</label>
                                                 {isDropdown ? (
                                                     <div className="font-bold">
@@ -2083,12 +2127,12 @@
                                                             <select disabled={isAuditReadOnly} className="w-full p-3 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500 dark:text-white font-bold font-bold" value={formData[field] || ''} onChange={e => { 
                                                                     if(field === 'hipProduct') setFormData(p=>({...p, hipProduct:e.target.value, hipCategory:'', hipRequestType:''})); 
                                                                     else if(field === 'hipCategory') setFormData(p=>({...p, hipCategory:e.target.value, hipRequestType:''})); 
-                                                                    else if(field === 'associateName' && newTaskType === 'weekly_quiz') {
+                                                                    else if(field === 'associateName') {
                                                                         const val = e.target.value;
                                                                         const email = associateEmailMap[val] || '';
                                                                         setFormData(p => ({ ...p, [field]: val, associateEmail: email }));
                                                                     }
-                                                                    else if(field === 'mentorName' && newTaskType === 'mentor_audit') {
+                                                                    else if(field === 'mentorName') {
                                                                         const val = e.target.value;
                                                                         const email = mentorEmailMap[val] || '';
                                                                         setFormData(p => ({ ...p, [field]: val, mentorEmail: email }));
@@ -2103,7 +2147,8 @@
                                                                 {field === 'hipProduct' && Object.keys(globalHipHierarchy).map((k, idx) => <option key={`${k}-${idx}`} value={k} className="font-bold">{k}</option>)}
                                                                 {field === 'hipCategory' && formData.hipProduct && Object.keys(globalHipHierarchy[formData.hipProduct] || {}).map((c, idx) => <option key={`${c}-${idx}`} value={c} className="font-bold">{c}</option>)}
                                                                 {field === 'hipRequestType' && formData.hipCategory && (globalHipHierarchy[formData.hipProduct]?.[formData.hipCategory] || []).map((o, idx) => <option key={`${o}-${idx}`} value={o} className="font-bold">{o}</option>)}
-                                                                {field !== 'resolution' && !field.startsWith('hip') && !['associateName', 'associateEmail', 'mentorName', 'pendingReasonDetail', 'status'].includes(field) && (customOptions[field] || []).map((o, idx) => <option key={`${o}-${idx}`} value={o} className="font-bold">{o}</option>)}
+                                                                {field === 'associateCoached' && ['Yes', 'No'].map((o, idx) => <option key={`${o}-${idx}`} value={o} className="font-bold">{o}</option>)}
+                                                                {field !== 'resolution' && !field.startsWith('hip') && !['associateName', 'associateEmail', 'mentorName', 'pendingReasonDetail', 'status', 'associateCoached'].includes(field) && (customOptions[field] || []).map((o, idx) => <option key={`${o}-${idx}`} value={o} className="font-bold">{o}</option>)}
                                                                 {field === 'pendingReasonDetail' && customOptions.pendingReasonDetail.map((o, idx) => <option key={`${o}-${idx}`} value={o} className="font-bold">{o}</option>)}
                                                                 {!isAuditReadOnly && <option value="ADD_NEW_CUSTOM" className="text-blue-600 italic font-black font-bold uppercase text-[10px] font-bold">+ Add New Item...</option>}
                                                             </select>
