@@ -175,6 +175,28 @@
             "Mohamed Mounir": "mohamed.mounir@tempo.fit"
         };
 
+        // --- Helper Function: Unify Agent/Mentor/Associate Names ---
+        const normalizeAgentName = (rawName) => {
+            if (!rawName) return 'N/A';
+            const lowerName = String(rawName).toLowerCase().trim();
+            const allMaps = { ...mentorEmailMap, ...associateEmailMap };
+            
+            // Reverse lookup: check if the string matches a known email prefix or full name
+            for (const [fullName, email] of Object.entries(allMaps)) {
+                const prefix = email.split('@')[0].toLowerCase();
+                if (lowerName === prefix || lowerName === fullName.toLowerCase()) {
+                    return fullName;
+                }
+            }
+            
+            // If it's a dot-separated email prefix but not in the map, capitalize it nicely
+            if (lowerName.includes('.') && !lowerName.includes(' ')) {
+                return lowerName.split('.').map(part => part.charAt(0).toUpperCase() + part.slice(1)).join(' ');
+            }
+            
+            return rawName;
+        };
+
         // --- Data Defaults ---
         const initialAssociateList = Object.keys(associateEmailMap);
         const initialMentorList = Object.keys(mentorEmailMap);
@@ -266,6 +288,9 @@
                     const counts = {};
                     filteredData.forEach(t => {
                         let value = ['status', 'agent'].includes(field) ? t[field] : t.details?.[field] || 'N/A';
+                        if (['agent', 'mentorName', 'associateName'].includes(field)) {
+                            value = normalizeAgentName(value);
+                        }
                         counts[value] = (counts[value] || 0) + 1;
                     });
                     
@@ -341,8 +366,6 @@
             const [editingTaskId, setEditingTaskId] = useState(null);
             const [newTaskType, setNewTaskType] = useState('disputes');
             const [formData, setFormData] = useState({});
-            const [currentPage, setCurrentPage] = useState(1);
-            const itemsPerPage = 10;
             
             // PIP State
             const [isPipModalOpen, setIsPipModalOpen] = useState(false);
@@ -963,6 +986,9 @@
                     const counts = {};
                     filteredData.forEach(t => {
                         let value = ['status', 'agent'].includes(analyticsField) ? t[analyticsField] : t.details?.[analyticsField] || 'N/A';
+                        if (['agent', 'mentorName', 'associateName'].includes(analyticsField)) {
+                            value = normalizeAgentName(value);
+                        }
                         counts[value] = (counts[value] || 0) + 1;
                     });
                     const ctx = chartRef.current.getContext('2d');
@@ -1066,9 +1092,9 @@
                 if (reportFilters.category !== 'all') filtered = filtered.filter(t => t.type === reportFilters.category);
                 if (reportFilters.agent !== 'all') {
                     filtered = filtered.filter(t => 
-                        t.agent === reportFilters.agent || 
-                        t.details?.mentorName === reportFilters.agent || 
-                        t.details?.associateName === reportFilters.agent
+                        normalizeAgentName(t.agent) === reportFilters.agent || 
+                        normalizeAgentName(t.details?.mentorName) === reportFilters.agent || 
+                        normalizeAgentName(t.details?.associateName) === reportFilters.agent
                     );
                 }
                 if (reportFilters.startDate) filtered = filtered.filter(t => new Date(t.date) >= new Date(reportFilters.startDate));
