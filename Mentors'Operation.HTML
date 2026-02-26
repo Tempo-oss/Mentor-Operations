@@ -140,7 +140,7 @@
         const ArrowUpCircle = (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="10"/><path d="m16 12-4-4-4 4"/><path d="M12 16V8"/></>} />;
 
         // --- Maps ---
-        const associateEmailMap = {
+        const initialAssociateEmailMap = {
             "Ariath Piol": "ariath.piol@tempo.fit",
             "Job James": "job.james@tempo.fit",
             "Lina Hesham": "linahesham@tempo.fit",
@@ -169,38 +169,14 @@
             "Youkabed Farid": "youkabed.farid@tempo.fit"
         };
 
-        const mentorEmailMap = {
+        const initialMentorEmailMap = {
             "Noha Radwan": "noha.radwan@tempo.fit",
             "Rashad Mohamed": "rashad.mohamed@tempo.fit",
             "Emad Mohamed": "emad.mohamed@tempo.fit",
             "Mohamed Mounir": "mohamed.mounir@tempo.fit"
         };
 
-        // --- Helper Function: Unify Agent/Mentor/Associate Names ---
-        const normalizeAgentName = (rawName) => {
-            if (!rawName) return 'N/A';
-            const lowerName = String(rawName).toLowerCase().trim();
-            const allMaps = { ...mentorEmailMap, ...associateEmailMap };
-            
-            // Reverse lookup: check if the string matches a known email prefix or full name
-            for (const [fullName, email] of Object.entries(allMaps)) {
-                const prefix = email.split('@')[0].toLowerCase();
-                if (lowerName === prefix || lowerName === fullName.toLowerCase()) {
-                    return fullName;
-                }
-            }
-            
-            // If it's a dot-separated email prefix but not in the map, capitalize it nicely
-            if (lowerName.includes('.') && !lowerName.includes(' ')) {
-                return lowerName.split('.').map(part => part.charAt(0).toUpperCase() + part.slice(1)).join(' ');
-            }
-            
-            return rawName;
-        };
-
         // --- Data Defaults ---
-        const initialAssociateList = Object.keys(associateEmailMap);
-        const initialMentorList = Object.keys(mentorEmailMap);
         const defaultTabs = ['dashboard', 'logs', 'analytics', 'reports'];
         
         const auditAttributes = [
@@ -268,7 +244,7 @@
         };
 
         // --- Individual Pie Chart Sub-Component ---
-        function IndividualAnalyticsChart({ categoryKey, categoryLabel, fields, allTasks, isDarkMode }) {
+        function IndividualAnalyticsChart({ categoryKey, categoryLabel, fields, allTasks, isDarkMode, normalizeAgentName }) {
             const chartRef = useRef(null);
             const chartInstance = useRef(null);
             const [field, setField] = useState('status');
@@ -313,7 +289,7 @@
                     });
                 }
                 return () => { if (chartInstance.current) chartInstance.current.destroy(); };
-            }, [categoryKey, field, startDate, endDate, allTasks, isDarkMode]);
+            }, [categoryKey, field, startDate, endDate, allTasks, isDarkMode, normalizeAgentName]);
 
             const hasData = allTasks.filter(t => t.type === categoryKey).length > 0;
 
@@ -368,8 +344,6 @@
             const [editingTaskId, setEditingTaskId] = useState(null);
             const [newTaskType, setNewTaskType] = useState('disputes');
             const [formData, setFormData] = useState({});
-            const [currentPage, setCurrentPage] = useState(1);
-            const itemsPerPage = 10;
             
             // PIP State
             const [isPipModalOpen, setIsPipModalOpen] = useState(false);
@@ -379,11 +353,11 @@
             const [isWarningModalOpen, setIsWarningModalOpen] = useState(false);
             const [warningData, setWarningData] = useState({});
 
-            // Audit Dashboard State (For Dashboard view)
+            // Audit Dashboard State
             const [auditDashMentor, setAuditDashMentor] = useState('');
             const [auditDashRange, setAuditDashRange] = useState({ start: '', end: '' });
             
-            // New Randomizer State
+            // Randomizer State
             const [auditRandomizerRange, setAuditRandomizerRange] = useState({ start: '', end: '' });
 
             // Admin task type filtering state
@@ -410,10 +384,34 @@
             const [authPassword, setAuthPassword] = useState('');
             const [newInternalPassword, setNewInternalPassword] = useState('');
 
-            // Config State
+            // Config / Agent Maps State
+            const [mentorMap, setMentorMap] = useState(initialMentorEmailMap);
+            const [associateMap, setAssociateMap] = useState(initialAssociateEmailMap);
             const [globalHipHierarchy, setGlobalHipHierarchy] = useState(initialHIPHierarchy);
-            const [globalAssociates, setGlobalAssociates] = useState(initialAssociateList);
-            const [globalMentors, setGlobalMentors] = useState(initialMentorList);
+
+            // Derived Lists
+            const globalMentors = useMemo(() => Object.keys(mentorMap).sort(), [mentorMap]);
+            const globalAssociates = useMemo(() => Object.keys(associateMap).sort(), [associateMap]);
+
+            // Helper: Normalize Agent Names
+            const normalizeAgentName = useMemo(() => (rawName) => {
+                if (!rawName) return 'N/A';
+                const lowerName = String(rawName).toLowerCase().trim();
+                const allMaps = { ...mentorMap, ...associateMap };
+                
+                for (const [fullName, email] of Object.entries(allMaps)) {
+                    const prefix = email.split('@')[0].toLowerCase();
+                    if (lowerName === prefix || lowerName === fullName.toLowerCase()) {
+                        return fullName;
+                    }
+                }
+                
+                if (lowerName.includes('.') && !lowerName.includes(' ')) {
+                    return lowerName.split('.').map(part => part.charAt(0).toUpperCase() + part.slice(1)).join(' ');
+                }
+                
+                return rawName;
+            }, [mentorMap, associateMap]);
 
             // Analytics State
             const chartRef = useRef(null);
@@ -434,15 +432,15 @@
                 surpriseAndDelightReason: ["Delivery ETA", "Wrong color", "Technical issue", "SRLimited access", "Missing discount", "Compatibility", "Lack of content"],
                 surpriseAndDelightType: ["Water Bottle", "Sweat Towel", "Yoga Block", "Recovery Roller", "Gift Box", "axis-performance-hat-black", "axis-performance-hat-slate-grey", "tempo-workout-gloves", "motive-training-tee-black", "motive-training-tee-1", "Pinnacle Knit Beanie"],
                 validRequest: ["Yes", "No"], validHip: ["Yes", "No"], emailSent: ["Yes", "No"], subscriptionStatus: ["Active", "Cancelled"],
-            pendingReasonDetail: ["waiting on Internal", "waiting on Customer"],
-            invalidReason: ["Outside Scope", "Incorrect Channel", "Missing Required Information", "No Response from Associate"],
-            warningReason: ["Attendance", "Performance", "Behavior", "Policy Violation"],
-            escalationCategory: ["Hardware", "Software", "Logistics", "Membership", "Other"],
-            escalationSubCategory: ["Delayed Shipping", "Damage", "Bug", "Billing Issue", "Other"],
-            reasonForEscalation: ["SLA Breach", "High Priority Customer", "Complex Issue", "Management Request"]
-        });
+                pendingReasonDetail: ["waiting on Internal", "waiting on Customer"],
+                invalidReason: ["Outside Scope", "Incorrect Channel", "Missing Required Information", "No Response from Associate"],
+                warningReason: ["Attendance", "Performance", "Behavior", "Policy Violation"],
+                escalationCategory: ["Hardware", "Software", "Logistics", "Membership", "Other"],
+                escalationSubCategory: ["Delayed Shipping", "Damage", "Bug", "Billing Issue", "Other"],
+                reasonForEscalation: ["SLA Breach", "High Priority Customer", "Complex Issue", "Management Request"]
+            });
 
-        const [customInputTarget, setCustomInputTarget] = useState(null);
+            const [customInputTarget, setCustomInputTarget] = useState(null);
             const [reportFilters, setReportFilters] = useState({ category: 'all', agent: 'all', startDate: '', endDate: '' });
             const [generatedReport, setGeneratedReport] = useState(null);
             const [selectedReportColumns, setSelectedReportColumns] = useState(['type', 'agent', 'status', 'date']);
@@ -508,8 +506,28 @@
                     const { data: configData, error: configErr } = await supabase.from('app_config').select('*').eq('id', 1).maybeSingle();
                     if (!configErr && configData) {
                         if (configData.hip_hierarchy) setGlobalHipHierarchy(prev => ({...prev, ...configData.hip_hierarchy}));
-                        if (configData.associates) setGlobalAssociates(prev => Array.from(new Set([...prev, ...configData.associates])));
-                        if (configData.mentors) setGlobalMentors(prev => Array.from(new Set([...prev, ...configData.mentors])));
+                        
+                        // Mentor Config
+                        if (configData.mentorMap) setMentorMap(configData.mentorMap);
+                        else if (configData.mentors) {
+                            // Migrate on the fly from old format to maps
+                            setMentorMap(prev => {
+                                const m = {...prev};
+                                configData.mentors.forEach(name => { if(!m[name]) m[name] = `${name.toLowerCase().replace(' ', '.')}@tempo.fit`; });
+                                return m;
+                            });
+                        }
+
+                        // Associate Config
+                        if (configData.associateMap) setAssociateMap(configData.associateMap);
+                        else if (configData.associates) {
+                            setAssociateMap(prev => {
+                                const m = {...prev};
+                                configData.associates.forEach(name => { if(!m[name]) m[name] = `${name.toLowerCase().replace(' ', '.')}@tempo.fit`; });
+                                return m;
+                            });
+                        }
+
                         if (configData.custom_options) setCustomOptions(prev => {
                             const merged = {...prev};
                             Object.keys(configData.custom_options).forEach(key => {
@@ -545,7 +563,7 @@
             // Set up Audit Dashboard Mentor mapping
             useEffect(() => {
                 if (userProfile) {
-                    const foundMentor = Object.keys(mentorEmailMap).find(name => mentorEmailMap[name] === userProfile.email);
+                    const foundMentor = Object.keys(mentorMap).find(name => mentorMap[name] === userProfile.email);
                     if (foundMentor) {
                         setAuditDashMentor(foundMentor);
                     } else if (userProfile.role === 'Admin') {
@@ -554,7 +572,7 @@
                         setAuditDashMentor(userProfile.email.split('@')[0]);
                     }
                 }
-            }, [userProfile, globalMentors]);
+            }, [userProfile, globalMentors, mentorMap]);
             
             // Deep Linking Handler
             useEffect(() => {
@@ -1082,7 +1100,7 @@
                     if (chartInstance.current) chartInstance.current.destroy(); 
                     if (pieChartInstance.current) pieChartInstance.current.destroy();
                 };
-            }, [activeTab, analyticsCategory, analyticsField, analyticsDateRange, tasks, isDarkMode]);
+            }, [activeTab, analyticsCategory, analyticsField, analyticsDateRange, tasks, isDarkMode, normalizeAgentName]);
 
             const saveGlobalConfig = async (newConfig) => {
                 const { error } = await supabase.from('app_config').upsert({ id: 1, ...newConfig });
@@ -1229,12 +1247,12 @@
             }
 
             if (userProfile?.error) return <div className="flex flex-col h-screen items-center justify-center font-bold gap-4 p-8 text-center">{userProfile.message} <button onClick={() => supabase.auth.signOut()} className="px-8 py-2 bg-blue-600 text-white rounded">Logout</button></div>;
-        if (!userProfile) return <div className="flex h-screen items-center justify-center font-bold">Verifying authorization profile...</div>;
+            if (!userProfile) return <div className="flex h-screen items-center justify-center font-bold">Verifying authorization profile...</div>;
 
-        // Admin Logic: Identify dropdowns belonging to the chosen task type
-        const adminDropdowns = (adminValidationCategories[adminSelectedTaskType]?.fields || []).filter(f => ['associateName', 'associateEmail', 'mentorName', 'team', 'productType', 'surpriseAndDelightType', 'resolution', 'pendingReason', 'disputeReason', 'reasonForSupport', 'validHip', 'validRequest', 'subscriptionStatus', 'emailSent', 'disputedProduct', 'invalidReason', 'surpriseAndDelightReason', 'hipProduct', 'hipCategory', 'hipRequestType', 'status', 'pendingReasonDetail', 'warningReason', 'escalationCategory', 'escalationSubCategory', 'reasonForEscalation'].includes(f));
+            // Admin Logic: Identify dropdowns belonging to the chosen task type (Removed associate/mentor names from generic list)
+            const adminDropdowns = (adminValidationCategories[adminSelectedTaskType]?.fields || []).filter(f => ['team', 'productType', 'surpriseAndDelightType', 'resolution', 'pendingReason', 'disputeReason', 'reasonForSupport', 'validHip', 'validRequest', 'subscriptionStatus', 'emailSent', 'disputedProduct', 'invalidReason', 'surpriseAndDelightReason', 'hipProduct', 'hipCategory', 'hipRequestType', 'status', 'pendingReasonDetail', 'warningReason', 'escalationCategory', 'escalationSubCategory', 'reasonForEscalation'].includes(f));
 
-        return (
+            return (
                 <div className="min-h-screen pb-20">
                     <header className="bg-white dark:bg-slate-900 border-b dark:border-slate-800 sticky top-0 z-20">
                         <div className="max-w-7xl mx-auto px-6 flex justify-between items-center h-16">
@@ -1262,7 +1280,7 @@
                                     <Card className="p-6 border-l-4 border-l-emerald-500"><p className="text-slate-400 dark:text-slate-500 text-[10px] font-black uppercase mb-1">Resolved Today</p><h3 className="text-4xl font-bold text-emerald-600">{tasks.filter(t => t.status !== 'Pending' && t.type !== 'pip' && t.type !== 'warning' && new Date(t.date).toDateString() === new Date().toDateString()).length}</h3></Card>
                                 </div>
 
-                                {/* Task Buttons Priority above pending actions (Filter out mentor_audit so it strictly stays in the Audits tab for creation) */}
+                                {/* Task Buttons Priority above pending actions */}
                                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
                                     {Object.entries(categories).filter(([key]) => key !== 'mentor_audit').map(([key, cfg]) => (
                                         <button key={key} onClick={() => { setNewTaskType(key); setEditingTaskId(null); setFormData({}); setIsFormOpen(true); }} className="p-4 bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-xl text-center hover:shadow-md transition-all group"><div className={`h-10 w-10 mx-auto rounded-lg flex items-center justify-center mb-2 bg-${cfg.color}-100 dark:bg-${cfg.color}-900/30`}>{React.createElement(cfg.icon, { className: `h-5 w-5 text-${cfg.color}-600` })}</div><p className="text-[9px] font-black text-slate-500 uppercase font-bold">{cfg.label}</p><p className="text-lg font-black dark:text-white font-bold">{tasks.filter(t => t.type === key).length}</p></button>
@@ -1502,7 +1520,8 @@
                                             categoryLabel={c.label} 
                                             fields={c.fields.filter(f => !f.includes('Module'))} 
                                             allTasks={tasks} 
-                                            isDarkMode={isDarkMode} 
+                                            isDarkMode={isDarkMode}
+                                            normalizeAgentName={normalizeAgentName} 
                                         />
                                     ))}
                                 </div>
@@ -1695,9 +1714,79 @@
                                         </div>
                                     </div>
 
+                                    {/* Staff Directory Block for form Dropdowns */}
+                                    <div className="mb-12 border-b dark:border-slate-800 pb-12 font-bold">
+                                        <h3 className="text-sm font-black uppercase text-slate-400 mb-4 font-bold">Staff Directory (Form Dropdowns)</h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                            {/* Mentors */}
+                                            <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-2xl border dark:border-slate-700">
+                                                <h4 className="text-xs font-black uppercase text-blue-500 mb-4">Mentors Dropdown</h4>
+                                                <div className="flex gap-2 mb-4">
+                                                    <input id="new-mentor-name" placeholder="Name" className="flex-1 p-2 bg-white dark:bg-slate-900 border dark:border-slate-700 rounded-lg text-xs outline-none dark:text-white" />
+                                                    <input id="new-mentor-email" placeholder="Email" className="flex-1 p-2 bg-white dark:bg-slate-900 border dark:border-slate-700 rounded-lg text-xs outline-none dark:text-white" />
+                                                    <button onClick={() => {
+                                                        const nameInput = document.getElementById('new-mentor-name');
+                                                        const emailInput = document.getElementById('new-mentor-email');
+                                                        const name = nameInput.value.trim();
+                                                        const email = emailInput.value.trim();
+                                                        if(name && email) {
+                                                            setMentorMap(prev => ({...prev, [name]: email}));
+                                                            nameInput.value = '';
+                                                            emailInput.value = '';
+                                                        } else alert("Name and Email required.");
+                                                    }} className="px-4 bg-blue-600 text-white rounded-lg text-[10px] font-black uppercase hover:bg-blue-700 transition-colors">Add</button>
+                                                </div>
+                                                <div className="max-h-48 overflow-y-auto space-y-2">
+                                                    {Object.entries(mentorMap).sort(([a], [b]) => a.localeCompare(b)).map(([name, email]) => (
+                                                        <div key={name} className="flex justify-between items-center p-2 bg-white dark:bg-slate-900 border dark:border-slate-700 rounded-lg text-xs">
+                                                            <div><span className="font-bold dark:text-slate-200">{name}</span> <span className="text-slate-500 ml-2">{email}</span></div>
+                                                            <button onClick={() => {
+                                                                const newMap = {...mentorMap};
+                                                                delete newMap[name];
+                                                                setMentorMap(newMap);
+                                                            }} className="text-rose-500 hover:text-rose-700">&times;</button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            {/* Associates */}
+                                            <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-2xl border dark:border-slate-700">
+                                                <h4 className="text-xs font-black uppercase text-emerald-500 mb-4">Associates Dropdown</h4>
+                                                <div className="flex gap-2 mb-4">
+                                                    <input id="new-associate-name" placeholder="Name" className="flex-1 p-2 bg-white dark:bg-slate-900 border dark:border-slate-700 rounded-lg text-xs outline-none dark:text-white" />
+                                                    <input id="new-associate-email" placeholder="Email" className="flex-1 p-2 bg-white dark:bg-slate-900 border dark:border-slate-700 rounded-lg text-xs outline-none dark:text-white" />
+                                                    <button onClick={() => {
+                                                        const nameInput = document.getElementById('new-associate-name');
+                                                        const emailInput = document.getElementById('new-associate-email');
+                                                        const name = nameInput.value.trim();
+                                                        const email = emailInput.value.trim();
+                                                        if(name && email) {
+                                                            setAssociateMap(prev => ({...prev, [name]: email}));
+                                                            nameInput.value = '';
+                                                            emailInput.value = '';
+                                                        } else alert("Name and Email required.");
+                                                    }} className="px-4 bg-emerald-600 text-white rounded-lg text-[10px] font-black uppercase hover:bg-emerald-700 transition-colors">Add</button>
+                                                </div>
+                                                <div className="max-h-48 overflow-y-auto space-y-2">
+                                                    {Object.entries(associateMap).sort(([a], [b]) => a.localeCompare(b)).map(([name, email]) => (
+                                                        <div key={name} className="flex justify-between items-center p-2 bg-white dark:bg-slate-900 border dark:border-slate-700 rounded-lg text-xs">
+                                                            <div><span className="font-bold dark:text-slate-200">{name}</span> <span className="text-slate-500 ml-2">{email}</span></div>
+                                                            <button onClick={() => {
+                                                                const newMap = {...associateMap};
+                                                                delete newMap[name];
+                                                                setAssociateMap(newMap);
+                                                            }} className="text-rose-500 hover:text-rose-700">&times;</button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
                                     {/* User Authorizations Block */}
                                     <div className="space-y-6 mb-12 font-bold">
-                                        <h3 className="text-xs font-black uppercase text-slate-400 font-bold">User Authorizations</h3>
+                                        <h3 className="text-xs font-black uppercase text-slate-400 font-bold">User Authorizations (System Login Access)</h3>
                                         <div className="flex gap-4 bg-slate-50 dark:bg-slate-800/50 p-6 rounded-2xl border dark:border-slate-700 font-bold font-bold">
                                             <input type="email" placeholder="tempo.fit email" className="flex-1 p-3 border dark:border-slate-700 dark:bg-slate-900 dark:text-white rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 bg-white font-bold" onChange={e => setFormData(p => ({...p, newEmail: e.target.value}))} value={formData.newEmail || ''} />
                                             <select className="p-3 border dark:border-slate-700 dark:bg-slate-900 dark:text-white rounded-xl outline-none bg-white font-bold" onChange={e => setFormData(p => ({...p, newRole: e.target.value}))} value={formData.newRole || 'Mentor'}><option value="Mentor">Mentor</option><option value="Admin">Admin</option></select>
@@ -1724,7 +1813,7 @@
 
                                     {/* Requirement: Hierarchical Data Validation (Select Task Type first) */}
                                     <div className="space-y-8 pt-12 border-t dark:border-slate-800 font-bold">
-                                        <div className="flex items-center gap-3 font-bold"><DatabaseIcon className="h-5 w-5 text-emerald-600" /><h3 className="text-sm font-black uppercase text-slate-400">Data Validation Center</h3></div>
+                                        <div className="flex items-center gap-3 font-bold"><DatabaseIcon className="h-5 w-5 text-emerald-600" /><h3 className="text-sm font-black uppercase text-slate-400">Data Validation Center (Other Fields)</h3></div>
                                         <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border dark:border-slate-700 space-y-6 font-bold">
                                             <div>
                                                 <label className="text-[10px] font-black uppercase mb-2 block text-slate-500 font-bold">Step 1: Select Main Task Type to Manage Lists</label>
@@ -1737,21 +1826,17 @@
                                                     <div key={field} className="p-4 bg-white dark:bg-slate-900 border dark:border-slate-700 rounded-xl space-y-3 shadow-sm font-bold">
                                                         <h4 className="text-[10px] font-black uppercase text-blue-500 font-bold">{field.replace(/([A-Z])/g, ' $1')}</h4>
                                                         <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-1 font-bold">
-                                                            {(field === 'associateName' || (field === 'associateEmail' && adminSelectedTaskType !== 'weekly_quiz') ? globalAssociates : (field === 'mentorName' ? globalMentors : customOptions[field] || [])).map((item, idx) => (
+                                                            {(customOptions[field] || []).map((item, idx) => (
                                                                 <Badge key={`${item}-${idx}`} color="slate"><div className="flex items-center gap-2 font-bold">{item}<button onClick={() => {
-                                                                    if (field.includes('associate') && adminSelectedTaskType !== 'weekly_quiz') setGlobalAssociates(globalAssociates.filter(i => i !== item));
-                                                                    else if (field === 'mentorName') setGlobalMentors(globalMentors.filter(i => i !== item));
-                                                                    else setCustomOptions({...customOptions, [field]: customOptions[field].filter(i => i !== item)});
+                                                                    setCustomOptions({...customOptions, [field]: customOptions[field].filter(i => i !== item)});
                                                                 }} className="text-rose-500 hover:text-rose-700 font-bold">&times;</button></div></Badge>
                                                             ))}
                                                         </div>
                                                         <div className="flex gap-2 font-bold font-bold">
-                                                            <input id={`add-${field}`} className="flex-1 p-2 bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-lg text-xs font-bold" placeholder="Add Item..." />
+                                                            <input id={`add-${field}`} className="flex-1 p-2 bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-lg text-xs font-bold dark:text-white outline-none" placeholder="Add Item..." />
                                                             <button onClick={() => {
                                                                     const val = document.getElementById(`add-${field}`).value; if(!val) return;
-                                                                    if (field.includes('associate') && adminSelectedTaskType !== 'weekly_quiz') setGlobalAssociates([...globalAssociates, val]);
-                                                                    else if (field === 'mentorName') setGlobalMentors([...globalMentors, val]);
-                                                                    else setCustomOptions({...customOptions, [field]: [...(customOptions[field] || []), val]});
+                                                                    setCustomOptions({...customOptions, [field]: [...(customOptions[field] || []), val]});
                                                                     document.getElementById(`add-${field}`).value = '';
                                                                 }} className="px-3 bg-blue-600 text-white rounded-lg text-[10px] font-black uppercase tracking-tighter">ADD</button>
                                                         </div>
@@ -1792,7 +1877,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="mt-10 pt-8 border-t dark:border-slate-800 font-bold"><button onClick={() => saveGlobalConfig({ hip_hierarchy: globalHipHierarchy, associates: globalAssociates, mentors: globalMentors, custom_options: customOptions })} className="w-full py-4 bg-emerald-600 text-white font-black rounded-xl uppercase tracking-widest hover:bg-emerald-700 transition-all font-bold font-bold">Commit All Changes to Database</button></div>
+                                    <div className="mt-10 pt-8 border-t dark:border-slate-800 font-bold"><button onClick={() => saveGlobalConfig({ hip_hierarchy: globalHipHierarchy, mentorMap: mentorMap, associateMap: associateMap, custom_options: customOptions })} className="w-full py-4 bg-emerald-600 text-white font-black rounded-xl uppercase tracking-widest hover:bg-emerald-700 transition-all font-bold font-bold">Commit All Changes to Database</button></div>
                                 </Card>
                             </div>
                         )}
@@ -1826,7 +1911,7 @@
                                                     {userProfile.role === 'Admin' ? (
                                                         <select required className="w-full p-3 bg-slate-50 dark:bg-slate-900 border dark:border-slate-700 rounded-xl outline-none text-sm font-bold dark:text-white focus:ring-2 focus:ring-purple-500" value={pipData.mentorName || ''} onChange={(e) => {
                                                             const val = e.target.value;
-                                                            setPipData(p => ({ ...p, mentorName: val, mentorEmail: mentorEmailMap[val] || '' }));
+                                                            setPipData(p => ({ ...p, mentorName: val, mentorEmail: mentorMap[val] || '' }));
                                                         }}>
                                                             <option value="">Select Mentor...</option>
                                                             {globalMentors.map(a => <option key={a} value={a}>{a}</option>)}
@@ -1955,7 +2040,7 @@
                                                 {userProfile.role === 'Admin' ? (
                                                     <select required className="w-full p-3 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-xl outline-none text-sm font-bold dark:text-white focus:ring-2 focus:ring-rose-500" value={warningData.mentorName || ''} onChange={(e) => {
                                                         const val = e.target.value;
-                                                        setWarningData(p => ({ ...p, mentorName: val, mentorEmail: mentorEmailMap[val] || '' }));
+                                                        setWarningData(p => ({ ...p, mentorName: val, mentorEmail: mentorMap[val] || '' }));
                                                     }}>
                                                         <option value="">Select Mentor...</option>
                                                         {globalMentors.map(a => <option key={a} value={a}>{a}</option>)}
@@ -2085,7 +2170,7 @@
                                                                 const auditedHipIds = tasks.filter(t => t.type === 'mentor_audit').map(t => t.details?.hipLogReference).filter(Boolean);
                                                                 let hL = tasks.filter(t => t.type === 'hip_request' && t.status !== 'Audited' && !auditedHipIds.includes(t.id)); 
                                                                 if (formData.mentorName) {
-                                                                    const expectedAgent = (mentorEmailMap[formData.mentorName] || '').split('@')[0];
+                                                                    const expectedAgent = (mentorMap[formData.mentorName] || '').split('@')[0];
                                                                     if (expectedAgent) hL = hL.filter(t => t.agent.toLowerCase() === expectedAgent.toLowerCase());
                                                                 }
                                                                 if (auditRandomizerRange.start) hL = hL.filter(t => new Date(t.date) >= new Date(auditRandomizerRange.start));
@@ -2096,14 +2181,14 @@
                                                                 }
                                                                 if (!hL.length) return alert("No eligible unaudited HIP logs found for the selected criteria."); 
                                                                 const r = hL[Math.floor(Math.random() * hL.length)]; 
-                                                                const foundMentorName = Object.keys(mentorEmailMap).find(k => mentorEmailMap[k].split('@')[0].toLowerCase() === r.agent.toLowerCase()) || r.agent;
+                                                                const foundMentorName = Object.keys(mentorMap).find(k => mentorMap[k].split('@')[0].toLowerCase() === r.agent.toLowerCase()) || r.agent;
                                                                 setFormData(p => ({ 
                                                                     ...p, 
                                                                     hipLogReference: r.id, 
                                                                     auditedTicket: r.details.ticketLink, 
                                                                     auditedSlack: r.details.slackLink,
                                                                     mentorName: foundMentorName,
-                                                                    mentorEmail: mentorEmailMap[foundMentorName] || ''
+                                                                    mentorEmail: mentorMap[foundMentorName] || ''
                                                                 })); 
                                                             }} className="p-3 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 hover:bg-emerald-200 dark:hover:bg-emerald-800/50 transition-colors rounded-xl flex items-center justify-center min-w-[3rem]" title="Pick Random Target">
                                                                 <Dice className="h-5 w-5 font-bold" />
@@ -2141,12 +2226,12 @@
                                                                     else if(field === 'hipCategory') setFormData(p=>({...p, hipCategory:e.target.value, hipRequestType:''})); 
                                                                     else if(field === 'associateName') {
                                                                         const val = e.target.value;
-                                                                        const email = associateEmailMap[val] || '';
+                                                                        const email = associateMap[val] || '';
                                                                         setFormData(p => ({ ...p, [field]: val, associateEmail: email }));
                                                                     }
                                                                     else if(field === 'mentorName') {
                                                                         const val = e.target.value;
-                                                                        const email = mentorEmailMap[val] || '';
+                                                                        const email = mentorMap[val] || '';
                                                                         setFormData(p => ({ ...p, [field]: val, mentorEmail: email }));
                                                                     }
                                                                     else handleInputChange(field, e.target.value);
@@ -2162,7 +2247,7 @@
                                                                 {field === 'associateCoached' && ['Yes', 'No'].map((o, idx) => <option key={`${o}-${idx}`} value={o} className="font-bold">{o}</option>)}
                                                                 {field !== 'resolution' && !field.startsWith('hip') && !['associateName', 'associateEmail', 'mentorName', 'pendingReasonDetail', 'status', 'associateCoached'].includes(field) && (customOptions[field] || []).map((o, idx) => <option key={`${o}-${idx}`} value={o} className="font-bold">{o}</option>)}
                                                                 {field === 'pendingReasonDetail' && customOptions.pendingReasonDetail.map((o, idx) => <option key={`${o}-${idx}`} value={o} className="font-bold">{o}</option>)}
-                                                                {!isAuditReadOnly && <option value="ADD_NEW_CUSTOM" className="text-blue-600 italic font-black font-bold uppercase text-[10px] font-bold">+ Add New Item...</option>}
+                                                                {!isAuditReadOnly && !['associateName', 'associateEmail', 'mentorName'].includes(field) && <option value="ADD_NEW_CUSTOM" className="text-blue-600 italic font-black font-bold uppercase text-[10px] font-bold">+ Add New Item...</option>}
                                                             </select>
                                                         )}
                                                         {customInputTarget === field && (<div className="mt-2 flex gap-2 animate-fade-in font-bold"><input type="text" id={`custom-${field}`} className="flex-1 p-2 border rounded-lg outline-none bg-white dark:bg-slate-900 dark:text-white font-bold" /><button type="button" onClick={() => handleAddCustomValue(field, document.getElementById(`custom-${field}`).value)} className="px-3 bg-blue-600 text-white rounded-lg text-[10px] font-black uppercase tracking-tighter font-bold">Add</button></div>)}
