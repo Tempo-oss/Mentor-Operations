@@ -138,6 +138,7 @@
         const Target = (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></>} />;
         const Calendar = (props) => <Icon {...props} path={<><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></>} />;
         const ArrowUpCircle = (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="10"/><path d="m16 12-4-4-4 4"/><path d="M12 16V8"/></>} />;
+        const ExternalLink = (props) => <Icon {...props} path={<><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></>} />;
 
         // --- Maps ---
         const initialAssociateEmailMap = {
@@ -1336,9 +1337,14 @@
                                                                             <p className="text-[10px] text-slate-400">{new Date(t.date).toLocaleDateString()}</p>
                                                                         </div>
                                                                     </div>
-                                                                    <div className="flex items-center gap-4">
+                                                                    <div className="flex items-center gap-2 sm:gap-4 flex-wrap justify-end">
+                                                                        {Object.entries(t.details || {}).filter(([k, v]) => (k.toLowerCase().includes('link') || k.toLowerCase().includes('url')) && v).map(([k, v]) => (
+                                                                            <a key={k} href={String(v).startsWith('http') ? v : `https://${v}`} target="_blank" rel="noreferrer" className={`px-2.5 py-1.5 ${k.toLowerCase().includes('slack') ? 'bg-teal-50 dark:bg-teal-900/30 text-teal-600 border-teal-200 dark:border-teal-800' : 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 border-blue-200 dark:border-blue-800'} border rounded-lg text-[10px] font-black uppercase tracking-widest hover:shadow-md transition-all flex items-center gap-1.5`}>
+                                                                                {k.replace(/([A-Z])/g, ' $1').split(' ')[0]} <ExternalLink className="h-3 w-3" />
+                                                                            </a>
+                                                                        ))}
                                                                         {t.status === 'Pending' && t.details?.pendingReasonDetail && <Badge color="amber">{t.details.pendingReasonDetail}</Badge>}
-                                                                        <button onClick={() => handleEditTask(t)} className="px-4 py-2 bg-white dark:bg-slate-900 border dark:border-slate-700 text-[10px] font-black uppercase tracking-widest rounded-lg hover:border-blue-500 dark:hover:border-blue-500 hover:text-blue-500 transition-colors shadow-sm">EDIT →</button>
+                                                                        <button onClick={() => handleEditTask(t)} className="px-4 py-2 bg-white dark:bg-slate-900 border dark:border-slate-700 text-[10px] font-black uppercase tracking-widest rounded-lg hover:border-blue-500 dark:hover:border-blue-500 hover:text-blue-500 transition-colors shadow-sm ml-2">EDIT →</button>
                                                                     </div>
                                                                 </div>
                                                             ))}
@@ -1480,8 +1486,22 @@
                             <div className="space-y-4 animate-fade-in font-bold">
                                 <div className="flex justify-between bg-white dark:bg-slate-900 p-4 rounded-xl border dark:border-slate-800 font-bold"><div className="relative flex-1 max-w-md font-bold"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" /><input type="text" placeholder="Deep Search logs (Names, Tickets, Emails, Slack URLs, HIP details)..." className="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 dark:text-white rounded-lg outline-none focus:ring-1 focus:ring-blue-500 font-bold" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} /></div><button onClick={() => { setEditingTaskId(null); setFormData({}); setIsFormOpen(true); }} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-black uppercase tracking-widest font-bold">+ NEW ENTRY</button></div>
                                 <Card className="overflow-hidden">
-                                    <table className="w-full text-left text-sm font-bold"><thead className="bg-slate-50 dark:bg-slate-800 border-b dark:border-slate-700 font-bold"><tr><th className="px-6 py-4 dark:text-slate-300 uppercase font-black text-[10px] font-bold">Category</th><th className="px-6 py-4 dark:text-slate-300 uppercase font-black text-[10px] font-bold">Original Agent</th><th className="px-6 py-4 dark:text-slate-300 uppercase font-black text-[10px] font-bold">Status</th><th className="px-6 py-4 text-right dark:text-slate-300 uppercase font-black text-[10px] font-bold">Actions</th></tr></thead>
-                                        <tbody className="divide-y dark:divide-slate-800 font-bold">{tasks.filter(t => t.type !== 'pip' && t.type !== 'warning' && t.type !== 'mentor_audit' && ((JSON.stringify(t) + " " + JSON.stringify(t.details) + " " + (categories[t.type]?.label || '')).toLowerCase().includes(searchTerm.toLowerCase()))).map(t => (<tr key={t.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 font-bold"><td className="px-6 py-4 font-bold dark:text-slate-200">{categories[t.type]?.label}</td><td className="px-6 py-4 dark:text-slate-400 font-bold">{t.agent}</td><td className="px-6 py-4 font-bold"><Badge color={t.status === 'Pending' ? 'amber' : (['Resolved', 'Won', 'Activated', 'Audited'].includes(t.status) ? 'green' : 'slate')}>{t.status}</Badge></td><td className="px-6 py-4 text-right font-bold"><button onClick={() => handleEditTask(t)} className="p-2 text-slate-400 hover:text-blue-600 transition-colors font-bold"><Edit className="h-4 w-4" /></button></td></tr>))}</tbody>
+                                    <table className="w-full text-left text-sm font-bold"><thead className="bg-slate-50 dark:bg-slate-800 border-b dark:border-slate-700 font-bold"><tr><th className="px-6 py-4 dark:text-slate-300 uppercase font-black text-[10px] font-bold">Category</th><th className="px-6 py-4 dark:text-slate-300 uppercase font-black text-[10px] font-bold">Original Agent</th><th className="px-6 py-4 dark:text-slate-300 uppercase font-black text-[10px] font-bold">Status</th><th className="px-6 py-4 dark:text-slate-300 uppercase font-black text-[10px] font-bold">Links</th><th className="px-6 py-4 text-right dark:text-slate-300 uppercase font-black text-[10px] font-bold">Actions</th></tr></thead>
+                                        <tbody className="divide-y dark:divide-slate-800 font-bold">{tasks.filter(t => t.type !== 'pip' && t.type !== 'warning' && t.type !== 'mentor_audit' && ((JSON.stringify(t) + " " + JSON.stringify(t.details) + " " + (categories[t.type]?.label || '')).toLowerCase().includes(searchTerm.toLowerCase()))).map(t => (<tr key={t.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 font-bold">
+                                            <td className="px-6 py-4 font-bold dark:text-slate-200">{categories[t.type]?.label}</td>
+                                            <td className="px-6 py-4 dark:text-slate-400 font-bold">{t.agent}</td>
+                                            <td className="px-6 py-4 font-bold"><Badge color={t.status === 'Pending' ? 'amber' : (['Resolved', 'Won', 'Activated', 'Audited'].includes(t.status) ? 'green' : 'slate')}>{t.status}</Badge></td>
+                                            <td className="px-6 py-4 font-bold">
+                                                <div className="flex flex-wrap gap-2">
+                                                    {Object.entries(t.details || {}).filter(([k, v]) => (k.toLowerCase().includes('link') || k.toLowerCase().includes('url')) && v).map(([k, v]) => (
+                                                        <a key={k} href={String(v).startsWith('http') ? v : `https://${v}`} target="_blank" rel="noreferrer" className={`p-1.5 ${k.toLowerCase().includes('slack') ? 'bg-teal-50 dark:bg-teal-900/30 text-teal-600' : 'bg-blue-50 dark:bg-blue-900/30 text-blue-600'} rounded-lg hover:opacity-80 transition-colors flex items-center justify-center`} title={`Open ${k.replace(/([A-Z])/g, ' $1')}`}>
+                                                            {k.toLowerCase().includes('slack') ? <MessageCircle className="h-4 w-4" /> : <ExternalLink className="h-4 w-4" />}
+                                                        </a>
+                                                    ))}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 text-right font-bold"><button onClick={() => handleEditTask(t)} className="p-2 text-slate-400 hover:text-blue-600 transition-colors font-bold"><Edit className="h-4 w-4 inline" /></button></td>
+                                        </tr>))}</tbody>
                                     </table>
                                 </Card>
                             </div>
@@ -1567,7 +1587,14 @@
                                                                 let val = row[col] || row.details?.[col] || '-';
                                                                 if (col === 'type') val = categories[row.type]?.label || row.type;
                                                                 if (col === 'date') val = new Date(val).toLocaleDateString();
-                                                                return <td key={col} className="px-6 py-4 font-medium dark:text-slate-300">{val}</td>
+                                                                
+                                                                let displayVal = val;
+                                                                if ((col.toLowerCase().includes('link') || col.toLowerCase().includes('url')) && val && val !== '-') {
+                                                                    const href = String(val).startsWith('http') ? val : `https://${val}`;
+                                                                    displayVal = <a href={href} target="_blank" rel="noreferrer" className="text-blue-500 hover:underline flex items-center gap-1 w-max">{String(val).length > 25 ? String(val).substring(0, 25) + '...' : val} <ExternalLink className="h-3 w-3" /></a>;
+                                                                }
+                                                                
+                                                                return <td key={col} className="px-6 py-4 font-medium dark:text-slate-300">{displayVal}</td>
                                                             })}
                                                         </tr>
                                                     ))}
@@ -2215,7 +2242,17 @@
                                         );
                                         
                                         const isDropdown = ['associateName', 'associateEmail', 'mentorName', 'team', 'productType', 'surpriseAndDelightType', 'resolution', 'pendingReason', 'disputeReason', 'reasonForSupport', 'validHip', 'validRequest', 'subscriptionStatus', 'emailSent', 'disputedProduct', 'invalidReason', 'surpriseAndDelightReason', 'hipProduct', 'hipCategory', 'hipRequestType', 'status', 'pendingReasonDetail', 'associateCoached', 'escalationCategory', 'escalationSubCategory', 'reasonForEscalation'].includes(field);
-                                        return (<div key={field} className="font-bold font-bold"><label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 block font-bold font-bold font-bold">{field.replace(/([A-Z])/g, ' $1')}</label>
+                                        
+                                        return (
+                                            <div key={field} className="font-bold font-bold">
+                                                <div className="flex justify-between items-center mb-1.5">
+                                                    <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block font-bold font-bold font-bold">{field.replace(/([A-Z])/g, ' $1')}</label>
+                                                    {(field.toLowerCase().includes('link') || field.toLowerCase().includes('url')) && formData[field] && (
+                                                        <a href={String(formData[field]).startsWith('http') ? formData[field] : `https://${formData[field]}`} target="_blank" rel="noreferrer" className="text-blue-500 hover:text-blue-700 text-[10px] flex items-center gap-1 uppercase font-black tracking-tighter transition-colors">
+                                                            Open <ExternalLink className="h-3 w-3" />
+                                                        </a>
+                                                    )}
+                                                </div>
                                                 {isDropdown ? (
                                                     <div className="font-bold">
                                                         {(field === 'status' && autoResolvedTypes.includes(newTaskType)) ? (
@@ -2252,7 +2289,9 @@
                                                         )}
                                                         {customInputTarget === field && (<div className="mt-2 flex gap-2 animate-fade-in font-bold"><input type="text" id={`custom-${field}`} className="flex-1 p-2 border rounded-lg outline-none bg-white dark:bg-slate-900 dark:text-white font-bold" /><button type="button" onClick={() => handleAddCustomValue(field, document.getElementById(`custom-${field}`).value)} className="px-3 bg-blue-600 text-white rounded-lg text-[10px] font-black uppercase tracking-tighter font-bold">Add</button></div>)}
                                                     </div>
-                                                ) : (<input readOnly={isAuditReadOnly} type={field.toLowerCase().includes('date') ? 'date' : 'text'} className="w-full p-3 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500 dark:text-white font-bold font-bold" value={formData[field] || ''} onChange={e => handleInputChange(field, e.target.value)} />)}</div>);
+                                                ) : (<input readOnly={isAuditReadOnly} type={field.toLowerCase().includes('date') ? 'date' : 'text'} className="w-full p-3 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500 dark:text-white font-bold font-bold" value={formData[field] || ''} onChange={e => handleInputChange(field, e.target.value)} />)}
+                                            </div>
+                                        );
                                         })}
                                     </div>
                                     {!isAuditReadOnly && <button type="submit" className="w-full py-4 bg-blue-600 text-white font-black rounded-2xl shadow-xl hover:bg-blue-700 transition-all uppercase tracking-widest shadow-blue-100 font-bold font-bold">Commit Record Entry</button>}
