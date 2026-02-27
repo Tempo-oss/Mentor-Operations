@@ -359,6 +359,8 @@
                 const d = new Date();
                 return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
             });
+            const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
+            const [bulkImportText, setBulkImportText] = useState('');
 
             // PIP State
             const [isPipModalOpen, setIsPipModalOpen] = useState(false);
@@ -407,6 +409,16 @@
             // Derived Lists
             const globalMentors = useMemo(() => Object.keys(mentorMap).sort(), [mentorMap]);
             const globalAssociates = useMemo(() => Object.keys(associateMap).sort(), [associateMap]);
+
+            // KPI Master Configuration
+            const kpiMetricsList = [
+                { label: 'Attendance', key: 'attendance', weight: 20, target: 95 },
+                { label: 'Quality', key: 'quality', weight: 20, target: 90 },
+                { label: 'MSV', key: 'msv', weight: 20, target: 85 },
+                { label: 'Calibration', key: 'calibration', weight: 20, target: 85 },
+                { label: 'Communication', key: 'communication', weight: 10, target: 100 },
+                { label: 'Tasks QA', key: 'tasksQa', weight: 10, target: 100 },
+            ];
 
             // Helper: Normalize Agent Names
             const normalizeAgentName = useMemo(() => (rawName) => {
@@ -1258,15 +1270,60 @@
             });
             const myAvgAuditScore = myFilteredAudits.length ? (myFilteredAudits.reduce((acc, curr) => acc + (parseInt(curr.details?.overallAuditScore) || 0), 0) / myFilteredAudits.length).toFixed(1) : 0;
             
-            // KPI Functions
-            const calculateKpiTotal = (scores) => {
-                if (!scores) return 0;
-                const weights = { attendance: 0.20, quality: 0.20, msv: 0.20, calibration: 0.20, communication: 0.10, tasksQa: 0.10 };
-                let total = 0;
-                for (const key in weights) {
-                    total += (parseFloat(scores[key]) || 0) * weights[key];
+            // KPI Functions & Advanced Logic
+            const calculateKpiMetrics = (scores) => {
+                if (!scores) return { total: 0, payout: 0, breakdown: {} };
+
+                let totalScore = 0;
+                let breakdown = {};
+                let attendanceMet = false;
+
+                for (const config of kpiMetricsList) {
+                    const score = parseFloat(scores[config.key]);
+                    let earnedWeight = 0;
+
+                    if (isNaN(score) || score < 80) {
+                        earnedWeight = 0;
+                    } else if (score >= config.target) {
+                        earnedWeight = config.weight;
+                    } else {
+                        // Takes percentage of the weight according to the score achieved
+                        earnedWeight = (score / 100) * config.weight;
+                    }
+
+                    breakdown[config.key] = {
+                        score: isNaN(score) ? 0 : score,
+                        earnedWeight: earnedWeight
+                    };
+                    totalScore += earnedWeight;
+
+                    // Check if Attendance target is met
+                    if (config.key === 'attendance') {
+                        if (!isNaN(score) && score >= config.target) {
+                            attendanceMet = true;
+                        }
+                    }
                 }
-                return total.toFixed(2);
+
+                let payout = 0;
+                if (totalScore < 80) {
+                    payout = 0; // below 80% won't get any KPIs
+                } else if (totalScore >= 80 && totalScore < 85) {
+                    payout = totalScore; // from 80 to 84 will have THIS PERCENTAGE ONLY
+                } else if (totalScore >= 85) {
+                    payout = 100; // above 85 will be granted the full KPIs
+                }
+
+                // Strictly enforce attendance rule: If target not met, zero payout
+                if (!attendanceMet) {
+                    payout = 0;
+                }
+
+                return {
+                    total: Number(totalScore.toFixed(2)),
+                    payout: Number(payout.toFixed(2)),
+                    breakdown: breakdown
+                };
             };
 
             const handleKpiChange = (mentorName, field, value) => {
@@ -1280,6 +1337,46 @@
                         }
                     }
                 }));
+            };
+
+            const handleBulkImport = () => {
+                if (!bulkImportText.trim()) return;
+                const rows = bulkImportText.trim().split('\n');
+                const updatedMonthData = { ...(kpiData[kpiMonth] || {}) };
+                let importedCount = 0;
+
+                rows.forEach(row => {
+                    const cols = row.split('\t');
+                    if (cols.length >= 2) { // At least Name + 1 col
+                        const rawName = cols[0].trim().toLowerCase();
+                        // Find matching mentor ignoring case/spaces
+                        const matchedMentor = globalMentors.find(m => m.toLowerCase().includes(rawName) || rawName.includes(m.toLowerCase()));
+                        
+                        if (matchedMentor && !['ariath piol', 'ariad', 'job james'].includes(matchedMentor.toLowerCase())) {
+                            const parseVal = (val) => {
+                                if (!val) return '';
+                                const parsed = parseFloat(String(val).replace(/[^0-9.]/g, ''));
+                                return isNaN(parsed) ? '' : parsed;
+                            };
+                            
+                            updatedMonthData[matchedMentor] = {
+                                ...(updatedMonthData[matchedMentor] || {}),
+                                attendance: cols[1] !== undefined ? parseVal(cols[1]) : (updatedMonthData[matchedMentor]?.attendance || ''),
+                                quality: cols[2] !== undefined ? parseVal(cols[2]) : (updatedMonthData[matchedMentor]?.quality || ''),
+                                msv: cols[3] !== undefined ? parseVal(cols[3]) : (updatedMonthData[matchedMentor]?.msv || ''),
+                                calibration: cols[4] !== undefined ? parseVal(cols[4]) : (updatedMonthData[matchedMentor]?.calibration || ''),
+                                communication: cols[5] !== undefined ? parseVal(cols[5]) : (updatedMonthData[matchedMentor]?.communication || ''),
+                                tasksQa: cols[6] !== undefined ? parseVal(cols[6]) : (updatedMonthData[matchedMentor]?.tasksQa || '')
+                            };
+                            importedCount++;
+                        }
+                    }
+                });
+
+                setKpiData(prev => ({...prev, [kpiMonth]: updatedMonthData}));
+                setBulkImportText('');
+                setIsBulkImportOpen(false);
+                alert(`Successfully imported data for ${importedCount} mentor(s). Don't forget to click 'SAVE KPIS' to commit to the database.`);
             };
 
             // ReadOnly Form state logic for Mentors reviewing Audits
@@ -1353,10 +1450,16 @@
                                             {(() => {
                                                 const myMentorName = Object.keys(mentorMap).find(name => mentorMap[name] === userProfile.email) || Object.keys(associateMap).find(name => associateMap[name] === userProfile.email) || userProfile.email.split('@')[0];
                                                 const myScores = (kpiData[kpiMonth] || {})[myMentorName] || {};
-                                                const total = calculateKpiTotal(myScores);
+                                                const kpiCalc = calculateKpiMetrics(myScores);
                                                 return (
-                                                    <div className={`h-24 w-24 rounded-full flex items-center justify-center text-3xl font-black text-white shadow-lg mt-2 ${total >= 90 ? 'bg-emerald-500 shadow-emerald-500/30' : total >= 75 ? 'bg-amber-500 shadow-amber-500/30' : 'bg-rose-500 shadow-rose-500/30'}`}>
-                                                        {total}%
+                                                    <div className="flex flex-col items-center">
+                                                        <div className={`h-24 w-24 rounded-full flex flex-col items-center justify-center text-white shadow-lg mt-2 ${kpiCalc.payout === 100 ? 'bg-emerald-500 shadow-emerald-500/30' : kpiCalc.payout > 0 ? 'bg-amber-500 shadow-amber-500/30' : 'bg-rose-500 shadow-rose-500/30'}`}>
+                                                            <span className="text-3xl font-black leading-none">{kpiCalc.payout}%</span>
+                                                            <span className="text-[8px] uppercase tracking-widest opacity-80 mt-1">Payout</span>
+                                                        </div>
+                                                        <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-3">
+                                                            Raw Score: <span className="text-slate-600 dark:text-slate-300">{kpiCalc.total}%</span>
+                                                        </div>
                                                     </div>
                                                 );
                                             })()}
@@ -1365,17 +1468,18 @@
                                             {(() => {
                                                 const myMentorName = Object.keys(mentorMap).find(name => mentorMap[name] === userProfile.email) || Object.keys(associateMap).find(name => associateMap[name] === userProfile.email) || userProfile.email.split('@')[0];
                                                 const myScores = (kpiData[kpiMonth] || {})[myMentorName] || {};
-                                                return [
-                                                    { label: 'Attendance', key: 'attendance', weight: '20%' },
-                                                    { label: 'Quality', key: 'quality', weight: '20%' },
-                                                    { label: 'MSV', key: 'msv', weight: '20%' },
-                                                    { label: 'Calibration', key: 'calibration', weight: '20%' },
-                                                    { label: 'Communication', key: 'communication', weight: '10%' },
-                                                    { label: 'Tasks QA', key: 'tasksQa', weight: '10%' },
-                                                ].map(m => (
-                                                    <div key={m.key} className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border dark:border-slate-700 flex flex-col justify-center items-center text-center">
-                                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">{m.label} <span className="text-yellow-600 dark:text-yellow-500">({m.weight})</span></p>
-                                                        <p className="font-black dark:text-white text-xl">{myScores[m.key] || 0}%</p>
+                                                const kpiCalc = calculateKpiMetrics(myScores);
+
+                                                return kpiMetricsList.map(m => (
+                                                    <div key={m.key} className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border dark:border-slate-700 flex flex-col justify-center items-center text-center">
+                                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">{m.label}</p>
+                                                        <div className="flex items-baseline gap-1">
+                                                            <p className="font-black dark:text-white text-lg">{myScores[m.key] || 0}%</p>
+                                                        </div>
+                                                        <div className="flex justify-between w-full mt-2 px-2 text-[9px] font-bold uppercase border-t dark:border-slate-700/50 pt-2">
+                                                            <span className="text-slate-400">T: {m.target}%</span>
+                                                            <span className={kpiCalc.breakdown[m.key]?.earnedWeight === m.weight ? 'text-emerald-500' : kpiCalc.breakdown[m.key]?.earnedWeight === 0 ? 'text-rose-500' : 'text-amber-500'}>Earned: {kpiCalc.breakdown[m.key]?.earnedWeight?.toFixed(1)}%</span>
+                                                        </div>
                                                     </div>
                                                 ));
                                             })()}
@@ -1728,24 +1832,47 @@
                                     </div>
                                     <div className="flex flex-wrap items-center gap-4">
                                         <input type="month" className="p-3 bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-xl outline-none font-bold dark:text-white" value={kpiMonth} onChange={e => setKpiMonth(e.target.value)} />
+                                        <button onClick={() => setIsBulkImportOpen(!isBulkImportOpen)} className="px-4 py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors text-slate-700 dark:text-slate-300 border dark:border-slate-700 rounded-xl text-xs font-black uppercase tracking-widest shadow-sm">
+                                            {isBulkImportOpen ? 'Close Import' : 'Bulk Import'}
+                                        </button>
                                         <button onClick={() => saveGlobalConfig({ hip_hierarchy: globalHipHierarchy, mentorMap: mentorMap, associateMap: associateMap, custom_options: customOptions, kpis: kpiData })} className="px-5 py-3 bg-yellow-500 hover:bg-yellow-600 transition-colors text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-md">
                                             SAVE KPIS
                                         </button>
                                     </div>
                                 </div>
 
+                                {isBulkImportOpen && (
+                                    <Card className="p-6 border-2 border-dashed border-yellow-400 dark:border-yellow-600/50 bg-yellow-50/50 dark:bg-yellow-900/10 animate-fade-in">
+                                        <h3 className="text-sm font-black uppercase text-yellow-600 dark:text-yellow-500 mb-2">Bulk Import from Spreadsheet</h3>
+                                        <p className="text-xs text-slate-500 mb-4">Paste your copied table here. Columns must be in this order: <strong>Name | Attendance | Quality | MSV | Calibration | Communication | Tasks QA</strong>.</p>
+                                        <textarea 
+                                            rows="5" 
+                                            className="w-full p-3 bg-white dark:bg-slate-900 border dark:border-slate-700 rounded-xl outline-none text-xs font-mono dark:text-slate-300 focus:ring-2 focus:ring-yellow-500 mb-4" 
+                                            placeholder="Noha Radwan	100%	90%	100%	96.50%	100%	100%&#10;Emad Mohamed	100%	98%	95%	80%	100%	100%"
+                                            value={bulkImportText}
+                                            onChange={e => setBulkImportText(e.target.value)}
+                                        ></textarea>
+                                        <div className="flex justify-end">
+                                            <button onClick={handleBulkImport} className="px-6 py-2 bg-yellow-500 text-white font-black rounded-lg uppercase tracking-widest hover:bg-yellow-600 transition-colors text-xs">
+                                                Process Data
+                                            </button>
+                                        </div>
+                                    </Card>
+                                )}
+
                                 <Card className="overflow-hidden overflow-x-auto">
                                     <table className="w-full text-left text-sm font-bold min-w-[800px]">
                                         <thead className="bg-slate-50/50 dark:bg-slate-800/50 text-[10px] uppercase tracking-widest text-slate-400 border-b dark:border-slate-800">
                                             <tr>
-                                                <th className="px-4 py-4">Mentor Name</th>
-                                                <th className="px-4 py-4">Attendance<br/><span className="text-[9px] text-yellow-600 dark:text-yellow-500">20%</span></th>
-                                                <th className="px-4 py-4">Quality<br/><span className="text-[9px] text-yellow-600 dark:text-yellow-500">20%</span></th>
-                                                <th className="px-4 py-4">MSV<br/><span className="text-[9px] text-yellow-600 dark:text-yellow-500">20%</span></th>
-                                                <th className="px-4 py-4">Calibration<br/><span className="text-[9px] text-yellow-600 dark:text-yellow-500">20%</span></th>
-                                                <th className="px-4 py-4">Communication<br/><span className="text-[9px] text-yellow-600 dark:text-yellow-500">10%</span></th>
-                                                <th className="px-4 py-4">Tasks QA<br/><span className="text-[9px] text-yellow-600 dark:text-yellow-500">10%</span></th>
-                                                <th className="px-4 py-4 text-center">Total Score</th>
+                                                <th className="px-2 py-4 pl-4">Mentor Name</th>
+                                                {kpiMetricsList.map(m => (
+                                                    <th key={m.key} className="px-2 py-4 text-center">
+                                                        {m.label}<br/>
+                                                        <span className="text-[9px] text-yellow-600 dark:text-yellow-500">T: {m.target}% | W: {m.weight}%</span>
+                                                    </th>
+                                                ))}
+                                                <th className="px-2 py-4 text-center">Raw<br/>Score</th>
+                                                <th className="px-2 py-4 text-center">Final<br/>Payout</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y dark:divide-slate-800">
@@ -1754,20 +1881,26 @@
                                                 .sort()
                                                 .map(m => {
                                                 const scores = (kpiData[kpiMonth] || {})[m] || {};
-                                                const total = calculateKpiTotal(scores);
+                                                const kpiCalc = calculateKpiMetrics(scores);
                                                 return (
                                                     <tr key={m} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                                                        <td className="px-4 py-4 dark:text-slate-200 whitespace-nowrap">{m}</td>
-                                                        {['attendance', 'quality', 'msv', 'calibration', 'communication', 'tasksQa'].map(metric => (
-                                                            <td key={metric} className="px-4 py-4">
-                                                                <div className="flex items-center gap-1.5">
-                                                                    <input type="number" min="0" max="100" className="w-16 p-2 text-center bg-white dark:bg-slate-900 border dark:border-slate-700 rounded-lg outline-none text-xs dark:text-white focus:ring-1 focus:ring-yellow-500" value={scores[metric] || ''} onChange={e => handleKpiChange(m, metric, e.target.value)} />
-                                                                    <span className="text-slate-400 text-[10px]">%</span>
+                                                        <td className="px-2 py-4 pl-4 dark:text-slate-200 whitespace-nowrap">{m}</td>
+                                                        {kpiMetricsList.map(metric => (
+                                                            <td key={metric.key} className="px-2 py-4">
+                                                                <div className="flex flex-col items-center gap-1">
+                                                                    <div className="flex items-center gap-1">
+                                                                        <input type="number" min="0" max="100" className="w-14 p-1.5 text-center bg-white dark:bg-slate-900 border dark:border-slate-700 rounded outline-none text-xs dark:text-white focus:ring-1 focus:ring-yellow-500" value={scores[metric.key] || ''} onChange={e => handleKpiChange(m, metric.key, e.target.value)} />
+                                                                        <span className="text-slate-400 text-[10px]">%</span>
+                                                                    </div>
+                                                                    <span className={`text-[9px] font-bold ${kpiCalc.breakdown[metric.key]?.earnedWeight === metric.weight ? 'text-emerald-500' : kpiCalc.breakdown[metric.key]?.earnedWeight === 0 ? 'text-rose-500' : 'text-amber-500'}`}>Earned: {kpiCalc.breakdown[metric.key]?.earnedWeight?.toFixed(1)}%</span>
                                                                 </div>
                                                             </td>
                                                         ))}
-                                                        <td className="px-4 py-4 text-center">
-                                                            <Badge color={total >= 90 ? 'green' : total >= 75 ? 'amber' : 'red'}>{total}%</Badge>
+                                                        <td className="px-2 py-4 text-center">
+                                                            <span className="font-black dark:text-slate-300">{kpiCalc.total}%</span>
+                                                        </td>
+                                                        <td className="px-2 py-4 text-center">
+                                                            <Badge color={kpiCalc.payout === 100 ? 'green' : kpiCalc.payout > 0 ? 'amber' : 'red'}>{kpiCalc.payout}%</Badge>
                                                         </td>
                                                     </tr>
                                                 );
