@@ -367,15 +367,17 @@
 
             const opts = useMemo(() => ({
                 questions: [...new Set(aiData.map(d => d.question).filter(Boolean))].sort(),
-                bots: [...new Set(aiData.map(d => d.bot).filter(Boolean))].sort()
+                bots: [...new Set(aiData.map(d => d.bot).filter(Boolean))].sort(),
+                comments: [...new Set(aiData.map(d => d.comment).filter(Boolean))].sort(),
+                actions: [...new Set(aiData.map(d => d.action).filter(Boolean))].sort()
             }), [aiData]);
 
             // KPIs
             const totalConversations = filteredData.length;
-            const correctResponses = filteredData.filter(d => d.comment === 'Correct Response by Bot').length;
-            const incorrectResponses = filteredData.filter(d => d.comment === 'Incorrect Response by Bot').length;
-            const raisedCases = filteredData.filter(d => d.action === 'Raised').length;
-            const failedTransfers = filteredData.filter(d => d.action === 'Failed to transfer').length;
+            const correctResponses = filteredData.filter(d => d.comment?.toLowerCase().includes('correct') && !d.comment?.toLowerCase().includes('incorrect')).length;
+            const incorrectResponses = totalConversations - correctResponses;
+            const raisedCases = filteredData.filter(d => d.action?.toLowerCase().includes('raised') || d.comment?.toLowerCase().includes('raised')).length;
+            const failedTransfers = filteredData.filter(d => d.action?.toLowerCase().includes('failed') || d.comment?.toLowerCase().includes('failed')).length;
             
             const correctPct = totalConversations ? ((correctResponses / totalConversations) * 100).toFixed(1) : 0;
             const incorrectPct = totalConversations ? ((incorrectResponses / totalConversations) * 100).toFixed(1) : 0;
@@ -387,7 +389,8 @@
                 filteredData.forEach(d => {
                     if (!stats[d.question]) stats[d.question] = { total: 0, fail: 0 };
                     stats[d.question].total++;
-                    if (d.comment === 'Incorrect Response by Bot') stats[d.question].fail++;
+                    const isCorrect = d.comment?.toLowerCase().includes('correct') && !d.comment?.toLowerCase().includes('incorrect');
+                    if (!isCorrect) stats[d.question].fail++;
                 });
                 const arr = Object.entries(stats).map(([q, s]) => ({ question: q, ...s }));
                 return {
@@ -431,16 +434,16 @@
                             continue;
                         }
 
-                        const comment = cols[cmtIdx];
-                        if (comment !== 'Correct Response by Bot' && comment !== 'Incorrect Response by Bot') {
-                            throw new Error(`Row ${i+1}: Invalid comment "${comment}". Must be exactly "Correct Response by Bot" or "Incorrect Response by Bot".`);
-                        }
-
+                        const comment = cols[cmtIdx] || '';
                         let action = actIdx > -1 ? cols[actIdx] : '';
-                        if (action && action !== 'Raised' && action !== 'Failed to transfer' && action.toLowerCase() !== 'blank') {
-                            throw new Error(`Row ${i+1}: Invalid action "${action}". Must be "Raised", "Failed to transfer", or blank.`);
-                        }
                         if (action.toLowerCase() === 'blank') action = '';
+
+                        let parsedDate;
+                        try {
+                            parsedDate = new Date(cols[dateIdx]).toISOString();
+                        } catch(e) {
+                            parsedDate = new Date().toISOString(); // fallback for unparseable dates
+                        }
 
                         toInsert.push({
                             type: 'ai_validation',
@@ -449,10 +452,10 @@
                             status: 'Audited',
                             date: new Date().toISOString(),
                             details: {
-                                question: cols[qIdx],
-                                bot: cols[botIdx],
-                                date: new Date(cols[dateIdx]).toISOString(), // Ensure standard
-                                userQuery: cols[queryIdx],
+                                question: cols[qIdx] || '',
+                                bot: cols[botIdx] || '',
+                                date: parsedDate,
+                                userQuery: cols[queryIdx] || '',
                                 ticketId: ticketId,
                                 comment: comment,
                                 action: action,
@@ -512,7 +515,8 @@
                         const day = new Date(d.date).toISOString().split('T')[0];
                         if (!daily[day]) daily[day] = { t: 0, c: 0 };
                         daily[day].t++;
-                        if (d.comment === 'Correct Response by Bot') daily[day].c++;
+                        const isCorrect = d.comment?.toLowerCase().includes('correct') && !d.comment?.toLowerCase().includes('incorrect');
+                        if (isCorrect) daily[day].c++;
                     });
                     const sortedDays = Object.keys(daily).sort();
                     const accData = sortedDays.map(day => ((daily[day].c / daily[day].t) * 100).toFixed(1));
@@ -555,19 +559,33 @@
                 // 3. Failure Breakdown
                 if (pieChartRef.current) {
                     if (pieChartInst.current) pieChartInst.current.destroy();
-                    const bdown = { 'Correct': 0, 'Raised': 0, 'Failed Transfer': 0, 'Incorrect (No Action)': 0 };
+                    const bdown = {};
                     filteredData.forEach(d => {
-                        if (d.comment === 'Correct Response by Bot') bdown['Correct']++;
-                        else if (d.action === 'Raised') bdown['Raised']++;
-                        else if (d.action === 'Failed to transfer') bdown['Failed Transfer']++;
-                        else bdown['Incorrect (No Action)']++;
+                        const isCorrect = d.comment?.toLowerCase().includes('correct') && !d.comment?.toLowerCase().includes('incorrect');
+                        if (isCorrect) {
+                            bdown['Correct'] = (bdown['Correct'] || 0) + 1;
+                        } else if (d.action?.toLowerCase().includes('raised') || d.comment?.toLowerCase().includes('raised')) {
+                            bdown['Raised'] = (bdown['Raised'] || 0) + 1;
+                        } else if (d.action?.toLowerCase().includes('failed') || d.comment?.toLowerCase().includes('failed')) {
+                            bdown['Failed Transfer'] = (bdown['Failed Transfer'] || 0) + 1;
+                        } else {
+                            const otherLabel = d.comment || 'Unknown/Other';
+                            bdown[otherLabel] = (bdown[otherLabel] || 0) + 1;
+                        }
+                    });
+
+                    const bgColors = Object.keys(bdown).map((label, idx) => {
+                        if (label === 'Correct') return '#10b981'; // emerald
+                        if (label === 'Raised') return '#f59e0b'; // amber
+                        if (label === 'Failed Transfer') return '#ef4444'; // red
+                        return `hsl(${(idx * 60) % 360}, 70%, 60%)`; // Dynamic colors for unknown statuses
                     });
 
                     pieChartInst.current = new Chart(pieChartRef.current, {
                         type: 'doughnut',
                         data: {
                             labels: Object.keys(bdown),
-                            datasets: [{ data: Object.values(bdown), backgroundColor: ['#10b981', '#f59e0b', '#ef4444', '#64748b'], borderWidth: 0 }]
+                            datasets: [{ data: Object.values(bdown), backgroundColor: bgColors, borderWidth: 0 }]
                         },
                         options: {
                             responsive: true, maintainAspectRatio: false,
@@ -590,7 +608,7 @@
                 const datesSet = new Set();
                 let max = 0;
 
-                filteredData.filter(d => d.comment === 'Incorrect Response by Bot').forEach(d => {
+                filteredData.filter(d => !(d.comment?.toLowerCase().includes('correct') && !d.comment?.toLowerCase().includes('incorrect'))).forEach(d => {
                     const day = new Date(d.date).toISOString().split('T')[0];
                     datesSet.add(day);
                     if (!matrix[d.question]) matrix[d.question] = {};
@@ -666,11 +684,11 @@
                         </div>
                         <div className="flex flex-col gap-1">
                             <label className="text-[9px] font-black uppercase text-slate-400 pl-1">Comment</label>
-                            <select className="p-2 text-[10px] bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-lg outline-none font-bold dark:text-white" value={filters.comment} onChange={e => setFilters(p=>({...p, comment: e.target.value}))}><option value="all">All</option><option value="Correct Response by Bot">Correct</option><option value="Incorrect Response by Bot">Incorrect</option></select>
+                            <select className="p-2 text-[10px] bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-lg outline-none font-bold dark:text-white" value={filters.comment} onChange={e => setFilters(p=>({...p, comment: e.target.value}))}><option value="all">All</option>{opts.comments.map(c=><option key={c} value={c}>{c}</option>)}</select>
                         </div>
                         <div className="flex flex-col gap-1">
                             <label className="text-[9px] font-black uppercase text-slate-400 pl-1">Action</label>
-                            <select className="p-2 text-[10px] bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-lg outline-none font-bold dark:text-white" value={filters.action} onChange={e => setFilters(p=>({...p, action: e.target.value}))}><option value="all">All</option><option value="Raised">Raised</option><option value="Failed to transfer">Failed to transfer</option><option value="">Blank (No Action)</option></select>
+                            <select className="p-2 text-[10px] bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-lg outline-none font-bold dark:text-white" value={filters.action} onChange={e => setFilters(p=>({...p, action: e.target.value}))}><option value="all">All</option><option value="">Blank (No Action)</option>{opts.actions.map(a=><option key={a} value={a}>{a}</option>)}</select>
                         </div>
                         <div className="flex flex-col gap-1">
                             <label className="text-[9px] font-black uppercase text-slate-400 pl-1">Search</label>
@@ -796,8 +814,8 @@
                                             <td className="px-4 py-3 font-mono text-[10px] text-blue-500">{d.ticketId}</td>
                                             <td className="px-4 py-3 truncate max-w-[200px] dark:text-slate-300" title={d.question}>{d.question}</td>
                                             <td className="px-4 py-3 truncate max-w-[300px] dark:text-slate-300 font-medium" title={d.userQuery}>{d.userQuery}</td>
-                                            <td className="px-4 py-3"><Badge color={d.comment === 'Correct Response by Bot' ? 'green' : 'red'}>{d.comment === 'Correct Response by Bot' ? 'Correct' : 'Incorrect'}</Badge></td>
-                                            <td className="px-4 py-3">{d.action ? <Badge color={d.action === 'Raised' ? 'amber' : 'red'}>{d.action}</Badge> : '-'}</td>
+                                            <td className="px-4 py-3"><Badge color={(d.comment?.toLowerCase().includes('correct') && !d.comment?.toLowerCase().includes('incorrect')) ? 'green' : 'red'}>{d.comment || 'None'}</Badge></td>
+                                            <td className="px-4 py-3">{d.action ? <Badge color={d.action?.toLowerCase().includes('raised') ? 'amber' : 'red'}>{d.action}</Badge> : '-'}</td>
                                         </tr>
                                     ))}
                                 </tbody>
