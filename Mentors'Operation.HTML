@@ -407,7 +407,7 @@
                     if (rows.length < 2) throw new Error("Must include header row and data.");
                     
                     const headers = rows[0].split('\t').map(h => h.trim().toLowerCase());
-                    const reqH = ['question', 'bot', 'utterance initiated at', 'user query text', 'external ticket id', 'comment'];
+                    const reqH = ['question', 'bot', 'utterance', 'query', 'ticket', 'comment'];
                     for (const h of reqH) {
                         if (!headers.find(x => x.includes(h))) throw new Error(`Missing required column containing: ${h}`);
                     }
@@ -425,22 +425,29 @@
                     const existingTickets = new Set(rawAiTasks.map(t => t.details?.ticketId));
 
                     for (let i = 1; i < rows.length; i++) {
-                        const cols = rows[i].split('\t').map(c => c.trim());
-                        if (cols.length < reqH.length) continue; // skip malformed
+                        const rawRow = rows[i];
+                        if (!rawRow.trim()) continue;
 
+                        const cols = rawRow.split('\t').map(c => c.trim());
+                        
                         const ticketId = cols[tktIdx];
+                        if (!ticketId) continue; // Skip fragmented newlines without IDs
+
                         if (existingTickets.has(ticketId)) {
                             console.warn(`Skipping duplicate ticket: ${ticketId}`);
                             continue;
                         }
 
+                        // Robust fallback strings to prevent undefined variable errors
                         const comment = cols[cmtIdx] || '';
-                        let action = actIdx > -1 ? cols[actIdx] : '';
+                        let action = cols[actIdx] || '';
                         if (action.toLowerCase() === 'blank') action = '';
 
                         let parsedDate;
                         try {
-                            parsedDate = new Date(cols[dateIdx]).toISOString();
+                            const d = new Date(cols[dateIdx]);
+                            if (isNaN(d.getTime())) throw new Error("Invalid date");
+                            parsedDate = d.toISOString();
                         } catch(e) {
                             parsedDate = new Date().toISOString(); // fallback for unparseable dates
                         }
@@ -462,7 +469,7 @@
                                 batchId: batchId
                             }
                         });
-                        existingTickets.add(ticketId); // Prevent dupes within same paste
+                        existingTickets.add(ticketId); // Prevent dupes within same paste payload
                     }
 
                     if (toInsert.length > 0) {
