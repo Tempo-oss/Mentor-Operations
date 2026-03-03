@@ -403,7 +403,22 @@
                 if (!importText.trim()) return;
                 setIsImporting(true);
                 try {
-                    const rows = importText.trim().split('\n');
+                    // Custom TSV parser to respect newlines inside quotes
+                    const rows = [];
+                    let currentRow = '';
+                    let insideQuotes = false;
+                    for (let i = 0; i < importText.length; i++) {
+                        const char = importText[i];
+                        if (char === '"') insideQuotes = !insideQuotes;
+                        if (char === '\n' && !insideQuotes) {
+                            if (currentRow.trim()) rows.push(currentRow);
+                            currentRow = '';
+                        } else {
+                            currentRow += char;
+                        }
+                    }
+                    if (currentRow.trim()) rows.push(currentRow);
+
                     if (rows.length < 2) throw new Error("Must include header row and data.");
                     
                     const headers = rows[0].split('\t').map(h => h.trim().toLowerCase());
@@ -415,33 +430,46 @@
                     const qIdx = headers.findIndex(h => h.includes('question'));
                     const botIdx = headers.findIndex(h => h.includes('bot'));
                     const dateIdx = headers.findIndex(h => h.includes('utterance'));
-                    const queryIdx = headers.findIndex(h => h.includes('user query text') || h.includes('query'));
+                    const queryIdx = headers.findIndex(h => h.includes('query'));
                     const tktIdx = headers.findIndex(h => h.includes('ticket'));
                     const cmtIdx = headers.findIndex(h => h.includes('comment'));
                     const actIdx = headers.findIndex(h => h.includes('action'));
 
                     const batchId = `BATCH-${new Date().getTime()}`;
                     const toInsert = [];
-                    const existingTickets = new Set(rawAiTasks.map(t => t.details?.ticketId));
+                    
+                    // Robust signature: Only strip non-alphanumeric to create an exact structural identity
+                    const makeSig = (ticket, question, comment, action) => {
+                        const clean = s => String(s || '').trim().replace(/[^a-z0-9]/gi, '').toLowerCase();
+                        return `${clean(ticket)}_${clean(question)}_${clean(comment)}_${clean(action)}`;
+                    };
+
+                    const existingSignatures = new Set(aiData.map(d => makeSig(d.ticketId, d.question, d.comment, d.action)));
 
                     for (let i = 1; i < rows.length; i++) {
                         const rawRow = rows[i];
-                        if (!rawRow.trim()) continue;
-
-                        const cols = rawRow.split('\t').map(c => c.trim());
+                        const cols = rawRow.split('\t').map(c => {
+                            let val = c.trim();
+                            if (val.startsWith('"') && val.endsWith('"')) val = val.slice(1, -1);
+                            return val.trim();
+                        });
                         
                         const ticketId = cols[tktIdx];
-                        if (!ticketId) continue; // Skip fragmented newlines without IDs
+                        if (!ticketId) continue; 
 
-                        if (existingTickets.has(ticketId)) {
-                            console.warn(`Skipping duplicate ticket: ${ticketId}`);
-                            continue;
-                        }
-
-                        // Robust fallback strings to prevent undefined variable errors
+                        const question = cols[qIdx] || '';
+                        const bot = cols[botIdx] || '';
+                        const userQuery = cols[queryIdx] || '';
                         const comment = cols[cmtIdx] || '';
                         let action = cols[actIdx] || '';
                         if (action.toLowerCase() === 'blank') action = '';
+
+                        const rowSignature = makeSig(ticketId, question, comment, action);
+
+                        if (existingSignatures.has(rowSignature)) {
+                            console.warn(`Skipping exact duplicate row for ticket: ${ticketId}`);
+                            continue;
+                        }
 
                         let parsedDate;
                         try {
@@ -449,7 +477,7 @@
                             if (isNaN(d.getTime())) throw new Error("Invalid date");
                             parsedDate = d.toISOString();
                         } catch(e) {
-                            parsedDate = new Date().toISOString(); // fallback for unparseable dates
+                            parsedDate = new Date().toISOString(); 
                         }
 
                         toInsert.push({
@@ -459,28 +487,28 @@
                             status: 'Audited',
                             date: new Date().toISOString(),
                             details: {
-                                question: cols[qIdx] || '',
-                                bot: cols[botIdx] || '',
+                                question: question,
+                                bot: bot,
                                 date: parsedDate,
-                                userQuery: cols[queryIdx] || '',
+                                userQuery: userQuery,
                                 ticketId: ticketId,
                                 comment: comment,
                                 action: action,
                                 batchId: batchId
                             }
                         });
-                        existingTickets.add(ticketId); // Prevent dupes within same paste payload
+                        existingSignatures.add(rowSignature); 
                     }
 
                     if (toInsert.length > 0) {
                         const { error } = await supabase.from('tasks').insert(toInsert);
                         if (error) throw error;
-                        alert(`Successfully imported ${toInsert.length} records.`);
+                        alert(`Successfully imported ${toInsert.length} new unique records.`);
                         setImportText('');
                         setIsImportOpen(false);
                         fetchData();
                     } else {
-                        alert("No valid new records found. They might be duplicates or malformed.");
+                        alert("No new records found. All pasted entries are exact duplicates of existing data.");
                     }
                 } catch (e) {
                     alert(`Import Error: ${e.message}`);
@@ -663,7 +691,7 @@
                                 onChange={e => setImportText(e.target.value)}
                             ></textarea>
                             <div className="flex justify-between items-center">
-                                <p className="text-[9px] text-slate-400 uppercase font-bold">* Duplicate Ticket IDs will be ignored to preserve integrity.</p>
+                                <p className="text-[9px] text-slate-400 uppercase font-bold">* Exact duplicate rows will be ignored to preserve integrity.</p>
                                 <button onClick={handleImport} disabled={isImporting} className="px-6 py-2 bg-blue-600 text-white font-black rounded-lg uppercase tracking-widest hover:bg-blue-700 transition-colors text-xs disabled:opacity-50">
                                     {isImporting ? 'Processing...' : 'Validate & Import'}
                                 </button>
