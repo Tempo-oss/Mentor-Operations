@@ -64,7 +64,7 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useMemo, useRef } = React;
+        const { useState, useEffect, useMemo, useRef, useCallback } = React;
 
         // --- Supabase Config ---
         const SUPABASE_URL = "https://mifbpckstfwphkwtqksa.supabase.co";
@@ -141,6 +141,7 @@
         const ExternalLink = (props) => <Icon {...props} path={<><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></>} />;
         const Award = (props) => <Icon {...props} path={<><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></>} />;
         const Cpu = (props) => <Icon {...props} path={<><rect width="16" height="16" x="4" y="4" rx="2"/><rect width="6" height="6" x="9" y="9" rx="1"/><path d="M9 2v2"/><path d="M15 2v2"/><path d="M9 20v2"/><path d="M15 20v2"/><path d="M2 9h2"/><path d="M2 14h2"/><path d="M20 9h2"/><path d="M20 14h2"/></>} />;
+        const RefreshCw = (props) => <Icon {...props} path={<><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></>} />;
 
         // --- Maps ---
         const initialAssociateEmailMap = {
@@ -1049,18 +1050,33 @@
             const formatDateTime = (dateString) => {
                 if (!dateString) return 'N/A';
                 const d = new Date(dateString);
+                if (isNaN(d.getTime())) return 'Invalid Date';
                 return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             };
 
-            const fetchData = async () => {
+            const fetchData = useCallback(async () => {
                 setConnectionStatus('connecting');
                 
-                // Fetch tasks
-                const tasksRes = await supabase.from('tasks').select('*').order('date', { ascending: false });
-                if (!tasksRes.error) { 
-                    setTasks(tasksRes.data || []); 
+                // Fetch tasks: REMOVED .order() from server-side fetch to prevent crashes if 'date' strings are corrupt or missing. We sort client-side. Added LIMIT to prevent silent truncation.
+                const tasksRes = await supabase.from('tasks').select('*').limit(10000);
+                
+                if (tasksRes.error) {
+                    console.error("Supabase Database Fetch Error:", tasksRes.error);
+                    alert("Database Error: " + tasksRes.error.message + "\nPlease verify your Supabase database schema and RLS policies.");
+                    setConnectionStatus('error');
+                } else {
+                    const fetchedData = tasksRes.data || [];
+                    
+                    // Client-Side sort ensures data is displayed correctly even if some records have strange dates.
+                    fetchedData.sort((a, b) => {
+                        const dA = new Date(a.date || 0).getTime();
+                        const dB = new Date(b.date || 0).getTime();
+                        return dB - dA;
+                    });
+                    
+                    setTasks(fetchedData); 
                     setConnectionStatus('online'); 
-                    discoverCustomOptions(tasksRes.data || []);
+                    discoverCustomOptions(fetchedData);
                 }
 
                 // Fetch registry
@@ -1079,7 +1095,6 @@
                         // Mentor Config
                         if (configData.mentorMap) setMentorMap(configData.mentorMap);
                         else if (configData.mentors) {
-                            // Migrate on the fly from old format to maps
                             setMentorMap(prev => {
                                 const m = {...prev};
                                 configData.mentors.forEach(name => { if(!m[name]) m[name] = `${name.toLowerCase().replace(' ', '.')}@tempo.fit`; });
@@ -1108,7 +1123,7 @@
                 } catch (e) {
                     console.error("Config fetch failed", e);
                 }
-            };
+            }, [userProfile]);
 
             const discoverCustomOptions = (allTasks) => {
                 setCustomOptions(prev => {
@@ -1125,9 +1140,14 @@
 
             useEffect(() => {
                 if (userProfile && !userProfile.error) fetchData();
-                const channel = supabase.channel('tasks-channel').on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, fetchData).subscribe();
+                
+                // Realtime subscription
+                const channel = supabase.channel('tasks-channel').on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => {
+                    fetchData();
+                }).subscribe();
+                
                 return () => supabase.removeChannel(channel);
-            }, [userProfile]);
+            }, [userProfile, fetchData]);
 
             // Set up Audit Dashboard Mentor mapping
             useEffect(() => {
@@ -1962,7 +1982,11 @@
                             <div className="flex items-center gap-4">
                                 <button onClick={() => setIsDarkMode(!isDarkMode)} className="p-2 text-slate-400 hover:text-blue-500 transition-colors">{isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}</button>
                                 <button onClick={() => setIsSettingsOpen(true)} className="p-2 text-slate-400 hover:text-slate-200 transition-colors"><SettingsIcon className="h-5 w-5" /></button>
-                                <div className={`h-2 w-2 rounded-full ${connectionStatus === 'online' ? 'bg-emerald-500' : 'bg-rose-500 animate-pulse'}`} />
+                                
+                                <button onClick={fetchData} title="Force Sync Data" className="p-2 text-slate-400 hover:text-slate-200 transition-colors flex items-center justify-center">
+                                    <div className={`h-2 w-2 rounded-full ${connectionStatus === 'online' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]' : connectionStatus === 'connecting' ? 'bg-amber-500 animate-pulse' : 'bg-rose-500 shadow-[0_0_8px_rgba(225,29,72,0.8)]'}`} />
+                                </button>
+                                
                                 <div className="text-right hidden md:block">
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter leading-none dark:text-slate-500 font-bold">Identity</p>
                                     <p className="text-xs font-black leading-none dark:text-slate-200">{userProfile.email.split('@')[0]}</p>
@@ -1973,6 +1997,12 @@
                     </header>
 
                     <main className="max-w-7xl mx-auto px-6 py-8">
+                        {tasks.length === 0 && connectionStatus === 'online' && (
+                            <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 p-4 rounded-xl text-amber-700 dark:text-amber-400 text-xs font-bold text-center animate-fade-in mb-6">
+                                <AlertTriangle className="h-5 w-5 inline-block mr-2 mb-1" />
+                                Zero records found. If data exists in Supabase, please check your Table's Row Level Security (RLS) policies. If RLS is enabled without policies, queries return empty arrays silently.
+                            </div>
+                        )}
                         {activeTab === 'dashboard' && (
                             <div className="space-y-8 animate-fade-in font-bold">
                                 
