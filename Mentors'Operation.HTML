@@ -58,6 +58,7 @@
 
         canvas {
             max-width: 100% !important;
+            cursor: default;
         }
     </style>
 </head>
@@ -249,7 +250,7 @@
         };
 
         // --- Individual Pie Chart Sub-Component ---
-        function IndividualAnalyticsChart({ categoryKey, categoryLabel, fields, allTasks, isDarkMode, normalizeAgentName }) {
+        function IndividualAnalyticsChart({ categoryKey, categoryLabel, fields, allTasks, isDarkMode, normalizeAgentName, setDrilldownModal }) {
             const chartRef = useRef(null);
             const chartInstance = useRef(null);
             const [selectedFields, setSelectedFields] = useState(['status']);
@@ -309,12 +310,33 @@
                         },
                         options: {
                             responsive: true, maintainAspectRatio: false,
+                            onHover: (event, chartElement) => {
+                                event.native.target.style.cursor = chartElement[0] ? 'pointer' : 'default';
+                            },
+                            onClick: (evt, elements) => {
+                                if (elements.length > 0) {
+                                    const index = elements[0].index;
+                                    const label = Object.keys(counts)[index];
+                                    
+                                    const matchingTasks = filteredData.filter(t => {
+                                        const vals = selectedFields.map(f => {
+                                            let value = ['status', 'agent'].includes(f) ? t[f] : t.details?.[f] || 'N/A';
+                                            if (['agent', 'mentorName', 'associateName'].includes(f)) value = normalizeAgentName(value);
+                                            if (typeof value === 'object' && value !== null) value = 'Complex Object / Multi-metric';
+                                            return value;
+                                        });
+                                        const key = vals.join(' | ');
+                                        return key === label;
+                                    });
+                                    setDrilldownModal({ isOpen: true, title: `${categoryLabel} - ${label}`, data: matchingTasks });
+                                }
+                            },
                             plugins: { legend: { position: 'right', labels: { color: isDarkMode ? '#cbd5e1' : '#475569', font: { family: 'Inter', weight: 'bold', size: 10 } } } }
                         }
                     });
                 }
                 return () => { if (chartInstance.current) chartInstance.current.destroy(); };
-            }, [categoryKey, selectedFields, startDate, endDate, allTasks, isDarkMode, normalizeAgentName]);
+            }, [categoryKey, selectedFields, startDate, endDate, allTasks, isDarkMode, normalizeAgentName, setDrilldownModal]);
 
             const hasData = allTasks.filter(t => t.type === categoryKey).length > 0;
 
@@ -906,6 +928,12 @@
             const [newTaskType, setNewTaskType] = useState('disputes');
             const [formData, setFormData] = useState({});
             
+            // Analytics Drilldown State
+            const [drilldownModal, setDrilldownModal] = useState({ isOpen: false, title: '', data: [] });
+            
+            // Reports Sort State
+            const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+
             // KPI State
             const [kpiData, setKpiData] = useState({});
             const [kpiMonth, setKpiMonth] = useState(() => {
@@ -1746,6 +1774,39 @@
                         plugins: [window.ChartDataLabels],
                         options: {
                             responsive: true, maintainAspectRatio: false,
+                            onHover: (event, chartElement) => {
+                                event.native.target.style.cursor = chartElement[0] ? 'pointer' : 'default';
+                            },
+                            onClick: (evt, elements) => {
+                                if (elements.length > 0) {
+                                    const element = elements[0];
+                                    const xLabel = labels[element.index];
+                                    const datasetLabel = datasets[element.datasetIndex].label;
+                                    
+                                    const matchingTasks = filteredData.filter(t => {
+                                        let pVal = ['status', 'agent'].includes(primaryField) ? t[primaryField] : t.details?.[primaryField] || 'N/A';
+                                        if (['agent', 'mentorName', 'associateName'].includes(primaryField)) pVal = normalizeAgentName(pVal);
+                                        if (typeof pVal === 'object' && pVal !== null) pVal = 'Complex Object';
+                                        pVal = String(pVal);
+                                        
+                                        if (pVal !== xLabel) return false;
+
+                                        if (secondaryFields.length > 0 && datasetLabel !== 'Count') {
+                                            const sVals = secondaryFields.map(f => {
+                                                let v = ['status', 'agent'].includes(f) ? t[f] : t.details?.[f] || 'N/A';
+                                                if (['agent', 'mentorName', 'associateName'].includes(f)) v = normalizeAgentName(v);
+                                                if (typeof v === 'object' && v !== null) v = 'Complex Object';
+                                                return String(v);
+                                            });
+                                            const sVal = sVals.join(' | ');
+                                            if (sVal !== datasetLabel) return false;
+                                        }
+                                        return true;
+                                    });
+
+                                    setDrilldownModal({ isOpen: true, title: `Drilldown: ${xLabel} ${secondaryFields.length > 0 ? `(${datasetLabel})` : ''}`, data: matchingTasks });
+                                }
+                            },
                             plugins: { 
                                 legend: { 
                                     display: secondaryFields.length > 0,
@@ -1785,6 +1846,20 @@
                             },
                             options: {
                                 responsive: true, maintainAspectRatio: false,
+                                onHover: (event, chartElement) => {
+                                    event.native.target.style.cursor = chartElement[0] ? 'pointer' : 'default';
+                                },
+                                onClick: (evt, elements) => {
+                                    if (elements.length > 0) {
+                                        const index = elements[0].index;
+                                        const label = Object.keys(pieCounts)[index];
+                                        const matchingTasks = tasks.filter(t => {
+                                            const lbl = categories[t.type]?.label || adminValidationCategories[t.type]?.label || t.type;
+                                            return lbl === label;
+                                        });
+                                        setDrilldownModal({ isOpen: true, title: `Drilldown: ${label}`, data: matchingTasks });
+                                    }
+                                },
                                 plugins: { legend: { position: 'right', labels: { color: isDarkMode ? '#cbd5e1' : '#475569', font: { family: 'Inter', weight: 'bold' } } } }
                             }
                         });
@@ -1823,10 +1898,47 @@
                 }
             };
 
+            const handleSort = (key) => {
+                let direction = 'asc';
+                if (sortConfig.key === key && sortConfig.direction === 'asc') {
+                    direction = 'desc';
+                }
+                setSortConfig({ key, direction });
+            };
+
+            const sortedReport = useMemo(() => {
+                if (!generatedReport) return [];
+                if (!sortConfig.key) return generatedReport;
+
+                return [...generatedReport].sort((a, b) => {
+                    let valA = a[sortConfig.key] !== undefined ? a[sortConfig.key] : (a.details?.[sortConfig.key] !== undefined ? a.details[sortConfig.key] : '');
+                    let valB = b[sortConfig.key] !== undefined ? b[sortConfig.key] : (b.details?.[sortConfig.key] !== undefined ? b.details[sortConfig.key] : '');
+                    
+                    if (sortConfig.key === 'type') {
+                        valA = categories[a.type]?.label || a.type;
+                        valB = categories[b.type]?.label || b.type;
+                    }
+
+                    if (sortConfig.key === 'date') {
+                        valA = new Date(valA).getTime() || 0;
+                        valB = new Date(valB).getTime() || 0;
+                    } else {
+                        if (typeof valA === 'object' && valA !== null) valA = JSON.stringify(valA);
+                        if (typeof valB === 'object' && valB !== null) valB = JSON.stringify(valB);
+                        valA = String(valA).toLowerCase();
+                        valB = String(valB).toLowerCase();
+                    }
+
+                    if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
+                    if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
+                    return 0;
+                });
+            }, [generatedReport, sortConfig, categories]);
+
             const downloadCSV = () => {
-                if (!generatedReport || generatedReport.length === 0) return;
+                if (!sortedReport || sortedReport.length === 0) return;
                 const headers = selectedReportColumns.map(col => col.replace(/([A-Z])/g, ' $1').trim()).join(',');
-                const rows = generatedReport.map(t => {
+                const rows = sortedReport.map(t => {
                     return selectedReportColumns.map(col => {
                         let val = t[col] !== undefined ? t[col] : (t.details?.[col] !== undefined ? t.details[col] : '');
                         if (col === 'type') val = categories[t.type]?.label || t.type;
@@ -2288,7 +2400,7 @@
                                                         <td className="px-6 py-4 text-blue-500 font-medium text-xs">{t.details?.auditedTicket || t.details?.hipLogReference || 'N/A'}</td>
                                                         <td className="px-6 py-4"><Badge color={t.details?.overallAuditScore >= 80 ? 'green' : t.details?.overallAuditScore >= 60 ? 'amber' : 'red'}>{t.details?.overallAuditScore || 0}%</Badge></td>
                                                         <td className="px-6 py-4 text-right">
-                                                            <button onClick={() => handleEditTask(t)} className="px-3 py-1.5 bg-white dark:bg-slate-900 border dark:border-slate-700 text-[10px] font-black uppercase tracking-widest rounded-lg hover:border-emerald-500 hover:text-emerald-500 transition-colors shadow-sm">View Details</button>
+                                                            <button onClick={() => handleEditTask(t)} className="px-3 py-1.5 bg-white dark:bg-slate-900 border dark:border-slate-700 text-[10px] font-black uppercase tracking-widest rounded-lg hover:border-emerald-50 hover:text-emerald-500 transition-colors shadow-sm">View Details</button>
                                                         </td>
                                                     </tr>
                                                 ))}
@@ -2428,6 +2540,7 @@
                                             allTasks={tasks} 
                                             isDarkMode={isDarkMode}
                                             normalizeAgentName={normalizeAgentName} 
+                                            setDrilldownModal={setDrilldownModal}
                                         />
                                     ))}
                                 </div>
@@ -2463,11 +2576,20 @@
                                             <table className="w-full text-sm text-left">
                                                 <thead className="bg-slate-50 dark:bg-slate-800 text-[10px] uppercase font-black text-slate-500">
                                                     <tr>
-                                                        {selectedReportColumns.map(col => <th key={col} className="px-6 py-3">{col.replace(/([A-Z])/g, ' $1')}</th>)}
+                                                        {selectedReportColumns.map(col => (
+                                                            <th key={col} className="px-6 py-3 cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors select-none" onClick={() => handleSort(col)}>
+                                                                <div className="flex items-center justify-between">
+                                                                    {col.replace(/([A-Z])/g, ' $1')}
+                                                                    {sortConfig.key === col && (
+                                                                        <span className="text-blue-500">{sortConfig.direction === 'asc' ? ' ↑' : ' ↓'}</span>
+                                                                    )}
+                                                                </div>
+                                                            </th>
+                                                        ))}
                                                     </tr>
                                                 </thead>
                                                 <tbody className="divide-y dark:divide-slate-800 text-xs">
-                                                    {generatedReport.map((row, i) => (
+                                                    {sortedReport.map((row, i) => (
                                                         <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
                                                             {selectedReportColumns.map(col => {
                                                                 let val = row[col] !== undefined ? row[col] : (row.details?.[col] !== undefined ? row.details[col] : '-');
@@ -3157,29 +3279,8 @@
                                             
                                             if (field === 'auditModule' || field === 'correctionModule') {
                                                 const items = field === 'auditModule' ? auditAttributes : quizModules;
-                                                return (
-                                                    <div key={field} className="space-y-6 pt-2 font-bold font-bold">
-                                                        <div className="flex justify-between items-center mb-2 font-bold font-bold">
-                                                            <h3 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-bold font-bold">{field.replace('Module','')} Quality</h3>
-                                                            {field === 'correctionModule' && <Badge color="cyan">AVG: {formData.overallScore || '0.0'}</Badge>}
-                                                            {field === 'auditModule' && <Badge color="green">Score: {formData.overallAuditScore || '0'}%</Badge>}
-                                                        </div>
-                                                        {items.map((m, idx) => (
-                                                            <div key={`${m.id}-${idx}`} className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm font-bold font-bold">
-                                                                <p className="font-bold text-sm mb-1 dark:text-slate-200 font-bold">{m.title || m.label}</p>
-                                                                <p className="text-[10px] text-slate-400 mb-4 font-bold">{m.desc}</p>
-                                                                <div className="flex justify-center gap-2 mb-4 font-bold font-bold">
-                                                                    {field === 'auditModule' ? ['Yes', 'No'].map(s => (
-                                                                        <button key={s} type="button" onClick={() => !isAuditReadOnly && handleAuditScore(m.id, s)} className={`px-4 py-1.5 rounded-lg border-2 text-[10px] font-black transition-all font-bold ${formData.auditScores?.[m.id] === s ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white dark:bg-slate-800 dark:border-slate-700 text-slate-400'} ${isAuditReadOnly ? 'cursor-not-allowed opacity-80' : ''}`}>{s.toUpperCase()}</button>
-                                                                    )) : [1, 2, 3, 4, 5].map(s => (
-                                                                        <button key={s} type="button" onClick={() => !isAuditReadOnly && handleQuizScore(m.id, s)} className={`w-8 h-8 rounded-full border-2 text-xs font-bold transition-all font-bold ${formData.quizScores?.[m.id] === s ? 'bg-cyan-500 border-cyan-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400'} ${isAuditReadOnly ? 'cursor-not-allowed opacity-80' : ''}`}>{s}</button>
-                                                                    ))}
-                                                                </div>
-                                                                <input type="text" placeholder="Detail..." className="w-full p-2 bg-slate-50 dark:bg-slate-800 border-b dark:border-slate-700 text-[10px] outline-none dark:text-white font-bold font-bold" readOnly={isAuditReadOnly} onChange={e => setFormData(p => ({...p, quizComments: {...(p.quizComments || {}), [m.id]: e.target.value}}))} value={formData.quizComments?.[m.id] || ''} />
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                );
+                                                return (<div key={field} className="space-y-6 pt-2 font-bold font-bold"><div className="flex justify-between items-center mb-2 font-bold font-bold"><h3 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-bold font-bold">{field.replace('Module','')} Quality</h3>{field === 'correctionModule' && <Badge color="cyan">AVG: {formData.overallScore || '0.0'}</Badge>}{field === 'auditModule' && <Badge color="green">Score: {formData.overallAuditScore || '0'}%</Badge>}</div>
+                                                    {items.map((m, idx) => (<div key={`${m.id}-${idx}`} className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm font-bold font-bold"><p className="font-bold text-sm mb-1 dark:text-slate-200 font-bold">{m.title || m.label}</p><p className="text-[10px] text-slate-400 mb-4 font-bold">{m.desc}</p><div className="flex justify-center gap-2 mb-4 font-bold font-bold">{field === 'auditModule' ? ['Yes', 'No'].map(s => (<button key={s} type="button" onClick={() => !isAuditReadOnly && handleAuditScore(m.id, s)} className={`px-4 py-1.5 rounded-lg border-2 text-[10px] font-black transition-all font-bold ${formData.auditScores?.[m.id] === s ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white dark:bg-slate-800 dark:border-slate-700 text-slate-400'} ${isAuditReadOnly ? 'cursor-not-allowed opacity-80' : ''}`}>{s.toUpperCase()}</button>)) : [1, 2, 3, 4, 5].map(s => (<button key={s} type="button" onClick={() => !isAuditReadOnly && handleQuizScore(m.id, s)} className={`w-8 h-8 rounded-full border-2 text-xs font-bold transition-all font-bold ${formData.quizScores?.[m.id] === s ? 'bg-cyan-500 border-cyan-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400'} ${isAuditReadOnly ? 'cursor-not-allowed opacity-80' : ''}`}>{s}</button>))}</div><input type="text" placeholder="Detail..." className="w-full p-2 bg-slate-50 dark:bg-slate-800 border-b dark:border-slate-700 text-[10px] outline-none dark:text-white font-bold font-bold" readOnly={isAuditReadOnly} onChange={e => setFormData(p => ({...p, quizComments: {...(p.quizComments || {}), [m.id]: e.target.value}}))} value={formData.quizComments?.[m.id] || ''} /></div>))}</div>);
                                             }
                                             if (field === 'hipLogReference' && newTaskType === 'mentor_audit') return (
                                                 <div key={field} className="pt-2 font-bold font-bold">
@@ -3313,6 +3414,7 @@
                         </div>
                     )}
 
+                    {/* Security Settings Modal */}
                     {isSettingsOpen && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 text-slate-900 dark:text-white font-bold">
                             <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm font-bold" onClick={() => setIsSettingsOpen(false)} />
@@ -3325,6 +3427,63 @@
                             </Card>
                         </div>
                     )}
+
+                    {/* Drilldown Modal Details */}
+                    {drilldownModal.isOpen && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                            <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm" onClick={() => setDrilldownModal({ isOpen: false, title: '', data: [] })} />
+                            <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-slate-50 dark:bg-slate-900 rounded-3xl shadow-2xl flex flex-col animate-fade-in">
+                                <div className="p-6 border-b dark:border-slate-800 flex justify-between items-center sticky top-0 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur z-10">
+                                    <h2 className="text-xl font-black uppercase tracking-tighter dark:text-white flex items-center gap-2">
+                                        <Search className="text-blue-500 h-5 w-5" />
+                                        {drilldownModal.title}
+                                    </h2>
+                                    <button type="button" onClick={() => setDrilldownModal({ isOpen: false, title: '', data: [] })} className="text-slate-400 hover:text-slate-800 dark:hover:text-white font-black text-xl">&times;</button>
+                                </div>
+                                <div className="p-6">
+                                    <table className="w-full text-left text-sm font-bold">
+                                        <thead className="bg-slate-100 dark:bg-slate-800/50 text-[10px] uppercase tracking-widest text-slate-500">
+                                            <tr>
+                                                <th className="px-4 py-3 rounded-tl-xl">Date</th>
+                                                <th className="px-4 py-3">Agent</th>
+                                                <th className="px-4 py-3">Status</th>
+                                                <th className="px-4 py-3 text-right rounded-tr-xl">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y dark:divide-slate-800">
+                                            {drilldownModal.data.map((t, idx) => (
+                                                <tr key={t.id || idx} className="hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors">
+                                                    <td className="px-4 py-3 dark:text-slate-300">{formatDateTime(t.date)}</td>
+                                                    <td className="px-4 py-3 dark:text-slate-300">{t.agent}</td>
+                                                    <td className="px-4 py-3">
+                                                        <Badge color={t.status === 'Pending' ? 'amber' : (['Resolved', 'Won', 'Activated', 'Audited'].includes(t.status) ? 'green' : 'slate')}>{t.status}</Badge>
+                                                    </td>
+                                                    <td className="px-4 py-3 text-right">
+                                                        <button type="button" onClick={() => {
+                                                            setDrilldownModal({ isOpen: false, title: '', data: [] });
+                                                            if (t.type === 'pip') {
+                                                                setPipData({ ...t.details, id: t.id, status: t.status });
+                                                                setIsPipModalOpen(true);
+                                                            } else if (t.type === 'warning') {
+                                                                setWarningData({ ...t.details, id: t.id });
+                                                                setIsWarningModalOpen(true);
+                                                            } else {
+                                                                handleEditTask(t);
+                                                            }
+                                                        }} className="px-3 py-1.5 bg-white dark:bg-slate-900 border dark:border-slate-700 text-[10px] font-black uppercase tracking-widest rounded-lg hover:border-blue-500 hover:text-blue-500 transition-colors shadow-sm">View Log</button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                            {drilldownModal.data.length === 0 && (
+                                                <tr><td colSpan="4" className="px-4 py-8 text-center text-slate-400 text-xs uppercase tracking-widest">No matching records found.</td></tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                 </div>
             );
         }
