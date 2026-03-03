@@ -36,6 +36,7 @@
 
     <!-- Chart.js for Data Visualization -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
@@ -130,7 +131,7 @@
         const DatabaseIcon = (props) => <Icon {...props} path={<><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/></>} />;
         const Moon = (props) => <Icon {...props} path={<><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></>} />;
         const Sun = (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></>} />;
-        const SettingsIcon = (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></>} />;
+        const SettingsIcon = (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></>} />;
         const ClipboardList = (props) => <Icon {...props} path={<React.Fragment><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></React.Fragment>} />;
         const ChevronDown = (props) => <Icon {...props} path={<polyline points="6 9 12 15 18 9"/>} />;
         const ChevronUp = (props) => <Icon {...props} path={<polyline points="18 15 12 9 6 15"/>} />;
@@ -251,9 +252,19 @@
         function IndividualAnalyticsChart({ categoryKey, categoryLabel, fields, allTasks, isDarkMode, normalizeAgentName }) {
             const chartRef = useRef(null);
             const chartInstance = useRef(null);
-            const [field, setField] = useState('status');
+            const [selectedFields, setSelectedFields] = useState(['status']);
             const [startDate, setStartDate] = useState('');
             const [endDate, setEndDate] = useState('');
+
+            const availableFields = Array.from(new Set(['status', 'agent', ...fields]));
+
+            const toggleField = (f) => {
+                if (selectedFields.includes(f)) {
+                    if (selectedFields.length > 1) setSelectedFields(selectedFields.filter(x => x !== f));
+                } else {
+                    setSelectedFields([...selectedFields, f]);
+                }
+            };
 
             useEffect(() => {
                 if (chartRef.current) {
@@ -269,17 +280,21 @@
                     
                     const counts = {};
                     filteredData.forEach(t => {
-                        let value = ['status', 'agent'].includes(field) ? t[field] : t.details?.[field] || 'N/A';
-                        if (['agent', 'mentorName', 'associateName'].includes(field)) {
-                            value = normalizeAgentName(value);
-                        }
-                        
-                        // Handle object values if inadvertently selected
-                        if (typeof value === 'object' && value !== null) {
-                            value = 'Complex Object / Multi-metric';
-                        }
-                        
-                        counts[value] = (counts[value] || 0) + 1;
+                        const vals = selectedFields.map(f => {
+                            let value = ['status', 'agent'].includes(f) ? t[f] : t.details?.[f] || 'N/A';
+                            if (['agent', 'mentorName', 'associateName'].includes(f)) {
+                                value = normalizeAgentName(value);
+                            }
+                            
+                            // Handle object values if inadvertently selected
+                            if (typeof value === 'object' && value !== null) {
+                                value = 'Complex Object / Multi-metric';
+                            }
+                            
+                            return value;
+                        });
+                        const key = vals.join(' | ');
+                        counts[key] = (counts[key] || 0) + 1;
                     });
                     
                     const ctx = chartRef.current.getContext('2d');
@@ -299,7 +314,7 @@
                     });
                 }
                 return () => { if (chartInstance.current) chartInstance.current.destroy(); };
-            }, [categoryKey, field, startDate, endDate, allTasks, isDarkMode, normalizeAgentName]);
+            }, [categoryKey, selectedFields, startDate, endDate, allTasks, isDarkMode, normalizeAgentName]);
 
             const hasData = allTasks.filter(t => t.type === categoryKey).length > 0;
 
@@ -307,11 +322,13 @@
                 <Card className="p-5 font-bold flex flex-col h-full bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-xl shadow-sm">
                     <h3 className="text-xs font-black uppercase tracking-widest dark:text-white mb-4 text-slate-700">{categoryLabel}</h3>
                     <div className="flex flex-col gap-2 mb-4">
-                        <select className="w-full p-2 bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-lg text-[10px] outline-none dark:text-slate-200 font-bold uppercase tracking-widest" value={field} onChange={e => setField(e.target.value)}>
-                            <option value="status">Status</option>
-                            <option value="agent">Agent</option>
-                            {fields.filter(f => !['quizScores', 'auditScores', 'quizComments'].includes(f)).map(f => <option key={f} value={f}>{f.replace(/([A-Z])/g, ' $1').trim()}</option>)}
-                        </select>
+                        <div className="flex flex-wrap gap-1 max-h-16 overflow-y-auto p-1 bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-lg">
+                            {availableFields.map(f => (
+                                <button type="button" key={f} onClick={() => toggleField(f)} className={`px-2 py-1 rounded text-[8px] font-black uppercase transition-colors ${selectedFields.includes(f) ? 'bg-blue-600 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600'}`}>
+                                    {f.replace(/([A-Z])/g, ' $1').trim()}
+                                </button>
+                            ))}
+                        </div>
                         <div className="flex gap-2">
                             <input type="date" className="flex-1 p-2 bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-lg text-[10px] outline-none dark:text-slate-200 font-bold" value={startDate} onChange={e => setStartDate(e.target.value)} title="Start Date" />
                             <input type="date" className="flex-1 p-2 bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-lg text-[10px] outline-none dark:text-slate-200 font-bold" value={endDate} onChange={e => setEndDate(e.target.value)} title="End Date" />
@@ -982,7 +999,7 @@
             const pieChartRef = useRef(null);
             const pieChartInstance = useRef(null);
             const [analyticsCategory, setAnalyticsCategory] = useState('disputes');
-            const [analyticsField, setAnalyticsField] = useState('status');
+            const [analyticsFields, setAnalyticsFields] = useState(['status']);
             const [analyticsDateRange, setAnalyticsDateRange] = useState({ start: '', end: '' });
 
             const [customOptions, setCustomOptions] = useState({
@@ -1659,6 +1676,14 @@
             };
 
             // Analytics Lifecycle
+            const toggleMainField = (f) => {
+                if (analyticsFields.includes(f)) {
+                    if (analyticsFields.length > 1) setAnalyticsFields(analyticsFields.filter(x => x !== f));
+                } else {
+                    setAnalyticsFields([...analyticsFields, f]);
+                }
+            };
+
             useEffect(() => {
                 if (activeTab === 'analytics' && chartRef.current) {
                     if (chartInstance.current) chartInstance.current.destroy();
@@ -1668,37 +1693,75 @@
                         const end = new Date(analyticsDateRange.end); end.setHours(23,59,59);
                         filteredData = filteredData.filter(t => new Date(t.date) <= end);
                     }
-                    const counts = {};
+                    
+                    const primaryField = analyticsFields[0] || 'status';
+                    const secondaryFields = analyticsFields.slice(1);
+                    
+                    const labelsSet = new Set();
+                    const datasetsMap = {};
+
                     filteredData.forEach(t => {
-                        let value = ['status', 'agent'].includes(analyticsField) ? t[analyticsField] : t.details?.[analyticsField] || 'N/A';
-                        if (['agent', 'mentorName', 'associateName'].includes(analyticsField)) {
-                            value = normalizeAgentName(value);
+                        // Extract Primary Axis Value (X-Axis)
+                        let pVal = ['status', 'agent'].includes(primaryField) ? t[primaryField] : t.details?.[primaryField] || 'N/A';
+                        if (['agent', 'mentorName', 'associateName'].includes(primaryField)) pVal = normalizeAgentName(pVal);
+                        if (typeof pVal === 'object' && pVal !== null) pVal = 'Complex Object';
+                        pVal = String(pVal);
+                        labelsSet.add(pVal);
+
+                        // Extract Secondary Axis Value (Stacks / Legend)
+                        let sVal = 'Count';
+                        if (secondaryFields.length > 0) {
+                            const sVals = secondaryFields.map(f => {
+                                let v = ['status', 'agent'].includes(f) ? t[f] : t.details?.[f] || 'N/A';
+                                if (['agent', 'mentorName', 'associateName'].includes(f)) v = normalizeAgentName(v);
+                                if (typeof v === 'object' && v !== null) v = 'Complex Object';
+                                return String(v);
+                            });
+                            sVal = sVals.join(' | ');
                         }
-                        
-                        // Treat object structures globally in chart as single complex representation
-                        if (typeof value === 'object' && value !== null) {
-                            value = 'Complex Object / Multi-metric';
-                        }
-                        
-                        counts[value] = (counts[value] || 0) + 1;
+
+                        if (!datasetsMap[sVal]) datasetsMap[sVal] = {};
+                        datasetsMap[sVal][pVal] = (datasetsMap[sVal][pVal] || 0) + 1;
                     });
+
+                    const labels = Array.from(labelsSet).sort();
+                    const datasets = Object.keys(datasetsMap).map((sVal, idx) => {
+                        const data = labels.map(l => datasetsMap[sVal][l] || 0);
+                        const color = `hsl(${(idx * 360) / Math.max(Object.keys(datasetsMap).length, 1)}, 70%, 55%)`;
+                        return {
+                            label: sVal,
+                            data: data,
+                            backgroundColor: secondaryFields.length > 0 ? color : (isDarkMode ? 'rgba(37, 99, 235, 0.8)' : 'rgba(37, 99, 235, 0.7)'),
+                            borderRadius: 4
+                        };
+                    });
+
                     const ctx = chartRef.current.getContext('2d');
                     chartInstance.current = new Chart(ctx, {
                         type: 'bar',
                         data: {
-                            labels: Object.keys(counts),
-                            datasets: [{
-                                data: Object.values(counts),
-                                backgroundColor: isDarkMode ? 'rgba(37, 99, 235, 0.8)' : 'rgba(37, 99, 235, 0.7)',
-                                borderRadius: 6
-                            }]
+                            labels: labels,
+                            datasets: datasets
                         },
+                        plugins: [window.ChartDataLabels],
                         options: {
                             responsive: true, maintainAspectRatio: false,
-                            plugins: { legend: { display: false } },
+                            plugins: { 
+                                legend: { 
+                                    display: secondaryFields.length > 0,
+                                    labels: { color: isDarkMode ? '#cbd5e1' : '#64748b', font: { family: 'Inter', weight: 'bold' } }
+                                },
+                                datalabels: {
+                                    color: '#ffffff',
+                                    font: { weight: 'bold', size: 10, family: 'Inter' },
+                                    formatter: (value) => value > 0 ? value : '',
+                                    anchor: 'center',
+                                    align: 'center'
+                                }
+                            },
                             scales: {
-                                y: { beginAtZero: true, grid: { color: isDarkMode ? '#334155' : '#f1f5f9' }, ticks: { color: isDarkMode ? '#94a3b8' : '#64748b' } },
-                                x: { grid: { display: false }, ticks: { color: isDarkMode ? '#94a3b8' : '#64748b' } }
+                                y: { stacked: true, beginAtZero: true, grid: { color: isDarkMode ? '#334155' : '#f1f5f9' }, ticks: { color: isDarkMode ? '#94a3b8' : '#64748b' } },
+                                x: { stacked: true, grid: { display: false }, ticks: { color: isDarkMode ? '#94a3b8' : '#64748b' } }
                             }
                         }
                     });
@@ -1731,7 +1794,9 @@
                     if (chartInstance.current) chartInstance.current.destroy(); 
                     if (pieChartInstance.current) pieChartInstance.current.destroy();
                 };
-            }, [activeTab, analyticsCategory, analyticsField, analyticsDateRange, tasks, isDarkMode, normalizeAgentName]);
+            }, [activeTab, analyticsCategory, analyticsFields, analyticsDateRange, tasks, isDarkMode, normalizeAgentName]);
+
+            const availableMainFields = Array.from(new Set(['status', 'agent', ...(categories[analyticsCategory]?.fields.filter(f => !f.includes('Module') && !['quizScores', 'auditScores', 'quizComments'].includes(f)) || [])]));
 
             const saveGlobalConfig = async (newConfig) => {
                 const { error } = await supabase.from('app_config').upsert({ id: 1, ...newConfig });
@@ -2322,11 +2387,22 @@
                                 {/* Main Bar Chart */}
                                 <Card className="p-6 font-bold">
                                     <div className="flex items-center gap-3 mb-6 font-bold"><BarChart3 className="h-6 w-6 text-blue-600" /><h2 className="text-xl font-bold uppercase tracking-widest dark:text-white font-bold">Filtered Analytics</h2></div>
-                                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8 font-bold">
-                                        <select className="p-2.5 bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-lg text-sm outline-none dark:text-slate-200 font-bold" value={analyticsCategory} onChange={e => setAnalyticsCategory(e.target.value)}>{Object.entries(categories).map(([k, c]) => <option key={k} value={k}>{c.label}</option>)}</select>
-                                        <select className="p-2.5 bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-lg text-sm outline-none dark:text-slate-200 font-bold" value={analyticsField} onChange={e => setAnalyticsField(e.target.value)}><option value="status">Status</option><option value="agent">Agent</option>{categories[analyticsCategory]?.fields.filter(f => !f.includes('Module') && !['quizScores', 'auditScores', 'quizComments'].includes(f)).map(f => <option key={f} value={f}>{f.replace(/([A-Z])/g, ' $1')}</option>)}</select>
-                                        <input type="date" className="p-2.5 bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-lg text-sm outline-none dark:text-slate-200 font-bold" value={analyticsDateRange.start} onChange={e => setAnalyticsDateRange(p => ({...p, start: e.target.value}))} />
-                                        <input type="date" className="p-2.5 bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-lg text-sm outline-none dark:text-slate-200 font-bold" value={analyticsDateRange.end} onChange={e => setAnalyticsDateRange(p => ({...p, end: e.target.value}))} />
+                                    <div className="flex flex-col gap-4 mb-8 font-bold">
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                            <select className="p-2.5 bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-lg text-sm outline-none dark:text-slate-200 font-bold" value={analyticsCategory} onChange={e => { setAnalyticsCategory(e.target.value); setAnalyticsFields(['status']); }}>{Object.entries(categories).map(([k, c]) => <option key={k} value={k}>{c.label}</option>)}</select>
+                                            <input type="date" className="p-2.5 bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-lg text-sm outline-none dark:text-slate-200 font-bold" value={analyticsDateRange.start} onChange={e => setAnalyticsDateRange(p => ({...p, start: e.target.value}))} />
+                                            <input type="date" className="p-2.5 bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-lg text-sm outline-none dark:text-slate-200 font-bold" value={analyticsDateRange.end} onChange={e => setAnalyticsDateRange(p => ({...p, end: e.target.value}))} />
+                                        </div>
+                                        <div className="p-3 bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-lg">
+                                            <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-2 font-black">Group By Attributes (Select Multiple)</p>
+                                            <div className="flex flex-wrap gap-2">
+                                                {availableMainFields.map(f => (
+                                                    <button type="button" key={f} onClick={() => toggleMainField(f)} className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-colors ${analyticsFields.includes(f) ? 'bg-blue-600 text-white shadow-md' : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-300 hover:border-blue-400'}`}>
+                                                        {f.replace(/([A-Z])/g, ' $1').trim()}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
                                     </div>
                                     <div className="h-[400px] flex items-center justify-center p-4 bg-slate-50 dark:bg-slate-800 rounded-xl relative font-bold"><canvas ref={chartRef}></canvas></div>
                                 </Card>
@@ -3081,8 +3157,29 @@
                                             
                                             if (field === 'auditModule' || field === 'correctionModule') {
                                                 const items = field === 'auditModule' ? auditAttributes : quizModules;
-                                                return (<div key={field} className="space-y-6 pt-2 font-bold font-bold"><div className="flex justify-between items-center mb-2 font-bold font-bold"><h3 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-bold font-bold">{field.replace('Module','')} Quality</h3>{field === 'correctionModule' && <Badge color="cyan">AVG: {formData.overallScore || '0.0'}</Badge>}{field === 'auditModule' && <Badge color="green">Score: {formData.overallAuditScore || '0'}%</Badge>}</div>
-                                                    {items.map((m, idx) => (<div key={`${m.id}-${idx}`} className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm font-bold font-bold"><p className="font-bold text-sm mb-1 dark:text-slate-200 font-bold">{m.title || m.label}</p><p className="text-[10px] text-slate-400 mb-4 font-bold">{m.desc}</p><div className="flex justify-center gap-2 mb-4 font-bold font-bold">{field === 'auditModule' ? ['Yes', 'No'].map(s => (<button key={s} type="button" onClick={() => !isAuditReadOnly && handleAuditScore(m.id, s)} className={`px-4 py-1.5 rounded-lg border-2 text-[10px] font-black transition-all font-bold ${formData.auditScores?.[m.id] === s ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white dark:bg-slate-800 dark:border-slate-700 text-slate-400'} ${isAuditReadOnly ? 'cursor-not-allowed opacity-80' : ''}`}>{s.toUpperCase()}</button>)) : [1, 2, 3, 4, 5].map(s => (<button key={s} type="button" onClick={() => !isAuditReadOnly && handleQuizScore(m.id, s)} className={`w-8 h-8 rounded-full border-2 text-xs font-bold transition-all font-bold ${formData.quizScores?.[m.id] === s ? 'bg-cyan-500 border-cyan-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400'} ${isAuditReadOnly ? 'cursor-not-allowed opacity-80' : ''}`}>{s}</button>))}</div><input type="text" placeholder="Detail..." className="w-full p-2 bg-slate-50 dark:bg-slate-800 border-b dark:border-slate-700 text-[10px] outline-none dark:text-white font-bold font-bold" readOnly={isAuditReadOnly} onChange={e => setFormData(p => ({...p, quizComments: {...(p.quizComments || {}), [m.id]: e.target.value}}))} value={formData.quizComments?.[m.id] || ''} /></div>))}</div>);
+                                                return (
+                                                    <div key={field} className="space-y-6 pt-2 font-bold font-bold">
+                                                        <div className="flex justify-between items-center mb-2 font-bold font-bold">
+                                                            <h3 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-bold font-bold">{field.replace('Module','')} Quality</h3>
+                                                            {field === 'correctionModule' && <Badge color="cyan">AVG: {formData.overallScore || '0.0'}</Badge>}
+                                                            {field === 'auditModule' && <Badge color="green">Score: {formData.overallAuditScore || '0'}%</Badge>}
+                                                        </div>
+                                                        {items.map((m, idx) => (
+                                                            <div key={`${m.id}-${idx}`} className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm font-bold font-bold">
+                                                                <p className="font-bold text-sm mb-1 dark:text-slate-200 font-bold">{m.title || m.label}</p>
+                                                                <p className="text-[10px] text-slate-400 mb-4 font-bold">{m.desc}</p>
+                                                                <div className="flex justify-center gap-2 mb-4 font-bold font-bold">
+                                                                    {field === 'auditModule' ? ['Yes', 'No'].map(s => (
+                                                                        <button key={s} type="button" onClick={() => !isAuditReadOnly && handleAuditScore(m.id, s)} className={`px-4 py-1.5 rounded-lg border-2 text-[10px] font-black transition-all font-bold ${formData.auditScores?.[m.id] === s ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white dark:bg-slate-800 dark:border-slate-700 text-slate-400'} ${isAuditReadOnly ? 'cursor-not-allowed opacity-80' : ''}`}>{s.toUpperCase()}</button>
+                                                                    )) : [1, 2, 3, 4, 5].map(s => (
+                                                                        <button key={s} type="button" onClick={() => !isAuditReadOnly && handleQuizScore(m.id, s)} className={`w-8 h-8 rounded-full border-2 text-xs font-bold transition-all font-bold ${formData.quizScores?.[m.id] === s ? 'bg-cyan-500 border-cyan-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400'} ${isAuditReadOnly ? 'cursor-not-allowed opacity-80' : ''}`}>{s}</button>
+                                                                    ))}
+                                                                </div>
+                                                                <input type="text" placeholder="Detail..." className="w-full p-2 bg-slate-50 dark:bg-slate-800 border-b dark:border-slate-700 text-[10px] outline-none dark:text-white font-bold font-bold" readOnly={isAuditReadOnly} onChange={e => setFormData(p => ({...p, quizComments: {...(p.quizComments || {}), [m.id]: e.target.value}}))} value={formData.quizComments?.[m.id] || ''} />
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                );
                                             }
                                             if (field === 'hipLogReference' && newTaskType === 'mentor_audit') return (
                                                 <div key={field} className="pt-2 font-bold font-bold">
@@ -3097,12 +3194,12 @@
                                                     <div className="flex gap-2 font-bold font-bold font-bold">
                                                         <div className="flex-1 p-3 bg-white dark:bg-slate-900 border dark:border-slate-700 rounded-xl text-sm font-medium dark:text-slate-300 flex flex-wrap items-center gap-4 font-bold">
                                                             {formData.auditedSlack && (
-                                                                <a href={formData.auditedSlack.startsWith('http') ? formData.auditedSlack : `https://${formData.auditedSlack}`} target="_blank" className="flex items-center gap-1.5 text-teal-600 dark:text-teal-400 hover:underline font-bold">
+                                                                <a href={formData.auditedSlack.startsWith('http') ? formData.auditedSlack : `https://${formData.auditedSlack}`} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-teal-600 dark:text-teal-400 hover:underline font-bold">
                                                                     <MessageCircle className="h-4 w-4" /> Slack
                                                                 </a>
                                                             )}
                                                             {formData.auditedTicket && (
-                                                                <a href={formData.auditedTicket.startsWith('http') ? formData.auditedTicket : `https://${formData.auditedTicket}`} target="_blank" className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 hover:underline font-bold">
+                                                                <a href={formData.auditedTicket.startsWith('http') ? formData.auditedTicket : `https://${formData.auditedTicket}`} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 hover:underline font-bold">
                                                                     <FileText className="h-4 w-4" /> Ticket
                                                                 </a>
                                                             )}
@@ -3144,70 +3241,70 @@
                                             if (field === 'associateEmail' && (newTaskType === 'weekly_quiz' || newTaskType === 'hip_request')) return (<div key={field} className="font-bold"><label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 block font-bold font-bold">Associate Email</label><input type="email" className="w-full p-3 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500 dark:text-white font-bold font-bold" value={formData[field] || ''} onChange={e => handleInputChange(field, e.target.value)} /></div>);
                                             
                                             if (field === 'invalidContext') return (
-                                            <div key={field} className="font-bold font-bold">
-                                                <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 block font-bold font-bold font-bold">Invalid HIP Context / Reason</label>
-                                                <textarea readOnly={isAuditReadOnly} rows="3" className="w-full p-3 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500 dark:text-white font-bold font-bold" value={formData[field] || ''} onChange={e => handleInputChange(field, e.target.value)} placeholder="Provide full context on why this HIP is invalid..."></textarea>
-                                            </div>
-                                        );
-
-                                        if (field === 'ownerNote') return (
-                                            <div key={field} className="font-bold font-bold">
-                                                <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 block font-bold font-bold font-bold">Owner Note</label>
-                                                <textarea readOnly={isAuditReadOnly} rows="3" className="w-full p-3 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500 dark:text-white font-bold font-bold" value={formData[field] || ''} onChange={e => handleInputChange(field, e.target.value)} placeholder="Enter detailed notes here..."></textarea>
-                                            </div>
-                                        );
-                                        
-                                        const isDropdown = ['associateName', 'associateEmail', 'mentorName', 'team', 'productType', 'surpriseAndDelightType', 'resolution', 'pendingReason', 'disputeReason', 'reasonForSupport', 'validHip', 'validRequest', 'subscriptionStatus', 'emailSent', 'disputedProduct', 'invalidReason', 'surpriseAndDelightReason', 'hipProduct', 'hipCategory', 'hipRequestType', 'status', 'pendingReasonDetail', 'associateCoached', 'escalationCategory', 'escalationSubCategory', 'reasonForEscalation'].includes(field);
-                                        
-                                        return (
-                                            <div key={field} className="font-bold font-bold">
-                                                <div className="flex justify-between items-center mb-1.5">
-                                                    <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block font-bold font-bold font-bold">{field.replace(/([A-Z])/g, ' $1')}</label>
-                                                    {(field.toLowerCase().includes('link') || field.toLowerCase().includes('url')) && formData[field] && (
-                                                        <a href={String(formData[field]).startsWith('http') ? formData[field] : `https://${formData[field]}`} target="_blank" rel="noreferrer" className="text-blue-500 hover:text-blue-700 text-[10px] flex items-center gap-1 uppercase font-black tracking-tighter transition-colors">
-                                                            Open <ExternalLink className="h-3 w-3" />
-                                                        </a>
-                                                    )}
+                                                <div key={field} className="font-bold font-bold">
+                                                    <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 block font-bold font-bold font-bold">Invalid HIP Context / Reason</label>
+                                                    <textarea readOnly={isAuditReadOnly} rows="3" className="w-full p-3 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500 dark:text-white font-bold font-bold" value={formData[field] || ''} onChange={e => handleInputChange(field, e.target.value)} placeholder="Provide full context on why this HIP is invalid..."></textarea>
                                                 </div>
-                                                {isDropdown ? (
-                                                    <div className="font-bold">
-                                                        {(field === 'status' && autoResolvedTypes.includes(newTaskType)) ? (
-                                                            <div className="p-3 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-xl text-emerald-600 text-sm font-bold text-emerald-600 uppercase text-center italic tracking-tighter font-bold">Enforced Resolved</div>
-                                                        ) : (
-                                                            <select disabled={isAuditReadOnly} className="w-full p-3 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500 dark:text-white font-bold font-bold" value={formData[field] || ''} onChange={e => { 
-                                                                    if(field === 'hipProduct') setFormData(p=>({...p, hipProduct:e.target.value, hipCategory:'', hipRequestType:''})); 
-                                                                    else if(field === 'hipCategory') setFormData(p=>({...p, hipCategory:e.target.value, hipRequestType:''})); 
-                                                                    else if(field === 'associateName') {
-                                                                        const val = e.target.value;
-                                                                        const email = associateMap[val] || '';
-                                                                        setFormData(p => ({ ...p, [field]: val, associateEmail: email }));
-                                                                    }
-                                                                    else if(field === 'mentorName') {
-                                                                        const val = e.target.value;
-                                                                        const email = mentorMap[val] || '';
-                                                                        setFormData(p => ({ ...p, [field]: val, mentorEmail: email }));
-                                                                    }
-                                                                    else handleInputChange(field, e.target.value);
-                                                                }}><option value="" className="font-bold">Select...</option>
-                                                                {field === 'associateName' && globalAssociates.map((a, idx) => <option key={`${a}-${idx}`} value={a} className="font-bold">{a}</option>)}
-                                                                {field === 'associateEmail' && globalAssociates.map((a, idx) => <option key={`${a}-${idx}`} value={a} className="font-bold">{a}</option>)}
-                                                                {field === 'mentorName' && globalMentors.map((a, idx) => <option key={`${a}-${idx}`} value={a} className="font-bold">{a}</option>)}
-                                                                {field === 'status' && ['Pending', 'Resolved'].map((o, idx) => <option key={`${o}-${idx}`} value={o} className="font-bold">{o}</option>)}
-                                                                {field === 'resolution' && (newTaskType === 'pending_subs' ? ['Activated', 'Cancelled'] : newTaskType === 'disputes' ? ['Pending', 'Lost', 'Won'] : ['Pending', 'Resolved']).map((o, idx) => <option key={`${o}-${idx}`} value={o} className="font-bold">{o}</option>)}
-                                                                {field === 'hipProduct' && Object.keys(globalHipHierarchy).map((k, idx) => <option key={`${k}-${idx}`} value={k} className="font-bold">{k}</option>)}
-                                                                {field === 'hipCategory' && formData.hipProduct && Object.keys(globalHipHierarchy[formData.hipProduct] || {}).map((c, idx) => <option key={`${c}-${idx}`} value={c} className="font-bold">{c}</option>)}
-                                                                {field === 'hipRequestType' && formData.hipCategory && (globalHipHierarchy[formData.hipProduct]?.[formData.hipCategory] || []).map((o, idx) => <option key={`${o}-${idx}`} value={o} className="font-bold">{o}</option>)}
-                                                                {field === 'associateCoached' && ['Yes', 'No'].map((o, idx) => <option key={`${o}-${idx}`} value={o} className="font-bold">{o}</option>)}
-                                                                {field !== 'resolution' && !field.startsWith('hip') && !['associateName', 'associateEmail', 'mentorName', 'pendingReasonDetail', 'status', 'associateCoached'].includes(field) && (customOptions[field] || []).map((o, idx) => <option key={`${o}-${idx}`} value={o} className="font-bold">{o}</option>)}
-                                                                {field === 'pendingReasonDetail' && customOptions.pendingReasonDetail.map((o, idx) => <option key={`${o}-${idx}`} value={o} className="font-bold">{o}</option>)}
-                                                                {!isAuditReadOnly && !['associateName', 'associateEmail', 'mentorName'].includes(field) && <option value="ADD_NEW_CUSTOM" className="text-blue-600 italic font-black font-bold uppercase text-[10px] font-bold">+ Add New Item...</option>}
-                                                            </select>
+                                            );
+
+                                            if (field === 'ownerNote') return (
+                                                <div key={field} className="font-bold font-bold">
+                                                    <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 block font-bold font-bold font-bold">Owner Note</label>
+                                                    <textarea readOnly={isAuditReadOnly} rows="3" className="w-full p-3 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500 dark:text-white font-bold font-bold" value={formData[field] || ''} onChange={e => handleInputChange(field, e.target.value)} placeholder="Enter detailed notes here..."></textarea>
+                                                </div>
+                                            );
+                                            
+                                            const isDropdown = ['associateName', 'associateEmail', 'mentorName', 'team', 'productType', 'surpriseAndDelightType', 'resolution', 'pendingReason', 'disputeReason', 'reasonForSupport', 'validHip', 'validRequest', 'subscriptionStatus', 'emailSent', 'disputedProduct', 'invalidReason', 'surpriseAndDelightReason', 'hipProduct', 'hipCategory', 'hipRequestType', 'status', 'pendingReasonDetail', 'associateCoached', 'escalationCategory', 'escalationSubCategory', 'reasonForEscalation'].includes(field);
+                                            
+                                            return (
+                                                <div key={field} className="font-bold font-bold">
+                                                    <div className="flex justify-between items-center mb-1.5">
+                                                        <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block font-bold font-bold font-bold">{field.replace(/([A-Z])/g, ' $1')}</label>
+                                                        {(field.toLowerCase().includes('link') || field.toLowerCase().includes('url')) && formData[field] && (
+                                                            <a href={String(formData[field]).startsWith('http') ? formData[field] : `https://${formData[field]}`} target="_blank" rel="noreferrer" className="text-blue-500 hover:text-blue-700 text-[10px] flex items-center gap-1 uppercase font-black tracking-tighter transition-colors">
+                                                                Open <ExternalLink className="h-3 w-3" />
+                                                            </a>
                                                         )}
-                                                        {customInputTarget === field && (<div className="mt-2 flex gap-2 animate-fade-in font-bold"><input type="text" id={`custom-${field}`} className="flex-1 p-2 border rounded-lg outline-none bg-white dark:bg-slate-900 dark:text-white font-bold" /><button type="button" onClick={() => handleAddCustomValue(field, document.getElementById(`custom-${field}`).value)} className="px-3 bg-blue-600 text-white rounded-lg text-[10px] font-black uppercase tracking-tighter font-bold">Add</button></div>)}
                                                     </div>
-                                                ) : (<input readOnly={isAuditReadOnly} type={field.toLowerCase().includes('date') ? 'date' : 'text'} className="w-full p-3 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500 dark:text-white font-bold font-bold" value={formData[field] || ''} onChange={e => handleInputChange(field, e.target.value)} />)}
-                                            </div>
-                                        );
+                                                    {isDropdown ? (
+                                                        <div className="font-bold">
+                                                            {(field === 'status' && autoResolvedTypes.includes(newTaskType)) ? (
+                                                                <div className="p-3 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-xl text-emerald-600 text-sm font-bold uppercase text-center italic tracking-tighter font-bold">Enforced Resolved</div>
+                                                            ) : (
+                                                                <select disabled={isAuditReadOnly} className="w-full p-3 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500 dark:text-white font-bold font-bold" value={formData[field] || ''} onChange={e => { 
+                                                                        if(field === 'hipProduct') setFormData(p=>({...p, hipProduct:e.target.value, hipCategory:'', hipRequestType:''})); 
+                                                                        else if(field === 'hipCategory') setFormData(p=>({...p, hipCategory:e.target.value, hipRequestType:''})); 
+                                                                        else if(field === 'associateName') {
+                                                                            const val = e.target.value;
+                                                                            const email = associateMap[val] || '';
+                                                                            setFormData(p => ({ ...p, [field]: val, associateEmail: email }));
+                                                                        }
+                                                                        else if(field === 'mentorName') {
+                                                                            const val = e.target.value;
+                                                                            const email = mentorMap[val] || '';
+                                                                            setFormData(p => ({ ...p, [field]: val, mentorEmail: email }));
+                                                                        }
+                                                                        else handleInputChange(field, e.target.value);
+                                                                    }}><option value="" className="font-bold">Select...</option>
+                                                                    {field === 'associateName' && globalAssociates.map((a, idx) => <option key={`${a}-${idx}`} value={a} className="font-bold">{a}</option>)}
+                                                                    {field === 'associateEmail' && globalAssociates.map((a, idx) => <option key={`${a}-${idx}`} value={a} className="font-bold">{a}</option>)}
+                                                                    {field === 'mentorName' && globalMentors.map((a, idx) => <option key={`${a}-${idx}`} value={a} className="font-bold">{a}</option>)}
+                                                                    {field === 'status' && ['Pending', 'Resolved'].map((o, idx) => <option key={`${o}-${idx}`} value={o} className="font-bold">{o}</option>)}
+                                                                    {field === 'resolution' && (newTaskType === 'pending_subs' ? ['Activated', 'Cancelled'] : newTaskType === 'disputes' ? ['Pending', 'Lost', 'Won'] : ['Pending', 'Resolved']).map((o, idx) => <option key={`${o}-${idx}`} value={o} className="font-bold">{o}</option>)}
+                                                                    {field === 'hipProduct' && Object.keys(globalHipHierarchy).map((k, idx) => <option key={`${k}-${idx}`} value={k} className="font-bold">{k}</option>)}
+                                                                    {field === 'hipCategory' && formData.hipProduct && Object.keys(globalHipHierarchy[formData.hipProduct] || {}).map((c, idx) => <option key={`${c}-${idx}`} value={c} className="font-bold">{c}</option>)}
+                                                                    {field === 'hipRequestType' && formData.hipCategory && (globalHipHierarchy[formData.hipProduct]?.[formData.hipCategory] || []).map((o, idx) => <option key={`${o}-${idx}`} value={o} className="font-bold">{o}</option>)}
+                                                                    {field === 'associateCoached' && ['Yes', 'No'].map((o, idx) => <option key={`${o}-${idx}`} value={o} className="font-bold">{o}</option>)}
+                                                                    {field !== 'resolution' && !field.startsWith('hip') && !['associateName', 'associateEmail', 'mentorName', 'pendingReasonDetail', 'status', 'associateCoached'].includes(field) && (customOptions[field] || []).map((o, idx) => <option key={`${o}-${idx}`} value={o} className="font-bold">{o}</option>)}
+                                                                    {field === 'pendingReasonDetail' && customOptions.pendingReasonDetail?.map((o, idx) => <option key={`${o}-${idx}`} value={o} className="font-bold">{o}</option>)}
+                                                                    {!isAuditReadOnly && !['associateName', 'associateEmail', 'mentorName'].includes(field) && <option value="ADD_NEW_CUSTOM" className="text-blue-600 italic font-black font-bold uppercase text-[10px] font-bold">+ Add New Item...</option>}
+                                                                </select>
+                                                            )}
+                                                            {customInputTarget === field && (<div className="mt-2 flex gap-2 animate-fade-in font-bold"><input type="text" id={`custom-${field}`} className="flex-1 p-2 border rounded-lg outline-none bg-white dark:bg-slate-900 dark:text-white font-bold" /><button type="button" onClick={() => handleAddCustomValue(field, document.getElementById(`custom-${field}`).value)} className="px-3 bg-blue-600 text-white rounded-lg text-[10px] font-black uppercase tracking-tighter font-bold">Add</button></div>)}
+                                                        </div>
+                                                    ) : (<input readOnly={isAuditReadOnly} type={field.toLowerCase().includes('date') ? 'date' : 'text'} className="w-full p-3 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500 dark:text-white font-bold font-bold" value={formData[field] || ''} onChange={e => handleInputChange(field, e.target.value)} />)}
+                                                </div>
+                                            );
                                         })}
                                     </div>
                                     {!isAuditReadOnly && <button type="submit" className="w-full py-4 bg-blue-600 text-white font-black rounded-2xl shadow-xl hover:bg-blue-700 transition-all uppercase tracking-widest shadow-blue-100 font-bold font-bold">Commit Record Entry</button>}
