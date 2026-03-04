@@ -145,6 +145,7 @@
     const Award = (props) => <Icon {...props} path={<><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></>} />;
     const Cpu = (props) => <Icon {...props} path={<><rect width="16" height="16" x="4" y="4" rx="2"/><rect width="6" height="6" x="9" y="9" rx="1"/><path d="M9 2v2"/><path d="M15 2v2"/><path d="M9 20v2"/><path d="M15 20v2"/><path d="M2 9h2"/><path d="M2 14h2"/><path d="M20 9h2"/><path d="M20 14h2"/></>} />;
     const RefreshCw = (props) => <Icon {...props} path={<><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></>} />;
+    const Activity = (props) => <Icon {...props} path={<polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />} />;
 
     // --- Maps ---
     const initialAssociateEmailMap = {
@@ -184,7 +185,7 @@
     };
 
     // --- Data Defaults ---
-    const defaultTabs = ['dashboard', 'logs', 'analytics', 'reports', 'ai_validation'];
+    const defaultTabs = ['dashboard', 'insights', 'logs', 'analytics', 'reports', 'ai_validation'];
     
     const auditAttributes = [
       { id: 'responsiveness', label: 'Responsiveness', weight: 10, desc: 'Mentor responsiveness metrics.' },
@@ -249,6 +250,284 @@
         "Setup & Specs": ["Kettlebell Setup", "Folding Rack Setup", "Folding Rack Lock Issue", "Collar Specs", "HRM Replacement", "HRM Charger Replacement"]
       }
     };
+
+    // --- Deep Dive Insights Component ---
+    function InsightsDashboard({ tasks, isDarkMode, categories, normalizeAgentName }) {
+      const [attribute, setAttribute] = useState('associateName');
+      const [value, setValue] = useState('');
+      const [dateRange, setDateRange] = useState({ start: '', end: '' });
+
+      const distChartRef = useRef(null);
+      const validChartRef = useRef(null);
+      const trendChartRef = useRef(null);
+      const reqTypesChartRef = useRef(null);
+
+      const chartInstances = useRef({});
+
+      // Dynamically get available attributes excluding objects and timestamps
+      const availableAttributes = useMemo(() => {
+        const attrs = new Set(['agent', 'status']);
+        Object.values(categories).forEach(c => {
+          c.fields.forEach(f => {
+            if (!['quizScores', 'auditScores', 'quizComments', 'overallScore', 'overallAuditScore', 'date'].includes(f)) {
+              attrs.add(f);
+            }
+          });
+        });
+        return Array.from(attrs).sort();
+      }, [categories]);
+
+      // Get available values based on the selected attribute
+      const availableValues = useMemo(() => {
+        const vals = new Set();
+        tasks.forEach(t => {
+          let v = ['agent', 'status'].includes(attribute) ? t[attribute] : t.details?.[attribute];
+          if (['agent', 'mentorName', 'associateName'].includes(attribute)) {
+            v = normalizeAgentName(v);
+          }
+          if (v && typeof v !== 'object') vals.add(String(v));
+        });
+        return Array.from(vals).sort();
+      }, [tasks, attribute, normalizeAgentName]);
+
+      // Ensure a value is selected if possible
+      useEffect(() => {
+        if (availableValues.length > 0 && (!value || !availableValues.includes(value))) {
+          setValue(availableValues[0]);
+        }
+      }, [attribute, availableValues]);
+
+      // Filter tasks
+      const { globalFiltered, targetTasks } = useMemo(() => {
+        let g = tasks;
+        if (dateRange.start) g = g.filter(t => new Date(t.date) >= new Date(dateRange.start));
+        if (dateRange.end) {
+          const end = new Date(dateRange.end); end.setHours(23,59,59);
+          g = g.filter(t => new Date(t.date) <= end);
+        }
+        
+        const tgs = g.filter(t => {
+          let v = ['agent', 'status'].includes(attribute) ? t[attribute] : t.details?.[attribute];
+          if (['agent', 'mentorName', 'associateName'].includes(attribute)) {
+            v = normalizeAgentName(v);
+          }
+          return String(v) === value;
+        });
+
+        return { globalFiltered: g, targetTasks: tgs };
+      }, [tasks, attribute, value, dateRange, normalizeAgentName]);
+
+      // Compute Top-Level Metrics
+      const contributionPct = globalFiltered.length ? ((targetTasks.length / globalFiltered.length) * 100).toFixed(1) : 0;
+      const totalQuizzes = targetTasks.filter(t => t.type === 'weekly_quiz');
+      const avgQuizScore = totalQuizzes.length ? (totalQuizzes.reduce((acc, t) => acc + parseFloat(t.details?.overallScore || 0), 0) / totalQuizzes.length).toFixed(1) : 'N/A';
+      
+      const hips = targetTasks.filter(t => t.type === 'hip_request');
+      const fws = targetTasks.filter(t => t.type === 'floorwalker');
+      
+      const validHipsCount = hips.filter(t => t.details?.validHip === 'Yes').length;
+      const invalidHipsCount = hips.filter(t => t.details?.validHip === 'No').length;
+      const validFwsCount = fws.filter(t => t.details?.validRequest === 'Yes').length;
+      const invalidFwsCount = fws.filter(t => t.details?.validRequest === 'No').length;
+
+      // Rendering Charts
+      useEffect(() => {
+        if (!targetTasks.length) return;
+
+        const textCol = isDarkMode ? '#94a3b8' : '#64748b';
+        const gridCol = isDarkMode ? '#334155' : '#f1f5f9';
+
+        // Destroy old instances
+        Object.values(chartInstances.current).forEach(inst => inst && inst.destroy());
+        chartInstances.current = {};
+
+        // 1. Task Distribution (Doughnut)
+        if (distChartRef.current) {
+          const distData = {};
+          targetTasks.forEach(t => {
+            const lbl = categories[t.type]?.label || t.type;
+            distData[lbl] = (distData[lbl] || 0) + 1;
+          });
+          const bgColors = Object.keys(distData).map((_, i) => `hsl(${(i * 360) / Object.keys(distData).length}, 70%, 55%)`);
+          chartInstances.current.dist = new Chart(distChartRef.current, {
+            type: 'doughnut',
+            data: { labels: Object.keys(distData), datasets: [{ data: Object.values(distData), backgroundColor: bgColors, borderWidth: 0 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: textCol, font: { family: 'Inter', size: 10 } } } } }
+          });
+        }
+
+        // 2. Validation Chart (Bar - Valid vs Invalid)
+        if (validChartRef.current && (hips.length > 0 || fws.length > 0)) {
+          chartInstances.current.valid = new Chart(validChartRef.current, {
+            type: 'bar',
+            data: {
+              labels: ['HIP Requests', 'Floorwalker'],
+              datasets: [
+                { label: 'Valid', data: [validHipsCount, validFwsCount], backgroundColor: '#10b981', borderRadius: 4 },
+                { label: 'Invalid', data: [invalidHipsCount, invalidFwsCount], backgroundColor: '#f43f5e', borderRadius: 4 }
+              ]
+            },
+            options: {
+              responsive: true, maintainAspectRatio: false,
+              scales: { y: { beginAtZero: true, grid: { color: gridCol }, ticks: { color: textCol } }, x: { grid: { display: false }, ticks: { color: textCol } } },
+              plugins: { legend: { labels: { color: textCol } } }
+            }
+          });
+        }
+
+        // 3. Activity Trend (Line)
+        if (trendChartRef.current) {
+          const daily = {};
+          targetTasks.forEach(t => {
+            const day = new Date(t.date).toISOString().split('T')[0];
+            daily[day] = (daily[day] || 0) + 1;
+          });
+          const sortedDays = Object.keys(daily).sort();
+          chartInstances.current.trend = new Chart(trendChartRef.current, {
+            type: 'line',
+            data: {
+              labels: sortedDays,
+              datasets: [{ label: 'Volume', data: sortedDays.map(d => daily[d]), borderColor: '#3b82f6', tension: 0.3, fill: true, backgroundColor: 'rgba(59, 130, 246, 0.1)' }]
+            },
+            options: {
+              responsive: true, maintainAspectRatio: false,
+              scales: { y: { beginAtZero: true, grid: { color: gridCol }, ticks: { color: textCol } }, x: { grid: { display: false }, ticks: { color: textCol } } },
+              plugins: { legend: { display: false } }
+            }
+          });
+        }
+
+        // 4. Request Types / Reasons (Bar)
+        if (reqTypesChartRef.current) {
+          const typesData = {};
+          targetTasks.forEach(t => {
+            let reqVal = t.details?.hipRequestType || t.details?.reasonForSupport || t.details?.escalationCategory || t.details?.disputeReason || 'Other/None';
+            typesData[reqVal] = (typesData[reqVal] || 0) + 1;
+          });
+          const sortedTypes = Object.entries(typesData).sort((a,b) => b[1] - a[1]).slice(0, 7); // Top 7
+
+          chartInstances.current.reqTypes = new Chart(reqTypesChartRef.current, {
+            type: 'bar',
+            data: {
+              labels: sortedTypes.map(i => i[0].length > 15 ? i[0].substring(0,15)+'...' : i[0]),
+              datasets: [{ label: 'Count', data: sortedTypes.map(i => i[1]), backgroundColor: '#8b5cf6', borderRadius: 4 }]
+            },
+            options: {
+              indexAxis: 'y',
+              responsive: true, maintainAspectRatio: false,
+              scales: { x: { beginAtZero: true, grid: { color: gridCol }, ticks: { color: textCol } }, y: { grid: { display: false }, ticks: { color: textCol } } },
+              plugins: { legend: { display: false }, tooltip: { callbacks: { title: (ctx) => sortedTypes[ctx[0].dataIndex][0] } } }
+            }
+          });
+        }
+
+        return () => {
+          Object.values(chartInstances.current).forEach(inst => inst && inst.destroy());
+        };
+      }, [targetTasks, isDarkMode]);
+
+      return (
+        <div className="space-y-6 animate-fade-in font-bold">
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border dark:border-slate-800 shadow-sm space-y-6">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <div>
+                <h2 className="text-xl font-black uppercase tracking-widest dark:text-white flex items-center gap-3">
+                  <Activity className="h-6 w-6 text-indigo-500" /> Deep Dive Insights
+                </h2>
+                <p className="text-xs text-slate-500 uppercase mt-2 tracking-tighter">Select any attribute to see detailed analytics breakdown.</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-4 border-t dark:border-slate-800">
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-black uppercase text-slate-400 pl-1">Target Attribute</label>
+                <select className="p-2.5 text-xs bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-lg outline-none font-bold dark:text-white" value={attribute} onChange={e => { setAttribute(e.target.value); setValue(''); }}>
+                  {availableAttributes.map(a => <option key={a} value={a}>{a.replace(/([A-Z])/g, ' $1').trim()}</option>)}
+                </select>
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-black uppercase text-slate-400 pl-1">Target Value</label>
+                <select className="p-2.5 text-xs bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-lg outline-none font-bold dark:text-white" value={value} onChange={e => setValue(e.target.value)}>
+                  {availableValues.map(v => <option key={v} value={v}>{v}</option>)}
+                  {availableValues.length === 0 && <option value="">No data</option>}
+                </select>
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-black uppercase text-slate-400 pl-1">Start Date</label>
+                <input type="date" className="p-2.5 text-xs bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-lg outline-none font-bold dark:text-white" value={dateRange.start} onChange={e => setDateRange(p=>({...p, start: e.target.value}))} />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-black uppercase text-slate-400 pl-1">End Date</label>
+                <input type="date" className="p-2.5 text-xs bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-lg outline-none font-bold dark:text-white" value={dateRange.end} onChange={e => setDateRange(p=>({...p, end: e.target.value}))} />
+              </div>
+            </div>
+          </div>
+
+          {!value ? (
+            <div className="p-12 text-center text-slate-400 text-xs font-black uppercase tracking-widest border-2 border-dashed dark:border-slate-800 rounded-xl">Select a target value to load insights</div>
+          ) : targetTasks.length === 0 ? (
+            <div className="p-12 text-center text-slate-400 text-xs font-black uppercase tracking-widest border-2 border-dashed dark:border-slate-800 rounded-xl">No records found for this selection in the specified date range.</div>
+          ) : (
+            <>
+              {/* Top KPIs */}
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                <Card className="p-4 border-t-4 border-t-indigo-500 text-center">
+                  <p className="text-[9px] font-black uppercase text-indigo-600 dark:text-indigo-400 tracking-widest mb-1">Target Volume</p>
+                  <p className="text-2xl font-black dark:text-white">{targetTasks.length}</p>
+                </Card>
+                <Card className="p-4 border-t-4 border-t-blue-500 text-center">
+                  <p className="text-[9px] font-black uppercase text-blue-600 dark:text-blue-400 tracking-widest mb-1">% of Overall Data</p>
+                  <p className="text-2xl font-black dark:text-white">{contributionPct}%</p>
+                </Card>
+                <Card className="p-4 border-t-4 border-t-cyan-500 text-center">
+                  <p className="text-[9px] font-black uppercase text-cyan-600 dark:text-cyan-400 tracking-widest mb-1">Avg Quiz Score</p>
+                  <p className="text-2xl font-black dark:text-white">{avgQuizScore}</p>
+                </Card>
+                <Card className="p-4 border-t-4 border-t-teal-500 text-center">
+                  <p className="text-[9px] font-black uppercase text-teal-600 dark:text-teal-400 tracking-widest mb-1">Total HIPs</p>
+                  <p className="text-2xl font-black dark:text-white">{hips.length}</p>
+                </Card>
+                <Card className="p-4 border-t-4 border-t-amber-500 text-center">
+                  <p className="text-[9px] font-black uppercase text-amber-600 dark:text-amber-400 tracking-widest mb-1">Total Floorwalker</p>
+                  <p className="text-2xl font-black dark:text-white">{fws.length}</p>
+                </Card>
+              </div>
+
+              {/* Charts Section */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card className="p-5">
+                  <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-4">Distribution across categories</h3>
+                  <div className="h-[250px] relative flex items-center justify-center">
+                    <canvas ref={distChartRef}></canvas>
+                  </div>
+                </Card>
+
+                <Card className="p-5">
+                  <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-4">Volume Over Time</h3>
+                  <div className="h-[250px] relative flex items-center justify-center">
+                    <canvas ref={trendChartRef}></canvas>
+                  </div>
+                </Card>
+
+                <Card className="p-5">
+                  <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-4">HIP & FW Validations</h3>
+                  <div className="h-[250px] relative flex items-center justify-center">
+                    {(hips.length > 0 || fws.length > 0) ? <canvas ref={validChartRef}></canvas> : <p className="text-xs text-slate-400 uppercase font-black tracking-widest">No HIP/FW Data</p>}
+                  </div>
+                </Card>
+
+                <Card className="p-5">
+                  <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-4">Top Themes / Request Types</h3>
+                  <div className="h-[250px] relative flex items-center justify-center">
+                    <canvas ref={reqTypesChartRef}></canvas>
+                  </div>
+                </Card>
+              </div>
+            </>
+          )}
+        </div>
+      );
+    }
 
     // --- Individual Pie Chart Sub-Component ---
     function IndividualAnalyticsChart({ categoryKey, categoryLabel, fields, allTasks, isDarkMode, normalizeAgentName, setDrilldownModal }) {
@@ -2260,6 +2539,11 @@
                 Zero records found. If data exists in Supabase, please check your Table's Row Level Security (RLS) policies. If RLS is enabled without policies, queries return empty arrays silently.
               </div>
             )}
+            
+            {activeTab === 'insights' && (
+              <InsightsDashboard tasks={tasks} isDarkMode={isDarkMode} categories={categories} normalizeAgentName={normalizeAgentName} />
+            )}
+            
             {activeTab === 'dashboard' && (
               <div className="space-y-8 animate-fade-in font-bold">
                 
@@ -2616,20 +2900,20 @@
             )}
 
             {activeTab === 'reports' && (
-              <div className="space-y-6 animate-fade-in font-bold">
-                <Card className="p-6 space-y-6 font-bold">
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 font-bold">
+              <div className="space-y-6 animate-fade-in">
+                <Card className="p-6 space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <select className="w-full p-2.5 border dark:border-slate-700 dark:bg-slate-800 rounded-lg text-sm outline-none dark:text-slate-200 font-bold" value={reportFilters.category} onChange={e => setReportFilters(f => ({ ...f, category: e.target.value }))}><option value="all">All Types</option>{Object.entries(categories).map(([k, c]) => <option key={k} value={k}>{c.label}</option>)}</select>
                     <select className="w-full p-2.5 border dark:border-slate-700 dark:bg-slate-800 rounded-lg text-sm outline-none dark:text-slate-200 font-bold" value={reportFilters.agent} onChange={e => setReportFilters(f => ({ ...f, agent: e.target.value }))}><option value="all">All Staff</option>{Array.from(new Set([...globalMentors, ...globalAssociates])).sort().map(m => <option key={m} value={m}>{m}</option>)}</select>
                     <input type="date" className="w-full p-2.5 border dark:border-slate-700 dark:bg-slate-800 rounded-lg text-sm outline-none dark:text-slate-200 font-bold" value={reportFilters.startDate} onChange={e => setReportFilters(f => ({ ...f, startDate: e.target.value }))} />
                     <input type="date" className="w-full p-2.5 border dark:border-slate-700 dark:bg-slate-800 rounded-lg text-sm outline-none dark:text-slate-200 font-bold" value={reportFilters.endDate} onChange={e => setReportFilters(f => ({ ...f, endDate: e.target.value }))} />
                   </div>
-                  <div className="flex flex-wrap gap-2 pt-2 border-t dark:border-slate-800 border-slate-100 font-bold uppercase text-[10px] font-bold">
+                  <div className="flex flex-wrap gap-2 pt-2 border-t dark:border-slate-800 border-slate-100 uppercase text-[10px] font-bold">
                     {Array.from(new Set(['agent', 'status', 'date', ...(reportFilters.category !== 'all' ? categories[reportFilters.category].fields : [])])).filter(col => !col.includes('Module')).map(col => (
-                      <button key={col} onClick={() => toggleReportColumn(col)} className={`px-3 py-1.5 rounded-full border ${selectedReportColumns.includes(col) ? 'bg-blue-600 border-blue-600 text-white font-bold' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 font-bold'}`}>{col.replace(/([A-Z])/g, ' $1')}</button>
+                      <button key={col} onClick={() => toggleReportColumn(col)} className={`px-3 py-1.5 rounded-full border ${selectedReportColumns.includes(col) ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500'}`}>{col.replace(/([A-Z])/g, ' $1')}</button>
                     ))}
                   </div>
-                  <div className="flex justify-end pt-2 font-bold"><button onClick={handleGenerateReport} className="px-6 py-2.5 bg-slate-900 dark:bg-slate-100 dark:text-slate-900 text-white font-bold rounded-lg shadow-lg uppercase text-xs font-bold">Generate Report</button></div>
+                  <div className="flex justify-end pt-2"><button onClick={handleGenerateReport} className="px-6 py-2.5 bg-slate-900 dark:bg-slate-100 dark:text-slate-900 text-white font-bold rounded-lg shadow-lg uppercase text-xs">Generate Report</button></div>
                 </Card>
 
                 {generatedReport && (
@@ -2696,7 +2980,7 @@
             )}
 
             {activeTab === 'kpis' && userProfile.role === 'Admin' && (
-              <div className="space-y-6 animate-fade-in font-bold">
+              <div className="space-y-6 animate-fade-in">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-white dark:bg-slate-900 p-6 rounded-xl border dark:border-slate-800 gap-4">
                   <div>
                     <h2 className="text-xl font-black uppercase tracking-widest dark:text-white flex items-center gap-3">
@@ -2893,25 +3177,25 @@
 
             {activeTab === 'admin' && userProfile.role === 'Admin' && (
               <div className="space-y-8 animate-fade-in font-bold">
-                <Card className="p-8 font-bold">
-                  <div className="flex items-center gap-3 mb-8 font-bold"><Shield className="h-6 w-6 text-indigo-600" /><h2 className="text-xl font-black uppercase dark:text-white leading-none font-bold">Admin Console</h2></div>
+                <Card className="p-8">
+                  <div className="flex items-center gap-3 mb-8"><Shield className="h-6 w-6 text-indigo-600" /><h2 className="text-xl font-black uppercase dark:text-white leading-none">Admin Console</h2></div>
                   
                   {/* Admin Requirement: Delete Specific Entries Control */}
-                  <div className="mb-12 border-b dark:border-slate-800 pb-12 font-bold">
-                    <h3 className="text-sm font-black uppercase text-slate-400 mb-4 font-bold">Master Entry Control</h3>
-                    <div className="overflow-x-auto max-h-64 border dark:border-slate-800 rounded-xl font-bold">
-                      <table className="w-full text-left text-[10px] font-black uppercase font-bold">
-                        <thead className="bg-slate-50 dark:bg-slate-800 text-slate-500 sticky top-0 font-bold">
-                          <tr><th className="px-4 py-2 font-bold">Task</th><th className="px-4 py-2 font-bold">Original Agent</th><th className="px-4 py-2 font-bold">Date</th><th className="px-4 py-2 text-right font-bold">Delete</th></tr>
+                  <div className="mb-12 border-b dark:border-slate-800 pb-12">
+                    <h3 className="text-sm font-black uppercase text-slate-400 mb-4">Master Entry Control</h3>
+                    <div className="overflow-x-auto max-h-64 border dark:border-slate-800 rounded-xl">
+                      <table className="w-full text-left text-[10px] font-black uppercase">
+                        <thead className="bg-slate-50 dark:bg-slate-800 text-slate-500 sticky top-0">
+                          <tr><th className="px-4 py-2">Task</th><th className="px-4 py-2">Original Agent</th><th className="px-4 py-2">Date</th><th className="px-4 py-2 text-right">Delete</th></tr>
                         </thead>
-                        <tbody className="divide-y dark:divide-slate-800 font-bold">
+                        <tbody className="divide-y dark:divide-slate-800">
                           {tasks.map(t => (
-                            <tr key={t.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 font-bold">
-                              <td className="px-4 py-3 font-bold">{t.type === 'pip' ? 'PIP Record' : t.type === 'warning' ? 'Warning Record' : categories[t.type]?.label || t.type}</td>
-                              <td className="px-4 py-3 font-bold">{t.agent}</td>
-                              <td className="px-4 py-3 font-bold">{formatDateTime(t.date)}</td>
-                              <td className="px-4 py-3 text-right font-bold">
-                                <button onClick={async () => { if(confirm("Permanently delete entry?")) { await supabase.from('tasks').delete().eq('id', t.id); fetchData(); } }} className="text-rose-500 hover:text-rose-700 transition-colors font-bold"><Trash className="h-4 w-4" /></button>
+                            <tr key={t.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                              <td className="px-4 py-3">{t.type === 'pip' ? 'PIP Record' : t.type === 'warning' ? 'Warning Record' : categories[t.type]?.label || t.type}</td>
+                              <td className="px-4 py-3">{t.agent}</td>
+                              <td className="px-4 py-3">{formatDateTime(t.date)}</td>
+                              <td className="px-4 py-3 text-right">
+                                <button onClick={async () => { if(confirm("Permanently delete entry?")) { await supabase.from('tasks').delete().eq('id', t.id); fetchData(); } }} className="text-rose-500 hover:text-rose-700 transition-colors"><Trash className="h-4 w-4" /></button>
                               </td>
                             </tr>
                           ))}
@@ -2921,8 +3205,8 @@
                   </div>
 
                   {/* Staff Directory Block for form Dropdowns */}
-                  <div className="mb-12 border-b dark:border-slate-800 pb-12 font-bold">
-                    <h3 className="text-sm font-black uppercase text-slate-400 mb-4 font-bold">Staff Directory (Form Dropdowns)</h3>
+                  <div className="mb-12 border-b dark:border-slate-800 pb-12">
+                    <h3 className="text-sm font-black uppercase text-slate-400 mb-4">Staff Directory (Form Dropdowns)</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                       {/* Mentors */}
                       <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-2xl border dark:border-slate-700">
@@ -2991,35 +3275,35 @@
                   </div>
 
                   {/* User Authorizations Block */}
-                  <div className="space-y-6 mb-12 font-bold">
-                    <h3 className="text-xs font-black uppercase text-slate-400 font-bold">User Authorizations (System Login Access)</h3>
-                    <div className="flex gap-4 bg-slate-50 dark:bg-slate-800/50 p-6 rounded-2xl border dark:border-slate-700 font-bold font-bold">
-                      <input type="email" placeholder="tempo.fit email" className="flex-1 p-3 border dark:border-slate-700 dark:bg-slate-900 dark:text-white rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 bg-white font-bold" onChange={e => setFormData(p => ({...p, newEmail: e.target.value}))} value={formData.newEmail || ''} />
-                      <select className="p-3 border dark:border-slate-700 dark:bg-slate-900 dark:text-white rounded-xl outline-none bg-white font-bold" onChange={e => setFormData(p => ({...p, newRole: e.target.value}))} value={formData.newRole || 'Mentor'}><option value="Mentor">Mentor</option><option value="Admin">Admin</option></select>
-                      <button onClick={handleAddUser} className="px-8 py-3 bg-indigo-600 text-white rounded-xl font-black uppercase text-xs hover:bg-indigo-700 transition-all font-bold font-bold font-bold">Authorize</button>
+                  <div className="space-y-6 mb-12">
+                    <h3 className="text-xs font-black uppercase text-slate-400">User Authorizations (System Login Access)</h3>
+                    <div className="flex gap-4 bg-slate-50 dark:bg-slate-800/50 p-6 rounded-2xl border dark:border-slate-700">
+                      <input type="email" placeholder="tempo.fit email" className="flex-1 p-3 border dark:border-slate-700 dark:bg-slate-900 dark:text-white rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 bg-white" onChange={e => setFormData(p => ({...p, newEmail: e.target.value}))} value={formData.newEmail || ''} />
+                      <select className="p-3 border dark:border-slate-700 dark:bg-slate-900 dark:text-white rounded-xl outline-none bg-white" onChange={e => setFormData(p => ({...p, newRole: e.target.value}))} value={formData.newRole || 'Mentor'}><option value="Mentor">Mentor</option><option value="Admin">Admin</option></select>
+                      <button onClick={handleAddUser} className="px-8 py-3 bg-indigo-600 text-white rounded-xl font-black uppercase text-xs hover:bg-indigo-700 transition-all">Authorize</button>
                     </div>
-                    <div className="overflow-x-auto font-bold">
-                      <table className="w-full text-left uppercase font-black text-[10px] font-bold">
-                        <thead className="bg-slate-50 dark:bg-slate-800 border-b dark:border-slate-700 text-slate-400 font-bold font-bold">
-                          <tr><th className="px-6 py-4 font-bold">User</th><th className="px-6 py-4 font-bold">Role</th><th className="px-6 py-4 text-center font-bold">Permitted Tabs</th><th className="px-6 py-4 font-bold"></th></tr>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left uppercase font-black text-[10px]">
+                        <thead className="bg-slate-50 dark:bg-slate-800 border-b dark:border-slate-700 text-slate-400">
+                          <tr><th className="px-6 py-4">User</th><th className="px-6 py-4">Role</th><th className="px-6 py-4 text-center">Permitted Tabs</th><th className="px-6 py-4"></th></tr>
                         </thead>
-                        <tbody className="divide-y dark:divide-slate-800 font-bold">
+                        <tbody className="divide-y dark:divide-slate-800">
                           {registry.map(u => (
-                            <tr key={u.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 font-bold">
-                              <td className="px-6 py-4 lowercase font-bold dark:text-slate-400 font-bold">{u.email}</td>
-                              <td className="px-6 py-4 font-bold"><Badge color={u.role === 'Admin' ? 'purple' : 'slate'}>{u.role}</Badge></td>
-                              <td className="px-6 py-4 flex flex-wrap gap-2 justify-center font-bold">
-                                {['dashboard', 'logs', 'analytics', 'reports', 'pip', 'warnings', 'admin', 'audits', 'kpis', 'ai_validation'].map(t => {
+                            <tr key={u.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                              <td className="px-6 py-4 lowercase font-bold dark:text-slate-400">{u.email}</td>
+                              <td className="px-6 py-4"><Badge color={u.role === 'Admin' ? 'purple' : 'slate'}>{u.role}</Badge></td>
+                              <td className="px-6 py-4 flex flex-wrap gap-2 justify-center">
+                                {['dashboard', 'insights', 'logs', 'analytics', 'reports', 'pip', 'warnings', 'admin', 'audits', 'kpis', 'ai_validation'].map(t => {
                                   const isForceEnabled = (t === 'pip' || t === 'warnings' || t === 'audits') && u.role === 'Admin';
                                   return (
-                                    <label key={t} className="flex items-center gap-1.5 cursor-pointer bg-white dark:bg-slate-800 px-2 py-1 border dark:border-slate-700 rounded shadow-sm font-bold">
+                                    <label key={t} className="flex items-center gap-1.5 cursor-pointer bg-white dark:bg-slate-800 px-2 py-1 border dark:border-slate-700 rounded shadow-sm">
                                       <input type="checkbox" checked={u.allowed_tabs?.includes(t) || isForceEnabled} disabled={isForceEnabled} onChange={() => toggleTabForUser(u.email, t)} />
                                       <span className={`text-[9px] font-bold ${isForceEnabled ? 'text-slate-300 dark:text-slate-600' : 'dark:text-slate-400'}`}>{t.replace('_', ' ')}</span>
                                     </label>
                                   );
                                 })}
                               </td>
-                              <td className="px-6 py-4 text-right font-bold font-bold">{u.email !== 'mohamed.abdelmagid@tempo.fit' && <button onClick={async () => { if(confirm("Revoke access?")) { await supabase.from('users_registry').delete().eq('id', u.id); fetchData(); } }} className="text-rose-400 transition-colors font-bold font-bold font-bold"><Trash className="h-4 w-4" /></button>}</td>
+                              <td className="px-6 py-4 text-right">{u.email !== 'mohamed.abdelmagid@tempo.fit' && <button onClick={async () => { if(confirm("Revoke access?")) { await supabase.from('users_registry').delete().eq('id', u.id); fetchData(); } }} className="text-rose-400 transition-colors"><Trash className="h-4 w-4" /></button>}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -3028,31 +3312,31 @@
                   </div>
 
                   {/* Requirement: Hierarchical Data Validation (Select Task Type first) */}
-                  <div className="space-y-8 pt-12 border-t dark:border-slate-800 font-bold">
-                    <div className="flex items-center gap-3 font-bold"><DatabaseIcon className="h-5 w-5 text-emerald-600" /><h3 className="text-sm font-black uppercase text-slate-400">Data Validation Center (Other Fields)</h3></div>
-                    <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border dark:border-slate-700 space-y-6 font-bold">
+                  <div className="space-y-8 pt-12 border-t dark:border-slate-800">
+                    <div className="flex items-center gap-3"><DatabaseIcon className="h-5 w-5 text-emerald-600" /><h3 className="text-sm font-black uppercase text-slate-400">Data Validation Center (Other Fields)</h3></div>
+                    <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border dark:border-slate-700 space-y-6">
                       <div>
-                        <label className="text-[10px] font-black uppercase mb-2 block text-slate-500 font-bold">Step 1: Select Main Task Type to Manage Lists</label>
+                        <label className="text-[10px] font-black uppercase mb-2 block text-slate-500">Step 1: Select Main Task Type to Manage Lists</label>
                         <select className="w-full p-3 bg-white dark:bg-slate-900 border dark:border-slate-700 rounded-xl outline-none font-bold dark:text-white" value={adminSelectedTaskType} onChange={(e) => setAdminSelectedTaskType(e.target.value)}>
                           {Object.entries(adminValidationCategories).map(([k, c]) => <option key={k} value={k}>{c.label}</option>)}
                         </select>
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 font-bold">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {adminDropdowns.map(field => (
-                          <div key={field} className="p-4 bg-white dark:bg-slate-900 border dark:border-slate-700 rounded-xl space-y-3 shadow-sm font-bold">
-                            <h4 className="text-[10px] font-black uppercase text-blue-500 font-bold">{field.replace(/([A-Z])/g, ' $1')}</h4>
-                            <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-1 font-bold">
+                          <div key={field} className="p-4 bg-white dark:bg-slate-900 border dark:border-slate-700 rounded-xl space-y-3 shadow-sm">
+                            <h4 className="text-[10px] font-black uppercase text-blue-500">{field.replace(/([A-Z])/g, ' $1')}</h4>
+                            <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-1">
                               {(customOptions[field] || []).map((item, idx) => (
                                 <Badge key={`${item}-${idx}`} color="slate">
                                   <div className="flex items-center gap-2 font-bold">{item}
                                     <button type="button" onClick={() => {
                                       setCustomOptions({...customOptions, [field]: customOptions[field].filter(i => i !== item)});
-                                    }} className="text-rose-500 hover:text-rose-700 font-bold">&times;</button>
+                                    }} className="text-rose-500 hover:text-rose-700">&times;</button>
                                   </div>
                                 </Badge>
                               ))}
                             </div>
-                            <div className="flex gap-2 font-bold font-bold">
+                            <div className="flex gap-2">
                               <input id={`add-${field}`} className="flex-1 p-2 bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-lg text-xs font-bold dark:text-white outline-none" placeholder="Add Item..." />
                               <button type="button" onClick={() => {
                                 const val = document.getElementById(`add-${field}`).value; if(!val) return;
@@ -3065,12 +3349,12 @@
                       </div>
                     </div>
 
-                    <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border dark:border-slate-700 space-y-4 font-bold">
-                      <h4 className="text-xs font-black uppercase text-slate-400 font-bold">HIP Hierarchy Extension (RTs)</h4>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 font-bold font-bold">
-                        <select id="admin-hip-prod" className="p-2 bg-white dark:bg-slate-900 border dark:border-slate-700 rounded-lg text-xs font-bold dark:text-white font-bold">{Object.keys(globalHipHierarchy).map(k => <option key={k} value={k}>{k}</option>)}</select>
-                        <input id="admin-hip-cat" placeholder="Sub-Category" className="p-2 bg-white dark:bg-slate-900 border dark:border-slate-700 rounded-lg text-xs outline-none dark:text-white font-bold" />
-                        <input id="admin-hip-rt" placeholder="Request Type" className="p-2 bg-white dark:bg-slate-900 border dark:border-slate-700 rounded-lg text-xs outline-none dark:text-white font-bold" />
+                    <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border dark:border-slate-700 space-y-4">
+                      <h4 className="text-xs font-black uppercase text-slate-400">HIP Hierarchy Extension (RTs)</h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <select id="admin-hip-prod" className="p-2 bg-white dark:bg-slate-900 border dark:border-slate-700 rounded-lg text-xs font-bold dark:text-white">{Object.keys(globalHipHierarchy).map(k => <option key={k} value={k}>{k}</option>)}</select>
+                        <input id="admin-hip-cat" placeholder="Sub-Category" className="p-2 bg-white dark:bg-slate-900 border dark:border-slate-700 rounded-lg text-xs outline-none dark:text-white" />
+                        <input id="admin-hip-rt" placeholder="Request Type" className="p-2 bg-white dark:bg-slate-900 border dark:border-slate-700 rounded-lg text-xs outline-none dark:text-white" />
                       </div>
                       <button type="button" onClick={() => {
                         const p = document.getElementById('admin-hip-prod').value;
@@ -3081,27 +3365,27 @@
                         if(!updated[p][c]) updated[p][c] = [];
                         updated[p][c].push(r);
                         setGlobalHipHierarchy(updated);
-                      }} className="w-full py-2 bg-emerald-600 text-white rounded-lg font-black uppercase text-[10px] font-bold font-bold">Add Sub-Category / Request Type</button>
+                      }} className="w-full py-2 bg-emerald-600 text-white rounded-lg font-black uppercase text-[10px]">Add Sub-Category / Request Type</button>
                       
                       {/* Requirement: Delete any added RT within the hierarchy manager */}
-                      <div className="mt-6 pt-6 border-t dark:border-slate-800 space-y-4 font-bold font-bold">
-                        <h5 className="text-[10px] font-black uppercase text-slate-500 font-bold">Manage Hierarchy RTs</h5>
-                        <div className="max-h-64 overflow-y-auto space-y-4 font-bold font-bold">
+                      <div className="mt-6 pt-6 border-t dark:border-slate-800 space-y-4">
+                        <h5 className="text-[10px] font-black uppercase text-slate-500">Manage Hierarchy RTs</h5>
+                        <div className="max-h-64 overflow-y-auto space-y-4">
                           {Object.entries(globalHipHierarchy || {}).map(([prod, cats]) => (
-                            <div key={prod} className="space-y-2 font-bold"><p className="text-xs font-black uppercase text-blue-500 font-bold">{prod}</p>
+                            <div key={prod} className="space-y-2"><p className="text-xs font-black uppercase text-blue-500">{prod}</p>
                               {Object.entries(cats || {}).map(([cat, rts]) => (
-                                <div key={`${prod}-${cat}`} className="ml-4 space-y-1 font-bold">
-                                  <p className="text-[10px] font-bold text-slate-400 font-bold">{cat}</p>
-                                  <div className="flex flex-wrap gap-2 font-bold">
+                                <div key={`${prod}-${cat}`} className="ml-4 space-y-1">
+                                  <p className="text-[10px] font-bold text-slate-400">{cat}</p>
+                                  <div className="flex flex-wrap gap-2">
                                     {(rts || []).map((rt, idx) => (
                                       <Badge key={`${rt}-${idx}`} color="slate">
-                                        <div className="flex items-center gap-2 font-bold font-bold">
+                                        <div className="flex items-center gap-2 font-bold">
                                           {rt}
                                           <button type="button" onClick={() => { 
                                             const updated = {...globalHipHierarchy}; 
                                             updated[prod][cat] = updated[prod][cat].filter(item => item !== rt); 
                                             setGlobalHipHierarchy(updated); 
-                                          }} className="text-rose-500 font-bold font-bold">&times;</button>
+                                          }} className="text-rose-500">&times;</button>
                                         </div>
                                       </Badge>
                                     ))}
@@ -3114,8 +3398,8 @@
                       </div>
                     </div>
                   </div>
-                  <div className="mt-10 pt-8 border-t dark:border-slate-800 font-bold">
-                    <button type="button" onClick={() => saveGlobalConfig({ hip_hierarchy: globalHipHierarchy, mentorMap: mentorMap, associateMap: associateMap, custom_options: customOptions, kpis: kpiData })} className="w-full py-4 bg-emerald-600 text-white font-black rounded-xl uppercase tracking-widest hover:bg-emerald-700 transition-all font-bold font-bold">Commit All Changes to Database</button>
+                  <div className="mt-10 pt-8 border-t dark:border-slate-800">
+                    <button type="button" onClick={() => saveGlobalConfig({ hip_hierarchy: globalHipHierarchy, mentorMap: mentorMap, associateMap: associateMap, custom_options: customOptions, kpis: kpiData })} className="w-full py-4 bg-emerald-600 text-white font-black rounded-xl uppercase tracking-widest hover:bg-emerald-700 transition-all">Commit All Changes to Database</button>
                   </div>
                 </Card>
               </div>
@@ -3364,12 +3648,12 @@
           {/* Standard Form Modal (Supports Audits read-only logic) */}
           {isFormOpen && (
             <div className="fixed inset-0 z-50 flex justify-end font-bold">
-              <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm font-bold" onClick={() => setIsFormOpen(false)} />
-              <div className="relative w-full max-w-md bg-white dark:bg-slate-900 h-full shadow-2xl p-8 overflow-y-auto animate-slide-in-right font-bold">
-                <div className="flex justify-between items-center mb-8 font-bold font-bold"><h2 className="text-2xl font-black italic uppercase tracking-tighter dark:text-white font-bold leading-none font-bold">{editingTaskId ? (isAuditReadOnly ? 'VIEW' : 'EDIT') : 'NEW'} {categories[newTaskType].label}</h2><button type="button" onClick={() => setIsFormOpen(false)} className="text-slate-400 font-black uppercase text-[10px] hover:text-slate-800 dark:hover:text-white transition-colors font-bold">Close &times;</button></div>
-                <form onSubmit={handleAddTask} className="space-y-6 font-bold">
-                  {!editingTaskId && <div className="font-bold"><label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 block font-bold">Category Type</label><select className="w-full p-3 bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-xl outline-none font-bold dark:text-white font-bold" value={newTaskType} onChange={e => { setNewTaskType(e.target.value); setFormData(e.target.value === 'floorwalker' ? {status: 'Resolved'} : {}); }}>{Object.entries(categories).map(([k, c]) => <option key={k} value={k}>{c.label}</option>)}</select></div>}
-                  <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border dark:border-slate-700 space-y-4 font-bold font-bold">
+              <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsFormOpen(false)} />
+              <div className="relative w-full max-w-md bg-white dark:bg-slate-900 h-full shadow-2xl p-8 overflow-y-auto animate-slide-in-right">
+                <div className="flex justify-between items-center mb-8"><h2 className="text-2xl font-black italic uppercase tracking-tighter dark:text-white leading-none">{editingTaskId ? (isAuditReadOnly ? 'VIEW' : 'EDIT') : 'NEW'} {categories[newTaskType].label}</h2><button type="button" onClick={() => setIsFormOpen(false)} className="text-slate-400 font-black uppercase text-[10px] hover:text-slate-800 dark:hover:text-white transition-colors">Close &times;</button></div>
+                <form onSubmit={handleAddTask} className="space-y-6">
+                  {!editingTaskId && <div><label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 block">Category Type</label><select className="w-full p-3 bg-slate-50 dark:bg-slate-800 border dark:border-slate-700 rounded-xl outline-none font-bold dark:text-white" value={newTaskType} onChange={e => { setNewTaskType(e.target.value); setFormData(e.target.value === 'floorwalker' ? {status: 'Resolved'} : {}); }}>{Object.entries(categories).map(([k, c]) => <option key={k} value={k}>{c.label}</option>)}</select></div>}
+                  <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border dark:border-slate-700 space-y-4">
                     {categories[newTaskType].fields.map(field => {
                       const isValidNo = (newTaskType === 'floorwalker' && formData.validRequest === 'No') || (newTaskType === 'hip_request' && formData.validHip === 'No');
                       if (field === 'pendingReasonDetail' && formData.status !== 'Pending') return null;
@@ -3380,32 +3664,32 @@
                       
                       if (field === 'auditModule' || field === 'correctionModule') {
                         const items = field === 'auditModule' ? auditAttributes : quizModules;
-                        return (<div key={field} className="space-y-6 pt-2 font-bold font-bold"><div className="flex justify-between items-center mb-2 font-bold font-bold"><h3 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest font-bold font-bold">{field.replace('Module','')} Quality</h3>{field === 'correctionModule' && <Badge color="cyan">AVG: {formData.overallScore || '0.0'}</Badge>}{field === 'auditModule' && <Badge color="green">Score: {formData.overallAuditScore || '0'}%</Badge>}</div>
-                          {items.map((m, idx) => (<div key={`${m.id}-${idx}`} className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm font-bold font-bold"><p className="font-bold text-sm mb-1 dark:text-slate-200 font-bold">{m.title || m.label}</p><p className="text-[10px] text-slate-400 mb-4 font-bold">{m.desc}</p><div className="flex justify-center gap-2 mb-4 font-bold font-bold">{field === 'auditModule' ? ['Yes', 'No'].map(s => (<button key={s} type="button" onClick={() => !isAuditReadOnly && handleAuditScore(m.id, s)} className={`px-4 py-1.5 rounded-lg border-2 text-[10px] font-black transition-all font-bold ${formData.auditScores?.[m.id] === s ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white dark:bg-slate-800 dark:border-slate-700 text-slate-400'} ${isAuditReadOnly ? 'cursor-not-allowed opacity-80' : ''}`}>{s.toUpperCase()}</button>)) : [1, 2, 3, 4, 5].map(s => (<button key={s} type="button" onClick={() => !isAuditReadOnly && handleQuizScore(m.id, s)} className={`w-8 h-8 rounded-full border-2 text-xs font-bold transition-all font-bold ${formData.quizScores?.[m.id] === s ? 'bg-cyan-500 border-cyan-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400'} ${isAuditReadOnly ? 'cursor-not-allowed opacity-80' : ''}`}>{s}</button>))}</div><input type="text" placeholder="Detail..." className="w-full p-2 bg-slate-50 dark:bg-slate-800 border-b dark:border-slate-700 text-[10px] outline-none dark:text-white font-bold font-bold" readOnly={isAuditReadOnly} onChange={e => setFormData(p => ({...p, quizComments: {...(p.quizComments || {}), [m.id]: e.target.value}}))} value={formData.quizComments?.[m.id] || ''} /></div>))}</div>);
+                        return (<div key={field} className="space-y-6 pt-2"><div className="flex justify-between items-center mb-2"><h3 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">{field.replace('Module','')} Quality</h3>{field === 'correctionModule' && <Badge color="cyan">AVG: {formData.overallScore || '0.0'}</Badge>}{field === 'auditModule' && <Badge color="green">Score: {formData.overallAuditScore || '0'}%</Badge>}</div>
+                          {items.map((m, idx) => (<div key={`${m.id}-${idx}`} className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm"><p className="font-bold text-sm mb-1 dark:text-slate-200">{m.title || m.label}</p><p className="text-[10px] text-slate-400 mb-4">{m.desc}</p><div className="flex justify-center gap-2 mb-4">{field === 'auditModule' ? ['Yes', 'No'].map(s => (<button key={s} type="button" onClick={() => !isAuditReadOnly && handleAuditScore(m.id, s)} className={`px-4 py-1.5 rounded-lg border-2 text-[10px] font-black transition-all ${formData.auditScores?.[m.id] === s ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white dark:bg-slate-800 dark:border-slate-700 text-slate-400'} ${isAuditReadOnly ? 'cursor-not-allowed opacity-80' : ''}`}>{s.toUpperCase()}</button>)) : [1, 2, 3, 4, 5].map(s => (<button key={s} type="button" onClick={() => !isAuditReadOnly && handleQuizScore(m.id, s)} className={`w-8 h-8 rounded-full border-2 text-xs font-bold transition-all ${formData.quizScores?.[m.id] === s ? 'bg-cyan-500 border-cyan-500 text-white' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400'} ${isAuditReadOnly ? 'cursor-not-allowed opacity-80' : ''}`}>{s}</button>))}</div><input type="text" placeholder="Detail..." className="w-full p-2 bg-slate-50 dark:bg-slate-800 border-b dark:border-slate-700 text-[10px] outline-none dark:text-white" readOnly={isAuditReadOnly} onChange={e => setFormData(p => ({...p, quizComments: {...(p.quizComments || {}), [m.id]: e.target.value}}))} value={formData.quizComments?.[m.id] || ''} /></div>))}</div>);
                       }
                       if (field === 'hipLogReference' && newTaskType === 'mentor_audit') return (
-                        <div key={field} className="pt-2 font-bold font-bold">
-                          <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase block mb-1.5 font-bold font-bold">Audit Target Randomizer</label>
+                        <div key={field} className="pt-2">
+                          <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase block mb-1.5">Audit Target Randomizer</label>
                           {!isAuditReadOnly && (
-                            <div className="flex items-center gap-2 mb-3 font-bold font-bold">
-                              <input type="date" className="flex-1 p-2 bg-slate-50 dark:bg-slate-900 border dark:border-slate-700 rounded-lg text-xs outline-none focus:ring-1 focus:ring-emerald-500 dark:text-slate-300 font-bold" value={auditRandomizerRange.start} onChange={e => setAuditRandomizerRange(p => ({...p, start: e.target.value}))} title="Start Date" />
-                              <span className="text-slate-400 text-[10px] font-black uppercase font-bold">To</span>
-                              <input type="date" className="flex-1 p-2 bg-slate-50 dark:bg-slate-900 border dark:border-slate-700 rounded-lg text-xs outline-none focus:ring-1 focus:ring-emerald-500 dark:text-slate-300 font-bold" value={auditRandomizerRange.end} onChange={e => setAuditRandomizerRange(p => ({...p, end: e.target.value}))} title="End Date" />
+                            <div className="flex items-center gap-2 mb-3">
+                              <input type="date" className="flex-1 p-2 bg-slate-50 dark:bg-slate-900 border dark:border-slate-700 rounded-lg text-xs outline-none focus:ring-1 focus:ring-emerald-500 dark:text-slate-300" value={auditRandomizerRange.start} onChange={e => setAuditRandomizerRange(p => ({...p, start: e.target.value}))} title="Start Date" />
+                              <span className="text-slate-400 text-[10px] font-black uppercase">To</span>
+                              <input type="date" className="flex-1 p-2 bg-slate-50 dark:bg-slate-900 border dark:border-slate-700 rounded-lg text-xs outline-none focus:ring-1 focus:ring-emerald-500 dark:text-slate-300" value={auditRandomizerRange.end} onChange={e => setAuditRandomizerRange(p => ({...p, end: e.target.value}))} title="End Date" />
                             </div>
                           )}
-                          <div className="flex gap-2 font-bold font-bold font-bold">
-                            <div className="flex-1 p-3 bg-white dark:bg-slate-900 border dark:border-slate-700 rounded-xl text-sm font-medium dark:text-slate-300 flex flex-wrap items-center gap-4 font-bold">
+                          <div className="flex gap-2">
+                            <div className="flex-1 p-3 bg-white dark:bg-slate-900 border dark:border-slate-700 rounded-xl text-sm font-medium dark:text-slate-300 flex flex-wrap items-center gap-4">
                               {formData.auditedSlack && (
-                                <a href={formData.auditedSlack.startsWith('http') ? formData.auditedSlack : `https://${formData.auditedSlack}`} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-teal-600 dark:text-teal-400 hover:underline font-bold">
+                                <a href={formData.auditedSlack.startsWith('http') ? formData.auditedSlack : `https://${formData.auditedSlack}`} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-teal-600 dark:text-teal-400 hover:underline">
                                   <MessageCircle className="h-4 w-4" /> Slack
                                 </a>
                               )}
                               {formData.auditedTicket && (
-                                <a href={formData.auditedTicket.startsWith('http') ? formData.auditedTicket : `https://${formData.auditedTicket}`} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 hover:underline font-bold">
+                                <a href={formData.auditedTicket.startsWith('http') ? formData.auditedTicket : `https://${formData.auditedTicket}`} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 hover:underline">
                                   <FileText className="h-4 w-4" /> Ticket
                                 </a>
                               )}
-                              {(!formData.auditedSlack && !formData.auditedTicket) && <span className="text-slate-400 text-xs italic font-bold">No log selected</span>}
+                              {(!formData.auditedSlack && !formData.auditedTicket) && <span className="text-slate-400 text-xs italic">No log selected</span>}
                             </div>
                             {!isAuditReadOnly && (
                               <button type="button" onClick={() => { 
@@ -3433,35 +3717,35 @@
                                   mentorEmail: mentorMap[foundMentorName] || ''
                                 })); 
                               }} className="p-3 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 hover:bg-emerald-200 dark:hover:bg-emerald-800/50 transition-colors rounded-xl flex items-center justify-center min-w-[3rem]" title="Pick Random Target">
-                                <Dice className="h-5 w-5 font-bold" />
+                                <Dice className="h-5 w-5" />
                               </button>
                             )}
                           </div>
                         </div>
                       );
-                      if (field === 'mentorEmail' && newTaskType === 'mentor_audit') return (<div key={field} className="font-bold"><label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 block font-bold font-bold font-bold">Mentor Email</label><input type="email" className="w-full p-3 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500 dark:text-white font-bold font-bold" value={formData[field] || ''} readOnly={isAuditReadOnly || userProfile?.role !== 'Admin'} onChange={e => handleInputChange(field, e.target.value)} /></div>);
-                      if (field === 'associateEmail' && (newTaskType === 'weekly_quiz' || newTaskType === 'hip_request')) return (<div key={field} className="font-bold"><label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 block font-bold font-bold">Associate Email</label><input type="email" className="w-full p-3 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500 dark:text-white font-bold font-bold" value={formData[field] || ''} onChange={e => handleInputChange(field, e.target.value)} /></div>);
+                      if (field === 'mentorEmail' && newTaskType === 'mentor_audit') return (<div key={field}><label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 block">Mentor Email</label><input type="email" className="w-full p-3 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500 dark:text-white" value={formData[field] || ''} readOnly={isAuditReadOnly || userProfile?.role !== 'Admin'} onChange={e => handleInputChange(field, e.target.value)} /></div>);
+                      if (field === 'associateEmail' && (newTaskType === 'weekly_quiz' || newTaskType === 'hip_request')) return (<div key={field}><label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 block">Associate Email</label><input type="email" className="w-full p-3 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500 dark:text-white" value={formData[field] || ''} onChange={e => handleInputChange(field, e.target.value)} /></div>);
                       
                       if (field === 'invalidContext') return (
-                        <div key={field} className="font-bold font-bold">
-                          <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 block font-bold font-bold font-bold">Invalid HIP Context / Reason</label>
-                          <textarea readOnly={isAuditReadOnly} rows="3" className="w-full p-3 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500 dark:text-white font-bold font-bold" value={formData[field] || ''} onChange={e => handleInputChange(field, e.target.value)} placeholder="Provide full context on why this HIP is invalid..."></textarea>
+                        <div key={field}>
+                          <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 block">Invalid HIP Context / Reason</label>
+                          <textarea readOnly={isAuditReadOnly} rows="3" className="w-full p-3 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500 dark:text-white" value={formData[field] || ''} onChange={e => handleInputChange(field, e.target.value)} placeholder="Provide full context on why this HIP is invalid..."></textarea>
                         </div>
                       );
 
                       if (field === 'ownerNote') return (
-                        <div key={field} className="font-bold font-bold">
-                          <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 block font-bold font-bold font-bold">Owner Note</label>
-                          <textarea readOnly={isAuditReadOnly} rows="3" className="w-full p-3 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500 dark:text-white font-bold font-bold" value={formData[field] || ''} onChange={e => handleInputChange(field, e.target.value)} placeholder="Enter detailed notes here..."></textarea>
+                        <div key={field}>
+                          <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1.5 block">Owner Note</label>
+                          <textarea readOnly={isAuditReadOnly} rows="3" className="w-full p-3 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500 dark:text-white" value={formData[field] || ''} onChange={e => handleInputChange(field, e.target.value)} placeholder="Enter detailed notes here..."></textarea>
                         </div>
                       );
                       
                       const isDropdown = ['associateName', 'associateEmail', 'mentorName', 'team', 'productType', 'surpriseAndDelightType', 'resolution', 'pendingReason', 'disputeReason', 'reasonForSupport', 'validHip', 'validRequest', 'subscriptionStatus', 'emailSent', 'disputedProduct', 'invalidReason', 'surpriseAndDelightReason', 'hipProduct', 'hipCategory', 'hipRequestType', 'status', 'pendingReasonDetail', 'associateCoached', 'escalationCategory', 'escalationSubCategory', 'reasonForEscalation'].includes(field);
                       
                       return (
-                        <div key={field} className="font-bold font-bold">
+                        <div key={field}>
                           <div className="flex justify-between items-center mb-1.5">
-                            <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block font-bold font-bold font-bold">{field.replace(/([A-Z])/g, ' $1')}</label>
+                            <label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">{field.replace(/([A-Z])/g, ' $1')}</label>
                             {(field.toLowerCase().includes('link') || field.toLowerCase().includes('url')) && formData[field] && (
                               <a href={String(formData[field]).startsWith('http') ? formData[field] : `https://${formData[field]}`} target="_blank" rel="noreferrer" className="text-blue-500 hover:text-blue-700 text-[10px] flex items-center gap-1 uppercase font-black tracking-tighter transition-colors">
                                 Open <ExternalLink className="h-3 w-3" />
@@ -3469,11 +3753,11 @@
                             )}
                           </div>
                           {isDropdown ? (
-                            <div className="font-bold">
+                            <div>
                               {(field === 'status' && autoResolvedTypes.includes(newTaskType)) ? (
-                                <div className="p-3 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-xl text-emerald-600 text-sm font-bold uppercase text-center italic tracking-tighter font-bold">Enforced Resolved</div>
+                                <div className="p-3 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-xl text-emerald-600 text-sm font-bold uppercase text-center italic tracking-tighter">Enforced Resolved</div>
                               ) : (
-                                <select disabled={isAuditReadOnly} className="w-full p-3 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500 dark:text-white font-bold font-bold" value={formData[field] || ''} onChange={e => { 
+                                <select disabled={isAuditReadOnly} className="w-full p-3 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500 dark:text-white font-bold" value={formData[field] || ''} onChange={e => { 
                                   if(field === 'hipProduct') setFormData(p=>({...p, hipProduct:e.target.value, hipCategory:'', hipRequestType:''})); 
                                   else if(field === 'hipCategory') setFormData(p=>({...p, hipCategory:e.target.value, hipRequestType:''})); 
                                   else if(field === 'associateName') {
@@ -3487,30 +3771,100 @@
                                     setFormData(p => ({ ...p, [field]: val, mentorEmail: email }));
                                   }
                                   else handleInputChange(field, e.target.value);
-                                }}><option value="" className="font-bold">Select...</option>
-                                  {field === 'associateName' && globalAssociates.map((a, idx) => <option key={`${a}-${idx}`} value={a} className="font-bold">{a}</option>)}
-                                  {field === 'associateEmail' && globalAssociates.map((a, idx) => <option key={`${a}-${idx}`} value={a} className="font-bold">{a}</option>)}
-                                  {field === 'mentorName' && globalMentors.map((a, idx) => <option key={`${a}-${idx}`} value={a} className="font-bold">{a}</option>)}
-                                  {field === 'status' && ['Pending', 'Resolved'].map((o, idx) => <option key={`${o}-${idx}`} value={o} className="font-bold">{o}</option>)}
-                                  {field === 'resolution' && (newTaskType === 'pending_subs' ? ['Activated', 'Cancelled'] : newTaskType === 'disputes' ? ['Pending', 'Lost', 'Won'] : ['Pending', 'Resolved']).map((o, idx) => <option key={`${o}-${idx}`} value={o} className="font-bold">{o}</option>)}
-                                  {field === 'hipProduct' && Object.keys(globalHipHierarchy).map((k, idx) => <option key={`${k}-${idx}`} value={k} className="font-bold">{k}</option>)}
-                                  {field === 'hipCategory' && formData.hipProduct && Object.keys(globalHipHierarchy[formData.hipProduct] || {}).map((c, idx) => <option key={`${c}-${idx}`} value={c} className="font-bold">{c}</option>)}
-                                  {field === 'hipRequestType' && formData.hipCategory && (globalHipHierarchy[formData.hipProduct]?.[formData.hipCategory] || []).map((o, idx) => <option key={`${o}-${idx}`} value={o} className="font-bold">{o}</option>)}
-                                  {field === 'associateCoached' && ['Yes', 'No'].map((o, idx) => <option key={`${o}-${idx}`} value={o} className="font-bold">{o}</option>)}
-                                  {field !== 'resolution' && !field.startsWith('hip') && !['associateName', 'associateEmail', 'mentorName', 'pendingReasonDetail', 'status', 'associateCoached'].includes(field) && (customOptions[field] || []).map((o, idx) => <option key={`${o}-${idx}`} value={o} className="font-bold">{o}</option>)}
-                                  {field === 'pendingReasonDetail' && customOptions.pendingReasonDetail?.map((o, idx) => <option key={`${o}-${idx}`} value={o} className="font-bold">{o}</option>)}
-                                  {!isAuditReadOnly && !['associateName', 'associateEmail', 'mentorName'].includes(field) && <option value="ADD_NEW_CUSTOM" className="text-blue-600 italic font-black font-bold uppercase text-[10px] font-bold">+ Add New Item...</option>}
+                                }}><option value="">Select...</option>
+                                  {field === 'associateName' && globalAssociates.map((a, idx) => <option key={`${a}-${idx}`} value={a}>{a}</option>)}
+                                  {field === 'associateEmail' && globalAssociates.map((a, idx) => <option key={`${a}-${idx}`} value={a}>{a}</option>)}
+                                  {field === 'mentorName' && globalMentors.map((a, idx) => <option key={`${a}-${idx}`} value={a}>{a}</option>)}
+                                  {field === 'status' && ['Pending', 'Resolved'].map((o, idx) => <option key={`${o}-${idx}`} value={o}>{o}</option>)}
+                                  {field === 'resolution' && (newTaskType === 'pending_subs' ? ['Activated', 'Cancelled'] : newTaskType === 'disputes' ? ['Pending', 'Lost', 'Won'] : ['Pending', 'Resolved']).map((o, idx) => <option key={`${o}-${idx}`} value={o}>{o}</option>)}
+                                  {field === 'hipProduct' && Object.keys(globalHipHierarchy).map((k, idx) => <option key={`${k}-${idx}`} value={k}>{k}</option>)}
+                                  {field === 'hipCategory' && formData.hipProduct && Object.keys(globalHipHierarchy[formData.hipProduct] || {}).map((c, idx) => <option key={`${c}-${idx}`} value={c}>{c}</option>)}
+                                  {field === 'hipRequestType' && formData.hipCategory && (globalHipHierarchy[formData.hipProduct]?.[formData.hipCategory] || []).map((o, idx) => <option key={`${o}-${idx}`} value={o}>{o}</option>)}
+                                  {field === 'associateCoached' && ['Yes', 'No'].map((o, idx) => <option key={`${o}-${idx}`} value={o}>{o}</option>)}
+                                  {field !== 'resolution' && !field.startsWith('hip') && !['associateName', 'associateEmail', 'mentorName', 'pendingReasonDetail', 'status', 'associateCoached'].includes(field) && (customOptions[field] || []).map((o, idx) => <option key={`${o}-${idx}`} value={o}>{o}</option>)}
+                                  {field === 'pendingReasonDetail' && customOptions.pendingReasonDetail?.map((o, idx) => <option key={`${o}-${idx}`} value={o}>{o}</option>)}
+                                  {!isAuditReadOnly && !['associateName', 'associateEmail', 'mentorName'].includes(field) && <option value="ADD_NEW_CUSTOM" className="text-blue-600 italic font-black uppercase text-[10px]">+ Add New Item...</option>}
                                 </select>
                               )}
-                              {customInputTarget === field && (<div className="mt-2 flex gap-2 animate-fade-in font-bold"><input type="text" id={`custom-${field}`} className="flex-1 p-2 border rounded-lg outline-none bg-white dark:bg-slate-900 dark:text-white font-bold" /><button type="button" onClick={() => handleAddCustomValue(field, document.getElementById(`custom-${field}`).value)} className="px-3 bg-blue-600 text-white rounded-lg text-[10px] font-black uppercase tracking-tighter font-bold">Add</button></div>)}
+                              {customInputTarget === field && (<div className="mt-2 flex gap-2 animate-fade-in"><input type="text" id={`custom-${field}`} className="flex-1 p-2 border rounded-lg outline-none bg-white dark:bg-slate-900 dark:text-white" /><button type="button" onClick={() => handleAddCustomValue(field, document.getElementById(`custom-${field}`).value)} className="px-3 bg-blue-600 text-white rounded-lg text-[10px] font-black uppercase tracking-tighter">Add</button></div>)}
                             </div>
-                          ) : (<input readOnly={isAuditReadOnly} type={field.toLowerCase().includes('date') ? 'date' : 'text'} className="w-full p-3 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500 dark:text-white font-bold font-bold" value={formData[field] || ''} onChange={e => handleInputChange(field, e.target.value)} />)}
+                          ) : (<input readOnly={isAuditReadOnly} type={field.toLowerCase().includes('date') ? 'date' : 'text'} className="w-full p-3 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-xl outline-none text-sm font-medium focus:ring-2 focus:ring-blue-500 dark:text-white font-bold" value={formData[field] || ''} onChange={e => handleInputChange(field, e.target.value)} />)}
                         </div>
                       );
                     })}
                   </div>
-                  {!isAuditReadOnly && <button type="submit" className="w-full py-4 bg-blue-600 text-white font-black rounded-2xl shadow-xl hover:bg-blue-700 transition-all uppercase tracking-widest shadow-blue-100 font-bold font-bold">Commit Record Entry</button>}
+                  {!isAuditReadOnly && <button type="submit" className="w-full py-4 bg-blue-600 text-white font-black rounded-2xl shadow-xl hover:bg-blue-700 transition-all uppercase tracking-widest shadow-blue-100">Commit Record Entry</button>}
                 </form>
+              </div>
+            </div>
+          )}
+
+          {/* Security Settings Modal */}
+          {isSettingsOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 text-slate-900 dark:text-white font-bold">
+              <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsSettingsOpen(false)} />
+              <Card className="relative w-full max-w-md p-8 animate-fade-in shadow-2xl">
+                <div className="flex justify-between items-center mb-6"><h2 className="text-xl font-black uppercase tracking-tight dark:text-white">Security Center</h2><button type="button" onClick={() => setIsSettingsOpen(false)} className="text-slate-400 font-bold text-xl">&times;</button></div>
+                <div className="space-y-6">
+                  <div><label className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase mb-2 block">Change Password</label><input type="password" minLength="6" className="w-full p-3 border dark:border-slate-700 dark:bg-slate-800 rounded-xl outline-none font-bold dark:text-white" placeholder="New password" value={newInternalPassword} onChange={e => setNewInternalPassword(e.target.value)} /><p className="mt-2 text-[9px] text-slate-400 uppercase font-bold">Min 6 characters</p></div>
+                  <button type="button" onClick={handleUpdatePasswordInternal} className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold uppercase text-xs">Update Password Now</button>
+                </div>
+              </Card>
+            </div>
+          )}
+
+          {/* Drilldown Modal Details */}
+          {drilldownModal.isOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm" onClick={() => setDrilldownModal({ isOpen: false, title: '', data: [] })} />
+              <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-slate-50 dark:bg-slate-900 rounded-3xl shadow-2xl flex flex-col animate-fade-in">
+                <div className="p-6 border-b dark:border-slate-800 flex justify-between items-center sticky top-0 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur z-10">
+                  <h2 className="text-xl font-black uppercase tracking-tighter dark:text-white flex items-center gap-2">
+                    <Search className="text-blue-500 h-5 w-5" />
+                    {drilldownModal.title}
+                  </h2>
+                  <button type="button" onClick={() => setDrilldownModal({ isOpen: false, title: '', data: [] })} className="text-slate-400 hover:text-slate-800 dark:hover:text-white font-black text-xl">&times;</button>
+                </div>
+                <div className="p-6">
+                  <table className="w-full text-left text-sm font-bold">
+                    <thead className="bg-slate-100 dark:bg-slate-800/50 text-[10px] uppercase tracking-widest text-slate-500">
+                      <tr>
+                        <th className="px-4 py-3 rounded-tl-xl">Date</th>
+                        <th className="px-4 py-3">Agent</th>
+                        <th className="px-4 py-3">Status</th>
+                        <th className="px-4 py-3 text-right rounded-tr-xl">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y dark:divide-slate-800">
+                      {drilldownModal.data.map((t, idx) => (
+                        <tr key={t.id || idx} className="hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors">
+                          <td className="px-4 py-3 dark:text-slate-300">{formatDateTime(t.date)}</td>
+                          <td className="px-4 py-3 dark:text-slate-300">{t.agent}</td>
+                          <td className="px-4 py-3">
+                            <Badge color={t.status === 'Pending' ? 'amber' : (['Resolved', 'Won', 'Activated', 'Audited'].includes(t.status) ? 'green' : 'slate')}>{t.status}</Badge>
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <button type="button" onClick={() => {
+                              setDrilldownModal({ isOpen: false, title: '', data: [] });
+                              if (t.type === 'pip') {
+                                setPipData({ ...t.details, id: t.id, status: t.status });
+                                setIsPipModalOpen(true);
+                              } else if (t.type === 'warning') {
+                                setWarningData({ ...t.details, id: t.id });
+                                setIsWarningModalOpen(true);
+                              } else {
+                                handleEditTask(t);
+                              }
+                            }} className="px-3 py-1.5 bg-white dark:bg-slate-900 border dark:border-slate-700 text-[10px] font-black uppercase tracking-widest rounded-lg hover:border-blue-500 hover:text-blue-500 transition-colors shadow-sm">View Log</button>
+                          </td>
+                        </tr>
+                      ))}
+                      {drilldownModal.data.length === 0 && (
+                        <tr><td colSpan="4" className="px-4 py-8 text-center text-slate-400 text-xs uppercase tracking-widest">No matching records found.</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}
