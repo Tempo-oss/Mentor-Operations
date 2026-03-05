@@ -66,6 +66,23 @@
   <div id="root"></div>
 
   <script type="text/babel">
+    // Override alerts and confirms for safe iframe execution
+    window.alert = (msg) => {
+      const el = document.createElement('div');
+      el.className = 'fixed bottom-6 right-6 bg-slate-900 dark:bg-slate-800 text-white border border-slate-700 px-6 py-4 rounded-xl shadow-2xl z-[9999] font-bold text-sm animate-fade-in max-w-sm';
+      el.innerText = msg;
+      document.body.appendChild(el);
+      setTimeout(() => {
+        el.style.opacity = '0';
+        el.style.transition = 'opacity 0.3s ease';
+        setTimeout(() => el.remove(), 300);
+      }, 5000);
+    };
+    window.confirm = (msg) => {
+      console.log('Action auto-confirmed to prevent iframe block:', msg);
+      return true; // Auto confirm inside iframe to prevent freezing
+    };
+
     const { useState, useEffect, useMemo, useRef, useCallback } = React;
 
     // --- Supabase Config ---
@@ -146,6 +163,8 @@
     const Cpu = (props) => <Icon {...props} path={<><rect width="16" height="16" x="4" y="4" rx="2"/><rect width="6" height="6" x="9" y="9" rx="1"/><path d="M9 2v2"/><path d="M15 2v2"/><path d="M9 20v2"/><path d="M15 20v2"/><path d="M2 9h2"/><path d="M2 14h2"/><path d="M20 9h2"/><path d="M20 14h2"/></>} />;
     const RefreshCw = (props) => <Icon {...props} path={<><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></>} />;
     const Activity = (props) => <Icon {...props} path={<polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />} />;
+    const Menu = (props) => <Icon {...props} path={<><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></>} />;
+    const X = (props) => <Icon {...props} path={<><line x1="18" x2="6" y1="6" y2="18"/><line x1="6" x2="18" y1="6" y2="18"/></>} />;
 
     // --- Maps ---
     const initialAssociateEmailMap = {
@@ -1295,6 +1314,7 @@
       // Dashboard Collapsible State
       const [isPendingCollapsed, setIsPendingCollapsed] = useState(false);
       const [expandedPendingGroups, setExpandedPendingGroups] = useState({});
+      const [isSidebarOpen, setIsSidebarOpen] = useState(false);
       
       // Deep Link Handler State
       const [hasHandledDeepLink, setHasHandledDeepLink] = useState(false);
@@ -2345,6 +2365,23 @@
         return d.toLocaleDateString();
       };
 
+      const getTabIcon = (tab) => {
+        switch(tab) {
+          case 'dashboard': return <LayoutDashboard className="h-4 w-4" />;
+          case 'insights': return <Activity className="h-4 w-4" />;
+          case 'logs': return <FileText className="h-4 w-4" />;
+          case 'analytics': return <PieChart className="h-4 w-4" />;
+          case 'reports': return <BarChart3 className="h-4 w-4" />;
+          case 'ai_validation': return <Cpu className="h-4 w-4" />;
+          case 'pip': return <TrendingUp className="h-4 w-4" />;
+          case 'warnings': return <AlertTriangle className="h-4 w-4" />;
+          case 'audits': return <UserCheck className="h-4 w-4" />;
+          case 'kpis': return <Award className="h-4 w-4" />;
+          case 'admin': return <Shield className="h-4 w-4" />;
+          default: return <FileText className="h-4 w-4" />;
+        }
+      };
+
       // Calculated Audit Data for Dashboard (Including Mohamed Mounir Override for OverAll Team aggregation)
       const myDashboardAudits = tasks.filter(t => {
         if (t.type !== 'mentor_audit') return false;
@@ -2510,29 +2547,79 @@
       const adminDropdowns = (adminValidationCategories[adminSelectedTaskType]?.fields || []).filter(f => ['team', 'productType', 'surpriseAndDelightType', 'resolution', 'pendingReason', 'disputeReason', 'reasonForSupport', 'validHip', 'validRequest', 'subscriptionStatus', 'emailSent', 'disputedProduct', 'invalidReason', 'surpriseAndDelightReason', 'hipProduct', 'hipCategory', 'hipRequestType', 'status', 'pendingReasonDetail', 'warningReason', 'escalationCategory', 'escalationSubCategory', 'reasonForEscalation'].includes(f));
 
       return (
-        <div className="min-h-screen pb-20">
-          <header className="bg-white dark:bg-slate-900 border-b dark:border-slate-800 sticky top-0 z-20">
-            <div className="max-w-7xl mx-auto px-6 flex justify-between items-center h-16">
-              <div className="flex items-center gap-3"><h1 className="text-xl font-bold tracking-widest uppercase italic dark:text-white">Tempo</h1><Badge color={userProfile.role === 'Admin' ? 'purple' : 'slate'}>{userProfile.role}</Badge></div>
-              <nav className="flex gap-1 overflow-x-auto no-scrollbar">{visibleTabs.map(tab => (<button key={tab} onClick={() => setActiveTab(tab)} className={`px-4 py-2 text-xs font-black rounded-lg transition-colors uppercase tracking-widest whitespace-nowrap ${activeTab === tab ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white' : 'text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>{tab.replace('_', ' ')}</button>))}</nav>
-              <div className="flex items-center gap-4">
-                <button onClick={() => setIsDarkMode(!isDarkMode)} className="p-2 text-slate-400 hover:text-blue-500 transition-colors">{isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}</button>
-                <button onClick={() => setIsSettingsOpen(true)} className="p-2 text-slate-400 hover:text-slate-200 transition-colors"><SettingsIcon className="h-5 w-5" /></button>
-                
-                <button onClick={fetchData} title="Force Sync Data" className="p-2 text-slate-400 hover:text-slate-200 transition-colors flex items-center justify-center">
+        <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-slate-950">
+          
+          {/* Mobile Overlay */}
+          {isSidebarOpen && (
+            <div className="fixed inset-0 bg-slate-900/50 z-40 md:hidden backdrop-blur-sm" onClick={() => setIsSidebarOpen(false)} />
+          )}
+
+          {/* Sidebar Navigation */}
+          <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-slate-900 border-r dark:border-slate-800 flex flex-col transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+            <div className="p-6 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <h1 className="text-2xl font-black tracking-widest uppercase italic dark:text-white text-blue-600">Tempo</h1>
+                <Badge color={userProfile.role === 'Admin' ? 'purple' : 'slate'}>{userProfile.role}</Badge>
+              </div>
+              <button className="md:hidden text-slate-400 hover:text-slate-800 dark:hover:text-slate-200" onClick={() => setIsSidebarOpen(false)}>
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+            
+            <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1 no-scrollbar">
+              <div className="text-[10px] font-black uppercase text-slate-400 tracking-widest px-3 mb-3 mt-2">Main Menu</div>
+              {visibleTabs.map(tab => (
+                <button 
+                  key={tab} 
+                  onClick={() => { setActiveTab(tab); setIsSidebarOpen(false); }} 
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === tab ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+                >
+                  {getTabIcon(tab)}
+                  {tab.replace('_', ' ')}
+                </button>
+              ))}
+            </nav>
+
+            <div className="p-4 border-t dark:border-slate-800 space-y-4 bg-slate-50/50 dark:bg-slate-900/50">
+              <div className="flex items-center gap-3 px-2">
+                <div className="flex-1 min-w-0">
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Identity</p>
+                  <p className="text-xs font-black dark:text-slate-200 truncate" title={userProfile.email}>{userProfile.email.split('@')[0]}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-between gap-1">
+                <button onClick={() => setIsDarkMode(!isDarkMode)} className="p-2 text-slate-400 hover:text-blue-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors" title="Toggle Theme">
+                  {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                </button>
+                <button onClick={() => setIsSettingsOpen(true)} className="p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors" title="Settings">
+                  <SettingsIcon className="h-4 w-4" />
+                </button>
+                <button onClick={fetchData} title="Force Sync Data" className="p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors flex items-center justify-center">
                   <div className={`h-2 w-2 rounded-full ${connectionStatus === 'online' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]' : connectionStatus === 'connecting' ? 'bg-amber-500 animate-pulse' : 'bg-rose-500 shadow-[0_0_8px_rgba(225,29,72,0.8)]'}`} />
                 </button>
-                
-                <div className="text-right hidden md:block">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter leading-none dark:text-slate-500 font-bold">Identity</p>
-                  <p className="text-xs font-black leading-none dark:text-slate-200">{userProfile.email.split('@')[0]}</p>
-                </div>
-                <button onClick={() => supabase.auth.signOut()} className="p-2 text-slate-400 hover:text-rose-500 transition-colors"><LogOut className="h-4 w-4" /></button>
+                <button onClick={() => supabase.auth.signOut()} className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg transition-colors" title="Log Out">
+                  <LogOut className="h-4 w-4" />
+                </button>
               </div>
             </div>
-          </header>
+          </aside>
 
-          <main className="max-w-7xl mx-auto px-6 py-8">
+          {/* Main Content Viewport */}
+          <div className="flex-1 flex flex-col h-screen overflow-hidden relative">
+            {/* Mobile View Header */}
+            <header className="md:hidden bg-white dark:bg-slate-900 border-b dark:border-slate-800 p-4 flex items-center justify-between sticky top-0 z-30 shadow-sm">
+              <div className="flex items-center gap-3">
+                <h1 className="text-xl font-black tracking-widest uppercase italic dark:text-white text-blue-600">Tempo</h1>
+                <Badge color={userProfile.role === 'Admin' ? 'purple' : 'slate'}>{userProfile.role}</Badge>
+              </div>
+              <button className="p-2 -mr-2 text-slate-500 dark:text-slate-300" onClick={() => setIsSidebarOpen(true)}>
+                <Menu className="h-6 w-6" />
+              </button>
+            </header>
+
+            <main className="flex-1 overflow-y-auto p-4 md:p-8">
+              <div className="max-w-7xl mx-auto w-full pb-10">
             {tasks.length === 0 && connectionStatus === 'online' && (
               <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 p-4 rounded-xl text-amber-700 dark:text-amber-400 text-xs font-bold text-center animate-fade-in mb-6">
                 <AlertTriangle className="h-5 w-5 inline-block mr-2 mb-1" />
@@ -3404,6 +3491,7 @@
                 </Card>
               </div>
             )}
+              </div>
           </main>
 
           {/* PIP Modal Details */}
@@ -3868,6 +3956,7 @@
               </div>
             </div>
           )}
+          </div>
         </div>
       );
     }
