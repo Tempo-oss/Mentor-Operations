@@ -25,10 +25,10 @@
   </script>
   
   <!-- React & ReactDOM -->
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   
-  <!-- Babel for JSX -->
+  <!-- Babel for JSX in a static GitHub Pages deployment -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   
   <!-- Supabase JS Library -->
@@ -65,7 +65,7 @@
 <body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
   <div id="root"></div>
 
-  <script type="text/babel">
+  <script id="ment-app-source" type="text/plain">
     // Override alerts and confirms for safe iframe execution
     window.alert = (msg) => {
       const el = document.createElement('div');
@@ -3963,6 +3963,28 @@
 
     const root = ReactDOM.createRoot(document.getElementById('root'));
     root.render(<MentorOpsCenter />);
+  </script>
+  <script>
+    (() => {
+      try {
+        if (typeof window.Babel === "undefined") {
+          throw new Error("Babel standalone did not load");
+        }
+        const source = document.getElementById("ment-app-source")?.textContent || "";
+        window.__MENT_DEBUG_SET_STATUS__ && window.__MENT_DEBUG_SET_STATUS__("Debug: compiling app source with Babel");
+        const compiled = window.Babel.transform(source, {
+          presets: [
+            ["env", { modules: false }],
+            ["react", { runtime: "classic" }]
+          ]
+        });
+        const script = document.createElement("script");
+        script.text = compiled.code;
+        document.body.appendChild(script);
+      } catch (error) {
+        document.body.innerHTML = `<pre style="padding:16px;color:#b91c1c;background:#fff1f2;font:14px/1.5 monospace;white-space:pre-wrap;">App failed to start:\n${error.message}</pre>`;
+      }
+    })();
   </script>
 </body>
 </html>
